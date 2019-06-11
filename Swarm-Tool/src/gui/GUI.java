@@ -2,41 +2,27 @@ package gui;
 
 import java.awt.EventQueue;
 import javax.swing.JFrame;
-import javax.swing.JInternalFrame;
-import java.awt.BorderLayout;
 import javax.swing.JTabbedPane;
-import javax.swing.JSplitPane;
-import java.awt.FlowLayout;
-import java.awt.Frame;
-
 import java.awt.Color;
-import java.awt.EventQueue;
-import java.awt.GraphicsConfiguration;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.geom.Point2D;
 import java.util.Arrays;
 
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
-import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
-import javax.swing.JRadioButton;
 import javax.swing.JSlider;
-import javax.swing.JTabbedPane;
 import javax.swing.JTextField;
 import javax.swing.JToggleButton;
 import javax.swing.SwingConstants;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
-import cells.Cell;
-import other.SwarmAgent;
 import strategies.AbstractStrategy;
 import strategies.AllBlack;
 import strategies.CheckerBoard;

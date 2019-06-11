@@ -1,9 +1,8 @@
 package strategies;
 
-import java.awt.Color;
-
 import cells.Cell;
 import cells.GenericCell;
+
 import other.SwarmAgent;
 //Goal strategies are children of AbstractStrategy
 public abstract class AbstractStrategy {

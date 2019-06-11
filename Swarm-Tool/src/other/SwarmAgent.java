@@ -15,8 +15,6 @@ import java.awt.Graphics2D;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Point2D;
 
-import gui.GUI;
-
 /**
  * @author Nick
  * An agent is a freely moving and freely acting member of the swarm. An agent's goal is to

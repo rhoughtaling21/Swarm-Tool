@@ -8,9 +8,6 @@ package cells;
 
 import java.awt.Color;
 
-import gui.Board;
-import gui.GUI;
-
 @SuppressWarnings("serial")
 public class PersistenceCell extends GenericCell{
 	

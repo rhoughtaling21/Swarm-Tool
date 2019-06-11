@@ -24,20 +24,16 @@ import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import javax.swing.JFileChooser;
 import javax.swing.JPanel;
 import javax.swing.event.MouseInputListener;
 
 import cells.Cell;
 import cells.GenericCell;
-import cells.NullCell;
 import cells.PersistenceCell;
 import other.SwarmAgent;
 import strategies.AbstractStrategy;
-import strategies.AllBlack;
 import strategies.CheckerBoard;
 import strategies.DiagonalLines;
-import strategies.Lines;
 /*
  * Authors: Nick, Tim, Zak, Gabriel
  * Description: This is the guts of the program. Two 2x2 Cell arrays of size[size X size] are created to be layers 1 and 2,

@@ -1,7 +1,6 @@
 package strategies;
 
 import java.awt.Color;
-import java.util.Random;
 
 import cells.Cell;
 import cells.GenericCell;
