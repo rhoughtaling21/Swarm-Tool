@@ -2,8 +2,10 @@ package strategies;
 
 import java.awt.Color;
 
+import cells.CellDisplayBase;
+import cells.CellDisplayPolarity;
 import cells.Cell;
-import cells.GenericCell;
+import cells.CellDisplay;
 import gui.Board;
 import gui.GUI;
 import other.SwarmAgent;
@@ -17,23 +19,22 @@ public class AllBlack extends AbstractStrategy{
 
 	//This method does nothing	
 	@Override
-	public Cell Layer2(SwarmAgent agent, Cell[][] layer1, int cellSize, int row, int col, GenericCell[] neighbor) {
-		// TODO Auto-generated method stub
+	public CellDisplayPolarity Layer2(SwarmAgent agent, CellDisplayBase[][] layer1, int cellSize, int row, int col, Cell[] neighbor) {
 		return null;
 	}
 
 	@Override
-	public Cell Layer2(Cell[][] layer1, int cellSize, int row, int col, GenericCell[] neighbor) {
-		Cell layer2 = new Cell(0,0,0,Color.RED);
+	public CellDisplayPolarity Layer2(CellDisplayBase[][] layer1, int cellSize, int row, int col, Cell[] neighbor) {
+		CellDisplayPolarity layer2 = new CellDisplayPolarity(0,0,0,Color.RED);
 		if(layer1[row][col].getColor() == Color.BLACK)
 			//if the layer 1 cell is black
 		{
-			layer2 = new Cell(row*cellSize, col*cellSize, cellSize, GUI.getPolarity1());
+			layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity1());
 		}
 		else
 			//if the layer 1 cell is white
 		{
-			layer2 = new Cell(row*cellSize, col*cellSize, cellSize, GUI.getPolarity2());
+			layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity2());
 		}
 
 
@@ -42,7 +43,7 @@ public class AllBlack extends AbstractStrategy{
 	}
 
 	@Override
-	public void logic(SwarmAgent agent, Cell[][] layer1, Cell[][] layer2, GenericCell[] neighbors, Cell cell, int cellSize) {
+	public void logic(SwarmAgent agent, CellDisplayBase[][] layer1, CellDisplayPolarity[][] layer2, Cell[] neighbors, int cellSize) {
 
 		if(layer1[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].getColor() == Color.BLACK)
 		{

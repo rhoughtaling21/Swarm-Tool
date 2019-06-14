@@ -2,8 +2,10 @@ package strategies;
 
 import java.awt.Color;
 
+import cells.CellDisplayBase;
+import cells.CellDisplayPolarity;
 import cells.Cell;
-import cells.GenericCell;
+import cells.CellDisplay;
 import gui.Board;
 import gui.GUI;
 import other.SwarmAgent;
@@ -19,16 +21,16 @@ public class Lines extends AbstractStrategy{
 	
 	//This method does nothing
 	@Override
-	public Cell Layer2(SwarmAgent agent, Cell[][] layer1, int cellSize, int row, int col, GenericCell[] neighbor) {
+	public CellDisplayPolarity Layer2(SwarmAgent agent, CellDisplayBase[][] layer1, int cellSize, int row, int col, Cell[] neighbor) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 	
 	@Override
-	public Cell Layer2(Cell[][] layer1, int cellSize, int row, int col, GenericCell[] neighbors) {
+	public CellDisplayPolarity Layer2(CellDisplayBase[][] layer1, int cellSize, int row, int col, Cell[] neighbors) {
 		//Layer 2 in this sense shows 4 colors. one for each variation of straight lines. In the final, solved state,
 		//the 4 colors indicate the 4 faces of the pyramid.
-		Cell layer2 = new Cell(0,0,0,Color.RED);
+		CellDisplayPolarity layer2 = new CellDisplayPolarity(0, 0, 0, Color.RED);
 		int[] listOfPolarities = new int[4];
 		int max = listOfPolarities[0], chosenPolarity = 0, cornerCount = 0, edgeCount = 0, vertical = 0, horizontal = 0;
 		for(int index = 0; index<neighbors.length; index++)
@@ -95,44 +97,44 @@ public class Lines extends AbstractStrategy{
 			{
 				if(row%2==0)
 				{
-					layer2 = new Cell(row*cellSize, col*cellSize, cellSize, GUI.getPolarity1());
+					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity1());
 				}
 				else
 				{
-					layer2 = new Cell(row*cellSize, col*cellSize, cellSize, GUI.getPolarity2());
+					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity2());
 				}
 			}
 			else if(chosenPolarity == 1)
 			{
 				if(row%2==0)
 				{
-					layer2 = new Cell(row*cellSize, col*cellSize, cellSize, GUI.getPolarity1());
+					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity1());
 				}
 				else
 				{
-					layer2 = new Cell(row*cellSize, col*cellSize, cellSize, GUI.getPolarity2());
+					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity2());
 				}
 			}
 			else if(chosenPolarity == 2)
 			{
 				if(col%2==0)
 				{
-					layer2 = new Cell(row*cellSize, col*cellSize, cellSize, GUI.getPolarity4());
+					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity4());
 				}
 				else
 				{
-					layer2 = new Cell(row*cellSize, col*cellSize, cellSize, GUI.getPolarity3());
+					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity3());
 				}
 			}
 			else
 			{
 				if(col%2==0)
 				{
-					layer2 = new Cell(row*cellSize, col*cellSize, cellSize, GUI.getPolarity4());
+					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity4());
 				}
 				else
 				{
-					layer2 = new Cell(row*cellSize, col*cellSize, cellSize, GUI.getPolarity3());
+					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity3());
 				}
 			}
 		}
@@ -142,44 +144,44 @@ public class Lines extends AbstractStrategy{
 			{
 				if(row%2==0)
 				{
-					layer2 = new Cell(row*cellSize, col*cellSize, cellSize, GUI.getPolarity2());
+					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity2());
 				}
 				else
 				{
-					layer2 = new Cell(row*cellSize, col*cellSize, cellSize, GUI.getPolarity1());
+					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity1());
 				}
 			}
 			else if(chosenPolarity == 1)
 			{
 				if(row%2==0)
 				{
-					layer2 = new Cell(row*cellSize, col*cellSize, cellSize, GUI.getPolarity2());
+					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity2());
 				}
 				else
 				{
-					layer2 = new Cell(row*cellSize, col*cellSize, cellSize, GUI.getPolarity1());
+					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity1());
 				}
 			}
 			else if(chosenPolarity == 2)
 			{
 				if(col%2==0)
 				{
-					layer2 = new Cell(row*cellSize, col*cellSize, cellSize, GUI.getPolarity3());
+					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity3());
 				}
 				else
 				{
-					layer2 = new Cell(row*cellSize, col*cellSize, cellSize, GUI.getPolarity4());
+					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity4());
 				}
 			}
 			else
 			{
 				if(col%2==0)
 				{
-					layer2 = new Cell(row*cellSize, col*cellSize, cellSize, GUI.getPolarity3());
+					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity3());
 				}
 				else
 				{
-					layer2 = new Cell(row*cellSize, col*cellSize, cellSize, GUI.getPolarity4());
+					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity4());
 				}
 			}
 		}
@@ -189,7 +191,7 @@ public class Lines extends AbstractStrategy{
 
 	@Override
 	//this is the exact same logic as the checkerboard, but with edgeCount and cornerCount flipped.
-	public void logic(SwarmAgent agent, Cell[][] layer1, Cell[][] layer2, GenericCell[] neighbors, Cell cell, int cellSize) {
+	public void logic(SwarmAgent agent, CellDisplayBase[][] layer1, CellDisplayPolarity[][] layer2, Cell[] neighbors, int cellSize) {
 		int cornerCount = 0;
 		int edgeCount = 0;
 		//if (Math.random() < 0.1) {

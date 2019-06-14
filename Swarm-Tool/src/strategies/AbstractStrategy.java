@@ -1,17 +1,18 @@
 package strategies;
 
 import cells.Cell;
-import cells.GenericCell;
-
+import cells.CellDisplayBase;
+import cells.CellDisplayPolarity;
 import other.SwarmAgent;
+
 //Goal strategies are children of AbstractStrategy
 public abstract class AbstractStrategy {
 
-	public abstract Cell Layer2 (Cell[][] layer1, int cellSize, int row, int col, GenericCell[] neighbor);
+	public abstract CellDisplayPolarity Layer2 (CellDisplayBase[][] layer1, int cellSize, int row, int col, Cell[] neighbor);
 	//MODIFICATION
 	//new parameter, agent, is added to the method
-	public abstract Cell Layer2 (SwarmAgent agent, Cell[][] layer1, int cellSize, int row, int col, GenericCell[] neighbor);
-	public abstract void logic (SwarmAgent agent, Cell[][] layer1, Cell[][] layer2, GenericCell[] neighbors, Cell cell, int cellSize);
+	public abstract CellDisplayPolarity Layer2 (SwarmAgent agent, CellDisplayBase[][] layer1, int cellSize, int row, int col, Cell[] neighbor);
+	public abstract void logic (SwarmAgent agent, CellDisplayBase[][] layer1, CellDisplayPolarity[][] layer2, Cell[] neighbors, int cellSize);
 	
 	//MODIFICATION #7:
 	//By Morgan Might

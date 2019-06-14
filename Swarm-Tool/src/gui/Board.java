@@ -27,9 +27,10 @@ import java.util.TimerTask;
 import javax.swing.JPanel;
 import javax.swing.event.MouseInputListener;
 
-import cells.Cell;
-import cells.GenericCell;
-import cells.PersistenceCell;
+import cells.CellDisplayBase;
+import cells.CellDisplay;
+import cells.CellDisplayPersistence;
+import cells.CellDisplayPolarity;
 import other.SwarmAgent;
 import strategies.AbstractStrategy;
 import strategies.CheckerBoard;
@@ -44,10 +45,10 @@ import strategies.DiagonalLines;
  */
 @SuppressWarnings("serial")
 public class Board extends JPanel implements MouseInputListener {
-	private Cell[][] layer1;
-	private Cell[][] layer2;
-	private static PersistenceCell[][] layer4;  //MODIFICATION #7: new layer of cells for persistency
-	private GenericCell[][] display; //layer to paint
+	private CellDisplayBase[][] layer1;
+	private CellDisplayPolarity[][] layer2;
+	private static CellDisplayPersistence[][] layer4;  //MODIFICATION #7: new layer of cells for persistency
+	private CellDisplay[][] display; //layer to paint
 	public static int numCellsOnSide; //these are the numbers of cells in the board, NOT the graphical dimensions of the board
 	private boolean wrap = false; //whether the walls of the Board wrap or not; by default, they don't
 	private Color polarity;
@@ -76,7 +77,7 @@ public class Board extends JPanel implements MouseInputListener {
 	public static int currBlackCellCounter = 0;
 	public static int currWhiteCellCounter = 0;
 	public static int currGrayCellCounter = 0; //MODIFICATION #3
-	private GenericCell[] neighbors = new GenericCell[8];//the 8 cells that neighbor a given cell in layer 1 are stored here
+	private CellDisplay[] neighbors = new CellDisplay[8];//the 8 cells that neighbor a given cell in layer 1 are stored here
 	private AbstractStrategy strategy;//strategy that the agents and layer 2 use for their calculations given the current goal
 	public int numberOfAgents; //MODIFICATION
 	public boolean[] flipCell; //MODIFICATION #2
@@ -93,7 +94,7 @@ public class Board extends JPanel implements MouseInputListener {
 	public static int stepCount = 0; //MODIFICATION #6
 	int firstCount = 0, secondCount = 0, thirdCount = 0; //MODIFICATION (7/17/18 by Morgan Might) Allow the start goal to be diagonal lines
 
-	public Board(int width, int height, int numCellsOnSide, int numAgents, boolean wrap, Cell[][] layer1GetNeighbor) {
+	public Board(int width, int height, int numCellsOnSide, int numAgents, boolean wrap, CellDisplayBase[][] layer1GetNeighbor) {
 		numberOfAgents = numAgents;
 		//MODIFICATION
 		//Added 7/17/18
@@ -109,7 +110,7 @@ public class Board extends JPanel implements MouseInputListener {
 		setPreferredSize(new Dimension(width, height));
 		this.numCellsOnSide = numCellsOnSide;
 		this.wrap = wrap;
-		display = new GenericCell[numCellsOnSide][numCellsOnSide];
+		display = new CellDisplay[numCellsOnSide][numCellsOnSide];
 		//set the graphical dimensions of the cells themselves. the cells are always square, but the
 		//space they take up is constrained by the width and height of the board and by the number of cells.
 		cellSize = width/numCellsOnSide;
@@ -118,7 +119,7 @@ public class Board extends JPanel implements MouseInputListener {
 		attractorMaxDistance = cellSize*5; //the attractor affects everything in a five cell block radius
 
 		//layer 1
-		layer1 = new Cell[numCellsOnSide][numCellsOnSide];
+		layer1 = new CellDisplayBase[numCellsOnSide][numCellsOnSide];
 		int rand, randomPosition;
 		Random randGen = new Random();
 		Color initColor;
@@ -138,7 +139,7 @@ public class Board extends JPanel implements MouseInputListener {
 							currWhiteCellCounter++;
 						}
 
-						layer1[row][col] = new Cell(row * cellSize, col * cellSize, cellSize, initColor);
+						layer1[row][col] = new CellDisplayBase(row * cellSize, col * cellSize, cellSize, initColor);
 						
 		//	//	//	//	//MODIFICATION// // // // // // // // // // // // //
 						//Added 7/17/18
@@ -199,13 +200,13 @@ public class Board extends JPanel implements MouseInputListener {
 								}
 
 							}
-							layer1[row][col] = new Cell(row * cellSize, col * cellSize, cellSize, printColor);
+							layer1[row][col] = new CellDisplayBase(row * cellSize, col * cellSize, cellSize, printColor);
 						}
 					}
 				}
 			
 
-		layer2 = new Cell[numCellsOnSide][numCellsOnSide];
+		layer2 = new CellDisplayPolarity[numCellsOnSide][numCellsOnSide];
 		for (int row = 0; row < layer2.length; row++) {
 			for (int col = 0; col < layer2[row].length; col++) {
 				layer2[row][col] = strategy.Layer2(layer1, cellSize, row, col, getNeighbors(layer1, row, col));	
@@ -217,10 +218,10 @@ public class Board extends JPanel implements MouseInputListener {
 		//July 5, 2018
 		//Layer 4 cells start as white
 		//
-		layer4 = new PersistenceCell[numCellsOnSide][numCellsOnSide];
+		layer4 = new CellDisplayPersistence[numCellsOnSide][numCellsOnSide];
 		for (int row = 0; row < layer4.length; row++) {
 			for (int col = 0; col < layer4[row].length; col++) {
-				layer4[row][col] = new PersistenceCell(row * cellSize, col * cellSize, cellSize, Color.WHITE, 0);
+				layer4[row][col] = new CellDisplayPersistence(row * cellSize, col * cellSize, cellSize, Color.WHITE, 0);
 			}
 		}
 		
@@ -368,10 +369,10 @@ public class Board extends JPanel implements MouseInputListener {
 			int colMax = layer1[rowMax-1].length-1;
 			if((int)agent.getCenterX()/cellSize<=rowMax && (int)agent.getCenterY()/cellSize<=colMax)
 			{
-				strategy.logic(agent, layer1, layer2, neighbors, layer1[((int)agent.getCenterX()/cellSize)][((int)agent.getCenterY()/cellSize)], cellSize);
+				strategy.logic(agent, layer1, layer2, neighbors, cellSize);
 				for (int row = 0; row < layer2.length; row++) {
 					for (int col = 0; col < layer2[row].length; col++) {
-						GenericCell[] neighbors =  getNeighbors(layer1, row, col);
+						CellDisplay[] neighbors =  getNeighbors(layer1, row, col);
 						layer2[row][col] = strategy.Layer2(layer1, cellSize, row, col, neighbors);
 					}
 				}
@@ -457,9 +458,9 @@ public class Board extends JPanel implements MouseInputListener {
 	 * @param colNum
 	 * @return an array of all of the neighbors of the cell whose row and column number has been provided.
 	 */
-	public static GenericCell[] getNeighbors(Cell[][] cells, int rowNum, int colNum) {
+	public static CellDisplay[] getNeighbors(CellDisplayBase[][] cells, int rowNum, int colNum) {
 		//each cell only has 8 neighbors! for now at least.... :(
-		GenericCell[] neighbors = new Cell[8];
+		CellDisplay[] neighbors = new CellDisplayBase[8];
 		int rowMax = cells.length-1;
 		int colMax = cells[rowMax-1].length-1;
 		//This is an attempt to use nullCell singletons on the edge of the board to handle edge cases
@@ -579,7 +580,7 @@ public class Board extends JPanel implements MouseInputListener {
 	 * @param layer
 	 * @return the cell occupied by a given agent in a given layer
 	 */
-	public static Cell getOccupiedCell(SwarmAgent agent, Cell[][] layer) {
+	public static CellDisplayBase getOccupiedCell(SwarmAgent agent, CellDisplayBase[][] layer) {
 		return layer[(int)(agent.getCenterX()/layer[0][0].width)][(int)(agent.getCenterY()/layer[0][0].height)];
 	}
 
@@ -756,7 +757,7 @@ public class Board extends JPanel implements MouseInputListener {
 		strategy = newStrategy;
 		for (int row = 0; row < layer2.length; row++) {
 			for (int col = 0; col < layer2[row].length; col++) {
-				GenericCell[] neighbors =  getNeighbors(layer1, row, col);
+				CellDisplay[] neighbors =  getNeighbors(layer1, row, col);
 				layer2[row][col] = strategy.Layer2(layer1, cellSize, row, col, neighbors);
 			}
 		}
@@ -826,15 +827,15 @@ public class Board extends JPanel implements MouseInputListener {
 	//This method will reset the layer 4 cell to white
 	public static void resetToWhite(SwarmAgent agent, int cellSize){
 		layer4[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].setColor(Color.WHITE);
-		layer4[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].setPersistenceNum(0);
+		layer4[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].setPersistenceValue(0);
 	}
 
 	public static void addPurple(SwarmAgent agent, int cellSize) {
-		int persistenceNum = layer4[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].getPersistenceNum();
+		int persistenceNum = layer4[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].getPersistenceValue();
 		System.out.println("Persistence Num: " + persistenceNum);
 		if(layer4[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].getColor() == Color.WHITE) {
 			layer4[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].setColor(new Color(195,125,195));
-			layer4[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].setPersistenceNum(1);
+			layer4[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].setPersistenceValue(1);
 		}
 		else {
 			if(persistenceNum <= 3){ //(195, 125, 195) down to (180, 110, 180)
@@ -859,7 +860,7 @@ public class Board extends JPanel implements MouseInputListener {
 			}
 			
 			//Update Persistence Number
-			layer4[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].setPersistenceNum(persistenceNum + 1);
+			layer4[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].setPersistenceValue(persistenceNum + 1);
 		}
 		
 	}

@@ -3,8 +3,10 @@ package strategies;
 import java.awt.Color;
 import java.util.Random;
 
+import cells.CellDisplayBase;
+import cells.CellDisplayPolarity;
 import cells.Cell;
-import cells.GenericCell;
+import cells.CellDisplay;
 import gui.Board;		//MODIFICATION #7 
 import gui.GUI;
 import other.SwarmAgent;
@@ -17,15 +19,14 @@ public class CheckerBoard extends AbstractStrategy{
 	boolean adjustCellColor = false;
 	
 	@Override
-	public Cell Layer2(SwarmAgent agent, Cell[][] layer1, int cellSize, int row, int col, GenericCell[] neighbor) {
-		// TODO Auto-generated method stub
+	public CellDisplayPolarity Layer2(SwarmAgent agent, CellDisplayBase[][] layer1, int cellSize, int row, int col, Cell[] neighbor) {
 		//This method does nothing
 		return null;
 	}
 
 	@Override
-	public Cell Layer2(Cell[][] layer1,  int cellSize, int row, int col, GenericCell[] neighbor) {
-		Cell layer2 = new Cell(0,0,0,Color.RED);
+	public CellDisplayPolarity Layer2(CellDisplayBase[][] layer1,  int cellSize, int row, int col, Cell[] neighbor) {
+		CellDisplayPolarity layer2 = new CellDisplayPolarity(0, 0, 0, Color.RED);
 		{
 			if(layer1[row][col].getColor() == Color.BLACK)
 				//if the layer 1 cell is black
@@ -33,13 +34,13 @@ public class CheckerBoard extends AbstractStrategy{
 				if(col%2 == row%2)
 					//if its in a spot that should be black
 				{
-					layer2 = new Cell(row*cellSize, col*cellSize, cellSize, GUI.getPolarity1());
+					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity1());
 					//then you are the same polarity as cell[0][0]
 				}
 				else
 					//if its in a spot that SHOULDN'T be black
 				{
-					layer2 = new Cell(row*cellSize, col*cellSize, cellSize, GUI.getPolarity2());
+					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity2());
 					//then you are in the opposite polarity than cells[0][0]
 				}
 			}
@@ -49,13 +50,13 @@ public class CheckerBoard extends AbstractStrategy{
 				if(col%2 == row%2)
 					//if its in a spot that SHOULDN'T be 
 				{
-					layer2 = new Cell(row*cellSize, col*cellSize, cellSize, GUI.getPolarity2());
+					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity2());
 					// then its in the opposite polarity than cells[0]
 				}
 				else
 					//if its in a spot that should be white
 				{
-					layer2 = new Cell(row*cellSize, col*cellSize, cellSize, GUI.getPolarity1());
+					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity1());
 					//then its in the same polarity as cells[0][0]
 				}
 			}
@@ -64,29 +65,29 @@ public class CheckerBoard extends AbstractStrategy{
 		{
 			if(col%2 == row%2)
 			{
-				layer2 = new Cell(row*cellSize, col*cellSize, cellSize, GUI.getPolarity1());
+				layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity1());
 			}
 			else
 			{
-				layer2 = new Cell(row*cellSize, col*cellSize, cellSize, GUI.getPolarity2());
+				layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity2());
 			}
 		}
 		else
 		{
 			if(col%2 == row%2)
 			{
-				layer2 = new Cell(row*cellSize, col*cellSize, cellSize, GUI.getPolarity2());
+				layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity2());
 			}
 			else
 			{
-				layer2 = new Cell(row*cellSize, col*cellSize, cellSize, GUI.getPolarity1());
+				layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity1());
 			}
 		}
 
 		return layer2;
 	}
 
-	public void logic(SwarmAgent agent, Cell[][] layer1, Cell[][] layer2, GenericCell[] neighbors, Cell cell, int cellSize) {
+	public void logic(SwarmAgent agent, CellDisplayBase[][] layer1, CellDisplayPolarity[][] layer2, Cell[] neighbors, int cellSize) {
 		int cornerCount = 0;
 		int edgeCount = 0;
 		for(int index = 0; index<neighbors.length; index++)

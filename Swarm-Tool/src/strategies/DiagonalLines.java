@@ -2,13 +2,15 @@ package strategies;
 
 import java.awt.Color;
 
+import cells.CellDisplayBase;
+import cells.CellDisplayPolarity;
 import cells.Cell;
-import cells.GenericCell;
+import cells.CellDisplay;
 import gui.Board;
 import gui.GUI;
 import other.SwarmAgent;
 
-public class DiagonalLines extends AbstractStrategy{
+public class DiagonalLines extends AbstractStrategy {
 	
 	/*
 	 * Author Morgan Might
@@ -19,7 +21,7 @@ public class DiagonalLines extends AbstractStrategy{
 	 */
 
 	@Override
-	public Cell Layer2(Cell[][] layer1, int cellSize, int row, int col, GenericCell[] neighbor) {
+	public CellDisplayPolarity Layer2(CellDisplayBase[][] layer1, int cellSize, int row, int col, Cell[] neighbor) {
 		// TODO Auto-generated method stub
 		//Layer 2 in this sense shows 3 colors. one for each variation of diagonal lines. 
 		
@@ -49,20 +51,20 @@ public class DiagonalLines extends AbstractStrategy{
 		
 		
 		int polarityNum = 0;
-				Cell layer2 = new Cell(0,0,0,Color.RED);	
+				CellDisplayPolarity layer2 = new CellDisplayPolarity(0, 0, 0, Color.RED);	
 				//If the Cell's color is Black. Based on its location determine polarity of the Cell
 				if(layer1[row][col].getColor() == Color.BLACK) {
 					//Polarity
 					if((row + col)%3 ==0) {
-						layer2 = new Cell(row*cellSize, col*cellSize, cellSize, GUI.getPolarity1());
+						layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity1());
 						polarityNum = 1;
 					}
 					else if((row + col)%3 ==1) {
-						layer2 = new Cell(row*cellSize, col*cellSize, cellSize, GUI.getPolarity3());
+						layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity3());
 						polarityNum = 3;
 					}
 					else if((row + col)%3 ==2) {
-						layer2 = new Cell(row*cellSize, col*cellSize, cellSize, GUI.getPolarity2());
+						layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity2());
 						polarityNum = 2;
 					}
 					
@@ -71,15 +73,15 @@ public class DiagonalLines extends AbstractStrategy{
 				else if(layer1[row][col].getColor() == Color.GRAY) {
 					//Polarity
 					if((row + col)%3 ==0) {
-						layer2 = new Cell(row*cellSize, col*cellSize, cellSize, GUI.getPolarity2());
+						layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity2());
 						polarityNum = 2;
 					}
 					else if((row + col)%3 ==1) {
-						layer2 = new Cell(row*cellSize, col*cellSize, cellSize, GUI.getPolarity1());
+						layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity1());
 						polarityNum = 1;
 					}
 					else if((row + col)%3 ==2) {
-						layer2 = new Cell(row*cellSize, col*cellSize, cellSize, GUI.getPolarity3());
+						layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity3());
 						polarityNum = 3;
 					}
 				}
@@ -87,15 +89,15 @@ public class DiagonalLines extends AbstractStrategy{
 				else if(layer1[row][col].getColor() == Color.WHITE) {
 					//Polarity
 					if((row + col)%3 ==0) {
-						layer2 = new Cell(row*cellSize, col*cellSize, cellSize, GUI.getPolarity3());
+						layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity3());
 						polarityNum = 3;
 					}
 					else if((row + col)%3 ==1) {
-						layer2 = new Cell(row*cellSize, col*cellSize, cellSize, GUI.getPolarity2());
+						layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity2());
 						polarityNum = 2;
 					}
 					else if((row + col)%3 ==2) {
-						layer2 = new Cell(row*cellSize, col*cellSize, cellSize, GUI.getPolarity1());
+						layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity1());
 						polarityNum = 1;
 					}
 				}
@@ -120,9 +122,9 @@ public class DiagonalLines extends AbstractStrategy{
 
 
 	@Override
-	public Cell Layer2(SwarmAgent agent, Cell[][] layer1, int cellSize, int row, int col, GenericCell[] neighbors) {
+	public CellDisplayPolarity Layer2(SwarmAgent agent, CellDisplayBase[][] layer1, int cellSize, int row, int col, Cell[] neighbors) {
 		//Layer 2 in this sense shows 3 colors. one for each variation of diagonal lines. 
-		Cell layer2 = new Cell(0,0,0,Color.RED);
+		CellDisplayPolarity layer2 = new CellDisplayPolarity(0, 0, 0, Color.RED);
 		int polarityNum = 0;
 		
 		
@@ -153,15 +155,15 @@ public class DiagonalLines extends AbstractStrategy{
 		if(layer1[row][col].getColor() == Color.BLACK) {
 			//Polarity
 			if((row + col)%3 ==0) {
-				layer2 = new Cell(row*cellSize, col*cellSize, cellSize, GUI.getPolarity1());
+				layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity1());
 				polarityNum = 1;
 			}
 			else if((row + col)%3 ==1) {
-				layer2 = new Cell(row*cellSize, col*cellSize, cellSize, GUI.getPolarity3());
+				layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity3());
 				polarityNum = 3;
 			}
 			else if((row + col)%3 ==2) {
-				layer2 = new Cell(row*cellSize, col*cellSize, cellSize, GUI.getPolarity2());
+				layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity2());
 				polarityNum = 2;
 			}
 			
@@ -170,15 +172,15 @@ public class DiagonalLines extends AbstractStrategy{
 		else if(layer1[row][col].getColor() == Color.GRAY) {
 			//Polarity
 			if((row + col)%3 ==0) {
-				layer2 = new Cell(row*cellSize, col*cellSize, cellSize, GUI.getPolarity2());
+				layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity2());
 				polarityNum = 2;
 			}
 			else if((row + col)%3 ==1) {
-				layer2 = new Cell(row*cellSize, col*cellSize, cellSize, GUI.getPolarity1());
+				layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity1());
 				polarityNum = 1;
 			}
 			else if((row + col)%3 ==2) {
-				layer2 = new Cell(row*cellSize, col*cellSize, cellSize, GUI.getPolarity3());
+				layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity3());
 				polarityNum = 3;
 			}
 		}
@@ -186,15 +188,15 @@ public class DiagonalLines extends AbstractStrategy{
 		else if(layer1[row][col].getColor() == Color.WHITE) {
 			//Polarity
 			if((row + col)%3 ==0) {
-				layer2 = new Cell(row*cellSize, col*cellSize, cellSize, GUI.getPolarity3());
+				layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity3());
 				polarityNum = 3;
 			}
 			else if((row + col)%3 ==1) {
-				layer2 = new Cell(row*cellSize, col*cellSize, cellSize, GUI.getPolarity2());
+				layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity2());
 				polarityNum = 2;
 			}
 			else if((row + col)%3 ==2) {
-				layer2 = new Cell(row*cellSize, col*cellSize, cellSize, GUI.getPolarity1());
+				layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity1());
 				polarityNum = 1;
 			}
 		}
@@ -226,8 +228,7 @@ public class DiagonalLines extends AbstractStrategy{
 	//
 	//Added 6/13/2018 by Morgan Might
 	@Override
-	public void logic(SwarmAgent agent, Cell[][] layer1, Cell[][] layer2, GenericCell[] neighbors, Cell cell,
-			int cellSize) {
+	public void logic(SwarmAgent agent, CellDisplayBase[][] layer1, CellDisplayPolarity[][] layer2, Cell[] neighbors, int cellSize) {
 		int totalCells = Board.numCellsOnSide*Board.numCellsOnSide;
 		int row = (int) agent.getCenterX() / cellSize;
 		int col = (int) agent.getCenterY() / cellSize;
@@ -669,7 +670,7 @@ public class DiagonalLines extends AbstractStrategy{
 		//July 5, 2018
 		
 		//MODIFICATION #9
-		layer1[(int) agent.getCenterX() / cellSize][(int) agent.getCenterY() / cellSize].changeColor(newColor);
+		layer1[(int) agent.getCenterX() / cellSize][(int) agent.getCenterY() / cellSize].setColor(newColor);
 		layer2[(int) agent.getCenterX() / cellSize][(int) agent.getCenterY() / cellSize] = Layer2(agent, layer1, cellSize,
 			(int) agent.getCenterX() / cellSize, (int) agent.getCenterY() / cellSize, neighbors);
 		//If the cell was flipped reset the layer 4 cell to white
