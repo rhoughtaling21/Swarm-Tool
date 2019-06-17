@@ -47,15 +47,14 @@ import strategies.DiagonalLines;
 public class Board extends JPanel implements MouseInputListener {
 	private CellDisplayBase[][] layer1;
 	private CellDisplayPolarity[][] layer2;
-	private static CellDisplayPersistence[][] layer4;  //MODIFICATION #7: new layer of cells for persistency
-	private CellDisplay[][] display; //layer to paint
-	public static int numCellsOnSide; //these are the numbers of cells in the board, NOT the graphical dimensions of the board
+	private CellDisplayPersistence[][] layer4;  //MODIFICATION #7: new layer of cells for persistency
+	private CellDisplay[][] layerDisplay; //layer to paint
+	public int numCellsOnSide; //these are the numbers of cells in the board, NOT the graphical dimensions of the board
 	private boolean wrap = false; //whether the walls of the Board wrap or not; by default, they don't
-	private Color polarity;
 	private int cellSize; //pixel dimensions of each cell
 	private int agentSize; //pixel dimensions of each agent
 	private SwarmAgent[] agents;
-	private Color agentColor = GUI.agentColor;
+	private Color agentColor;
 	private double attractorStrength = 1;
 	private int attractorMaxDistance; //distance in cells, not pixels
 	private int attractOrRepel = 1; //1 if attract, -1 if repel
@@ -74,9 +73,9 @@ public class Board extends JPanel implements MouseInputListener {
 	private int blackCellCounter = 0;//info for GUI
 	private int whiteCellCounter = 0;
 	private int grayCellCounter = 0; //MODIFICATION #3
-	public static int currBlackCellCounter = 0;
-	public static int currWhiteCellCounter = 0;
-	public static int currGrayCellCounter = 0; //MODIFICATION #3
+	public int currBlackCellCounter = 0;
+	public int currWhiteCellCounter = 0;
+	public int currGrayCellCounter = 0; //MODIFICATION #3
 	private CellDisplay[] neighbors = new CellDisplay[8];//the 8 cells that neighbor a given cell in layer 1 are stored here
 	private AbstractStrategy strategy;//strategy that the agents and layer 2 use for their calculations given the current goal
 	public int numberOfAgents; //MODIFICATION
@@ -91,26 +90,29 @@ public class Board extends JPanel implements MouseInputListener {
 	//String exportInfoString = "Less than 5,5-9,10-14,15-19,20-24,More than 25\n"; //MODIFICATION #8
 	//String exportInfoString = "Zero,One,Two,Three,Four,Five,Six+\n"; //MODIFICATION #8
 	String exportInfoString = "Red,Blue,Yellow\n"; 
-	public static int stepCount = 0; //MODIFICATION #6
+	public int stepCount = 0; //MODIFICATION #6
 	int firstCount = 0, secondCount = 0, thirdCount = 0; //MODIFICATION (7/17/18 by Morgan Might) Allow the start goal to be diagonal lines
+	GUI gui;
 
-	public Board(int width, int height, int numCellsOnSide, int numAgents, boolean wrap, CellDisplayBase[][] layer1GetNeighbor) {
+	public Board(int width, int height, int numCellsOnSide, int numAgents, boolean wrap, CellDisplayBase[][] layer1GetNeighbor, GUI gui) {
 		numberOfAgents = numAgents;
+		this.gui = gui;
 		//MODIFICATION
 		//Added 7/17/18
-		//By Moragn Might
+		//By Morgan Might
 		//Allow the Board to start with the goal of Diagonal Lines
-		if(GUI.diagonalLineStart == true) {
+		if(gui.diagonalLineStart) {
 			strategy = new DiagonalLines();
 		}
 		else {
 			strategy = new CheckerBoard();
 		}
+		agentColor = gui.agentColor;
 		//set preferred graphical dimensions of the board
 		setPreferredSize(new Dimension(width, height));
 		this.numCellsOnSide = numCellsOnSide;
 		this.wrap = wrap;
-		display = new CellDisplay[numCellsOnSide][numCellsOnSide];
+		layerDisplay = new CellDisplay[numCellsOnSide][numCellsOnSide];
 		//set the graphical dimensions of the cells themselves. the cells are always square, but the
 		//space they take up is constrained by the width and height of the board and by the number of cells.
 		cellSize = width/numCellsOnSide;
@@ -124,7 +126,7 @@ public class Board extends JPanel implements MouseInputListener {
 		Random randGen = new Random();
 		Color initColor;
 		
-			if (!GUI.getSplitPolarity()) {
+			if (!gui.getSplitPolarity()) {
 				for (int row = 0; row < layer1.length; row++) {
 					for (int col = 0; col < layer1[row].length; col++) {
 						rand = (int) (Math.random() * 2);
@@ -139,13 +141,13 @@ public class Board extends JPanel implements MouseInputListener {
 							currWhiteCellCounter++;
 						}
 
-						layer1[row][col] = new CellDisplayBase(row * cellSize, col * cellSize, cellSize, initColor);
+						layer1[row][col] = new CellDisplayBase(row * cellSize, col * cellSize, cellSize, initColor, this);
 						
 		//	//	//	//	//MODIFICATION// // // // // // // // // // // // //
 						//Added 7/17/18
 						//By Morgan Might
 						//Set up polarity counts
-						if(GUI.getThreeColor()) {
+						if(gui.getThreeColor()) {
 							if(initColor == Color.BLACK && (row+col%3 == 0) || initColor == Color.GRAY && (row+col%3 == 1) || initColor == Color.WHITE && (row+col%3 == 2)) {
 								firstCount++;
 							}
@@ -159,15 +161,15 @@ public class Board extends JPanel implements MouseInputListener {
 						
 					}
 				}
-				if(GUI.getThreeColor()) {
-					GUI.setPolOneCount(firstCount);
-					GUI.setPolTwoCount(secondCount);
-					GUI.setPolThreeCount(thirdCount);
+				if(gui.getThreeColor()) {
+					gui.setPolOneCount(firstCount);
+					gui.setPolTwoCount(secondCount);
+					gui.setPolThreeCount(thirdCount);
 				}
 			}
 			
 			// MODIFICATION: This will test swarms when the polarity is split and the agents are no longer affective
-			else if(!GUI.getThreeColor()){
+			else if(!gui.getThreeColor()){
 				Color printColor;
 				randomPosition = randGen.nextInt(numCellsOnSide - 5) + 3;
 				System.out.print(randomPosition);
@@ -200,7 +202,7 @@ public class Board extends JPanel implements MouseInputListener {
 								}
 
 							}
-							layer1[row][col] = new CellDisplayBase(row * cellSize, col * cellSize, cellSize, printColor);
+							layer1[row][col] = new CellDisplayBase(row * cellSize, col * cellSize, cellSize, printColor, this);
 						}
 					}
 				}
@@ -221,7 +223,7 @@ public class Board extends JPanel implements MouseInputListener {
 		layer4 = new CellDisplayPersistence[numCellsOnSide][numCellsOnSide];
 		for (int row = 0; row < layer4.length; row++) {
 			for (int col = 0; col < layer4[row].length; col++) {
-				layer4[row][col] = new CellDisplayPersistence(row * cellSize, col * cellSize, cellSize, Color.WHITE, 0);
+				layer4[row][col] = new CellDisplayPersistence(row * cellSize, col * cellSize, cellSize, Color.WHITE, this, 0);
 			}
 		}
 		
@@ -233,7 +235,7 @@ public class Board extends JPanel implements MouseInputListener {
 		boolean specialAgent = false;
 		for (int i = 0; i < agents.length; i++) {
 			//these agents generate in a random spot on the board, with a random starting vector.
-			if(i < GUI.getNumOfSpecialAgents()) {
+			if(i < gui.getNumOfSpecialAgents()) {
 				specialAgent = true;
 			}
 			agents[i] = new SwarmAgent(width, cellSize, agentSize, specialAgent);
@@ -246,14 +248,14 @@ public class Board extends JPanel implements MouseInputListener {
 
 		StartTimer();
 
-		if (GUI.layer2Draw == 3)
+		if (gui.layer2Draw == 3)
 		{
-			GUI.layer2Draw = 1;
+			gui.layer2Draw = 1;
 		}
 
-		GUI.setLblIntBlackCells(blackCellCounter);
-		GUI.setLblIntGrayCells(grayCellCounter);
-		GUI.setLblIntWhiteCells(whiteCellCounter);
+		gui.setLblIntBlackCells(blackCellCounter);
+		gui.setLblIntGrayCells(grayCellCounter);
+		gui.setLblIntWhiteCells(whiteCellCounter);
 	}
 
 	public void StartTimer()
@@ -278,41 +280,41 @@ public class Board extends JPanel implements MouseInputListener {
 		Graphics2D g = (Graphics2D)arg0;
 
 		//draw boards
-		if (GUI.layer2Draw == 1)
+		if (gui.layer2Draw == 1)
 		{
 			for (int row = 0; row < numCellsOnSide; row++) {
 				for (int col = 0; col <numCellsOnSide; col++) {
-					display[row][col] = layer1[row][col];
-					display[row][col].draw(g);
+					layerDisplay[row][col] = layer1[row][col];
+					layerDisplay[row][col].draw(g);
 				}
 			}
 			tempL2D = 1;
 		}
-		else if(GUI.layer2Draw == 2)
+		else if(gui.layer2Draw == 2)
 		{
 			for (int row = 0; row < numCellsOnSide; row++) {
 				for (int col = 0; col <numCellsOnSide; col++) {
-					display[row][col] = layer2[row][col];
-					display[row][col].draw(g);
+					layerDisplay[row][col] = layer2[row][col];
+					layerDisplay[row][col].draw(g);
 				}
 			}
 			tempL2D = 2;
 		}
 		//MODIFICATION #7: needed to display the persistency board when on layer 4
 		//by Morgan Might on July 5, 2018
-		else if(GUI.layer2Draw == 4)
+		else if(gui.layer2Draw == 4)
 		{
 			for (int row = 0; row < numCellsOnSide; row++) {
 				for (int col = 0; col <numCellsOnSide; col++) {
-					display[row][col] = layer4[row][col];
-					display[row][col].draw(g);
+					layerDisplay[row][col] = layer4[row][col];
+					layerDisplay[row][col].draw(g);
 				}
 			}
 			tempL2D = 4;
 		}
 		else
 		{
-			GUI.layer2Draw = tempL2D;
+			gui.layer2Draw = tempL2D;
 			repaint();
 		}
 //*************************************************************************************************
@@ -321,7 +323,7 @@ public class Board extends JPanel implements MouseInputListener {
 		//draw agents
 		for (SwarmAgent agent : agents) {
 			// if the agents have been set to non-visible, sets them to a transparent color
-			if (GUI.whetherAgentsVisible) {
+			if (gui.whetherAgentsVisible) {
 				agent.setColor(agent.getColor());
 			} 
 			else {
@@ -392,55 +394,55 @@ public class Board extends JPanel implements MouseInputListener {
 				//the board. If it does, then it has the agent "bounce" off the board's wall. This is kind of a hack--
 				//the desirable behavior, actually, is actually just always bouncing it, but that will require refactoring
 				//this, and the agent's own step method, at a later date.
-				if (agent.x < agent.getSize() && agent.getVelocity().getX() < 0)  
+				if (agent.x < agent.getWidth() && agent.getVelocity().getX() < 0)  
 				{
 					agent.xBounce();
 				}
-				if (agent.y < agent.getSize() && agent.getVelocity().getY() < 0)
+				if (agent.y < agent.getHeight() && agent.getVelocity().getY() < 0)
 				{
 					agent.yBounce();
 				}
-				if (agent.x+agentSize > numCellsOnSide*cellSize+agent.getSize() && agent.getVelocity().getX() > 0)
+				if (agent.x+agentSize > numCellsOnSide*cellSize+agent.getWidth() && agent.getVelocity().getX() > 0)
 				{
 					agent.xBounce();
 				}
-				if (agent.y+agentSize > numCellsOnSide*cellSize+agent.getSize() && agent.getVelocity().getY() > 0)
+				if (agent.y+agentSize > numCellsOnSide*cellSize+agent.getHeight() && agent.getVelocity().getY() > 0)
 				{
 					agent.yBounce();
 				}
 			}
 		}
-		GUI.setLblCurrBlackCells(currBlackCellCounter);
-		GUI.setLblCurrGrayCells(currGrayCellCounter);
-		GUI.setLblCurrWhiteCells(currWhiteCellCounter);
+		gui.setLblCurrBlackCells(currBlackCellCounter);
+		gui.setLblCurrGrayCells(currGrayCellCounter);
+		gui.setLblCurrWhiteCells(currWhiteCellCounter);
 		
 		//MODIFICATION #10
 		//added back in 7/23
-		int redCount = GUI.getPolOneCount();
-		int blueCount = GUI.getPolTwoCount();
-		int yellowCount = GUI.getPolThreeCount();
+		int redCount = gui.getPolOneCount();
+		int blueCount = gui.getPolTwoCount();
+		int yellowCount = gui.getPolThreeCount();
 		
 			
 		stepCount++; //keep track of how many steps
-		GUI.updateStepCountLabel("" + stepCount + "");	//updates the Step label (added 7/23)
+		gui.updateStepCountLabel("" + stepCount + "");	//updates the Step label (added 7/23)
 		
 		//MODIFICATION #10
 		//added back in 7/23
 		exportInfoString += "" + redCount + "," + blueCount + "," + yellowCount +"\n";
-		System.out.println(exportInfoString + " " + stepCount);
+		//System.out.println(exportInfoString + " " + stepCount);
 	
 		//Now Export to the file		
-		try {				
-			outputFile = new File("\\\\kermit\\shome$\\mmight20\\Documents\\RESEARCH\\exportFile1.txt"); 
-			fileWriter = new FileWriter(outputFile);
-			writer = new BufferedWriter(fileWriter);
-			
-			writer.write(exportInfoString);
-			writer.close();
-		}
-		catch (IOException ex) {
-			System.out.println("Error: " + ex.getMessage());
-		}
+//		try {				
+//			outputFile = new File("\\\\kermit\\shome$\\mmight20\\Documents\\RESEARCH\\exportFile1.txt"); 
+//			fileWriter = new FileWriter(outputFile);
+//			writer = new BufferedWriter(fileWriter);
+//			
+//			writer.write(exportInfoString);
+//			writer.close();
+//		}
+//		catch (IOException ex) {
+//			System.out.println("Error: " + ex.getMessage());
+//		}
 		
 		System.out.println("Step: " + stepCount);
 		
@@ -626,7 +628,7 @@ public class Board extends JPanel implements MouseInputListener {
 
 		//if you click in a spot on the board, the agents will be attracted to that spot with decreasing effect
 		//the further away they are
-		if (GUI.attractOrRepel)
+		if (gui.attractOrRepel)
 		{
 			attractOrRepel=1;
 		}
@@ -809,7 +811,7 @@ public class Board extends JPanel implements MouseInputListener {
 	}
 	
 	//MODIFICATION #3
-	public static int getTotalNumCells() {
+	public int getTotalNumCells() {
 		return numCellsOnSide * numCellsOnSide;
 	}
 	
@@ -818,19 +820,19 @@ public class Board extends JPanel implements MouseInputListener {
 		Color[] nullArray = new Color[10];
 		SwarmAgent[] newAgents = new SwarmAgent[agents.length];
 		for(int i= 0; i < numAgents; i++) {
-			newAgents[i] = new SwarmAgent(agents[i].getX(), agents[i].getY(), agents[i].getSize(), agents[i].getVelocity(), agents[i].getColor(), nullArray);
+			newAgents[i] = new SwarmAgent(agents[i].getX(), agents[i].getY(), agents[i].getWidth(), agents[i].getVelocity(), agents[i].getColor(), nullArray);
 		}
 	}
 	
 	//MODIFICATION #7:
 	//Morgan Might on July 5, 2018
 	//This method will reset the layer 4 cell to white
-	public static void resetToWhite(SwarmAgent agent, int cellSize){
+	public void resetToWhite(SwarmAgent agent, int cellSize){
 		layer4[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].setColor(Color.WHITE);
 		layer4[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].setPersistenceValue(0);
 	}
 
-	public static void addPurple(SwarmAgent agent, int cellSize) {
+	public void addPurple(SwarmAgent agent, int cellSize) {
 		int persistenceNum = layer4[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].getPersistenceValue();
 		System.out.println("Persistence Num: " + persistenceNum);
 		if(layer4[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].getColor() == Color.WHITE) {
@@ -865,6 +867,9 @@ public class Board extends JPanel implements MouseInputListener {
 		
 	}
 
+	public GUI getGui() {
+		return gui;
+	}
 }
 
 

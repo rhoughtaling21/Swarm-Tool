@@ -13,8 +13,7 @@ import other.SwarmAgent;
  * Author: Zakary Gray
  * Description: Agent logic and layer 2 logic for an end goal of all layer 1 cells being black
  */
-public class AllBlack extends AbstractStrategy{
-	
+public class AllBlack extends AbstractStrategy {
 	boolean adjustCellColor = false; //MODIFICATION #7
 
 	//This method does nothing	
@@ -25,16 +24,16 @@ public class AllBlack extends AbstractStrategy{
 
 	@Override
 	public CellDisplayPolarity Layer2(CellDisplayBase[][] layer1, int cellSize, int row, int col, Cell[] neighbor) {
-		CellDisplayPolarity layer2 = new CellDisplayPolarity(0,0,0,Color.RED);
+		CellDisplayPolarity layer2 = new CellDisplayPolarity(0,0,0,Color.RED, layer1[row][col].getBoard());
 		if(layer1[row][col].getColor() == Color.BLACK)
 			//if the layer 1 cell is black
 		{
-			layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity1());
+			layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity1(), layer1[row][col].getBoard());
 		}
 		else
 			//if the layer 1 cell is white
 		{
-			layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity2());
+			layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity2(), layer1[row][col].getBoard());
 		}
 
 
@@ -58,11 +57,11 @@ public class AllBlack extends AbstractStrategy{
 		
 		//If the cell was flipped reset the layer 4 cell to white
 				if(adjustCellColor) {
-					Board.resetToWhite(agent, cellSize); //needs to be static????
+					layer1[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].getBoard().resetToWhite(agent, cellSize); //needs to be static????
 				}
 				//If the cell does not need changed, darken the purple
 				else {
-					Board.addPurple(agent, cellSize); 
+					layer1[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].getBoard().addPurple(agent, cellSize); 
 				}
 
 	}

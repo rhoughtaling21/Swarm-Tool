@@ -25,9 +25,8 @@ import java.awt.geom.Point2D;
  */
 @SuppressWarnings("serial")
 public class SwarmAgent extends Ellipse2D.Double {
-	private int size;
 	private Point2D velocity;	//adds direction to our agents
-	private Color color; 	//only adding a color here so we can make it green or invisible in the board class
+	private Color colorFill; 	//only adding a color here so we can make it green or invisible in the board class
 	private boolean specialAgent;	//MODIFICATION: one agent will be a different color (when true)
 	private Color[] recentColorsArray = new Color[20];
 	public boolean colorArrayFilled = false;
@@ -40,20 +39,20 @@ public class SwarmAgent extends Ellipse2D.Double {
 	 * @param x
 	 * @param y
 	 * @param size
-	 * @param v
-	 * @param color
+	 * @param velocity
+	 * @param colorFill
 	 */
-	public SwarmAgent(int x, int y, int size, Point2D v, Color color) {
+	public SwarmAgent(double x, double y, double size, Point2D velocity, Color colorFill) {
 		super(x, y, size, size);
-		this.velocity = v;
-		this.color = color;
+		this.velocity = velocity;
+		this.colorFill = colorFill;
 	}
 	
 	//MODIFICATION #3
-	public SwarmAgent(double x, double y, int size, Point2D v, Color color, Color[] recentColorArray) {
+	public SwarmAgent(double x, double y, double size, Point2D velocity, Color colorFill, Color[] recentColorArray) {
 		super(x, y, size, size);
-		this.velocity = v;
-		this.color = color;
+		this.velocity = velocity;
+		this.colorFill = colorFill;
 		this.recentColorsArray = recentColorArray;
 		System.out.println("agents updated");
 	}
@@ -74,10 +73,10 @@ public class SwarmAgent extends Ellipse2D.Double {
 		super((int)(Math.random()*boardWidth), (int)(Math.random()*boardWidth), size, size);
 		this.velocity = new Point2D.Double(cellSize*(Math.random()-0.5), cellSize*(Math.random()-0.5));
 		if(specialAgent) {
-			this.color = Color.CYAN;
+			this.colorFill = Color.CYAN;
 		}
 		else {
-			this.color = Color.GREEN;
+			this.colorFill = Color.GREEN;
 		}
 		this.specialAgent = specialAgent;
 		
@@ -89,17 +88,12 @@ public class SwarmAgent extends Ellipse2D.Double {
 	 * @param g
 	 */
 	public void draw(Graphics2D g) {
-		g.setColor(color);
+		g.setColor(colorFill);
 		g.fill(this);
-		g.fillOval((int)x, (int)y, size, size);
 	}
 
 	public void setColor(Color color) {
-		this.color = color;
-	}
-
-	public int getSize() {
-		return size;
+		this.colorFill = color;
 	}
 
 	public Point2D getVelocity() {
@@ -162,7 +156,7 @@ public class SwarmAgent extends Ellipse2D.Double {
 	
 	//MODIFICATION
 	public Color getColor() {
-		return this.color;
+		return this.colorFill;
 	}
 	
 	//MODIFICATION

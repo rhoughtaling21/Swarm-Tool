@@ -15,7 +15,6 @@ public class Lines extends AbstractStrategy{
 	 * Author: Zakary Gray
 	 * Description: Agent logic and layer 2 logic for an end goal of all layer 1 cells forming straight lines of black and white. The stable state for this goal is a pyramid.
 	 */
-	
 	//MODIFICATION #7
 	boolean adjustCellColor = false;
 	
@@ -30,7 +29,7 @@ public class Lines extends AbstractStrategy{
 	public CellDisplayPolarity Layer2(CellDisplayBase[][] layer1, int cellSize, int row, int col, Cell[] neighbors) {
 		//Layer 2 in this sense shows 4 colors. one for each variation of straight lines. In the final, solved state,
 		//the 4 colors indicate the 4 faces of the pyramid.
-		CellDisplayPolarity layer2 = new CellDisplayPolarity(0, 0, 0, Color.RED);
+		CellDisplayPolarity layer2 = new CellDisplayPolarity(0, 0, 0, Color.RED, layer1[row][col].getBoard());
 		int[] listOfPolarities = new int[4];
 		int max = listOfPolarities[0], chosenPolarity = 0, cornerCount = 0, edgeCount = 0, vertical = 0, horizontal = 0;
 		for(int index = 0; index<neighbors.length; index++)
@@ -97,44 +96,44 @@ public class Lines extends AbstractStrategy{
 			{
 				if(row%2==0)
 				{
-					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity1());
+					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity1(), layer1[row][col].getBoard());
 				}
 				else
 				{
-					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity2());
+					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity2(), layer1[row][col].getBoard());
 				}
 			}
 			else if(chosenPolarity == 1)
 			{
 				if(row%2==0)
 				{
-					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity1());
+					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity1(), layer1[row][col].getBoard());
 				}
 				else
 				{
-					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity2());
+					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity2(), layer1[row][col].getBoard());
 				}
 			}
 			else if(chosenPolarity == 2)
 			{
 				if(col%2==0)
 				{
-					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity4());
+					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity4(), layer1[row][col].getBoard());
 				}
 				else
 				{
-					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity3());
+					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity3(), layer1[row][col].getBoard());
 				}
 			}
 			else
 			{
 				if(col%2==0)
 				{
-					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity4());
+					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity4(), layer1[row][col].getBoard());
 				}
 				else
 				{
-					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity3());
+					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity3(), layer1[row][col].getBoard());
 				}
 			}
 		}
@@ -144,44 +143,44 @@ public class Lines extends AbstractStrategy{
 			{
 				if(row%2==0)
 				{
-					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity2());
+					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity2(), layer1[row][col].getBoard());
 				}
 				else
 				{
-					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity1());
+					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity1(), layer1[row][col].getBoard());
 				}
 			}
 			else if(chosenPolarity == 1)
 			{
 				if(row%2==0)
 				{
-					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity2());
+					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity2(), layer1[row][col].getBoard());
 				}
 				else
 				{
-					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity1());
+					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity1(), layer1[row][col].getBoard());
 				}
 			}
 			else if(chosenPolarity == 2)
 			{
 				if(col%2==0)
 				{
-					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity3());
+					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity3(), layer1[row][col].getBoard());
 				}
 				else
 				{
-					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity4());
+					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity4(), layer1[row][col].getBoard());
 				}
 			}
 			else
 			{
 				if(col%2==0)
 				{
-					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity3());
+					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity3(), layer1[row][col].getBoard());
 				}
 				else
 				{
-					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, GUI.getPolarity4());
+					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity4(), layer1[row][col].getBoard());
 				}
 			}
 		}
@@ -278,11 +277,11 @@ public class Lines extends AbstractStrategy{
 			//MODIFICATION #7:
 			//If the cell was flipped reset the layer 4 cell to white
 			if(adjustCellColor) {
-				Board.resetToWhite(agent, cellSize);
+				layer1[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].getBoard().resetToWhite(agent, cellSize);
 			}
 			//If the cell does not need changed, darken the purple
 			else {
-				Board.addPurple(agent, cellSize); 
+				layer1[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].getBoard().addPurple(agent, cellSize); 
 			}
 
 	}

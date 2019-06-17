@@ -29,6 +29,7 @@ public class NewBoardWindow extends JFrame {
 	private int numCellsOnSide, numAgents;
 	public int numSpecialAgents, splitPolNum;
 	int totalCells; //MODIFICATION #3
+	private GUI gui;
 
 	/**
 	 * Launch the application.
@@ -36,7 +37,9 @@ public class NewBoardWindow extends JFrame {
 	/**
 	 * Create the frame.
 	 */
-	public NewBoardWindow(JFrame frame) {
+	public NewBoardWindow(JFrame frame, GUI gui) {
+		this.gui = gui;
+		
 		//System.out.println("test");
 		setTitle("New Board Size");
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -109,11 +112,11 @@ public class NewBoardWindow extends JFrame {
 				numAgents = Integer.parseInt(txtNewswarmsize.getText());
 				numSpecialAgents = Integer.parseInt(newNumSpecialAgents.getText());
 				//splitPolNum = Integer.parseInt(splitPolarity.getText());
-				GUI.setLblBoardSizeInt(numCellsOnSide);
-				GUI.setLblSwarmSizeInt(numAgents);
-				GUI.setNumOfSpecialAgents(numSpecialAgents);
-				GUI.setSplitPolarity(splitPolarityBox.isSelected());
-				GUI.setDiagonalLineStart(threeColorsBox.isSelected());
+				gui.setLblBoardSizeInt(numCellsOnSide);
+				gui.setLblSwarmSizeInt(numAgents);
+				gui.setNumOfSpecialAgents(numSpecialAgents);
+				gui.setSplitPolarity(splitPolarityBox.isSelected());
+				gui.setDiagonalLineStart(threeColorsBox.isSelected());
 				MakeNewBoard(frame);
 				dispose();
 			}
@@ -124,9 +127,9 @@ public class NewBoardWindow extends JFrame {
 
 	//This will be the code that will make a new board and set the variables in the Primary GUI to the selected ones in this.
 	protected void MakeNewBoard(JFrame frame) {
-		if(GUI.board != null)
+		if(gui.board != null)
 		{
-			frame.remove(GUI.board);
+			frame.remove(gui.board);
 		}
 		//		GUI.board.getGraphics().setColor(Color.WHITE);
 		//		GUI.board.getGraphics().drawRect(-5, -5, 810, 810);
@@ -136,18 +139,18 @@ public class NewBoardWindow extends JFrame {
 		int borderForCentering = spareSpace/2;
 		int boardSize = GUI.MAXBOARDSIZE-borderForCentering*2;
 
-		boolean whetherBoardWraps = GUI.wrap;
-		Board board = new Board(boardSize,boardSize,numCellsOnSide,numAgents, whetherBoardWraps, null);
+		boolean whetherBoardWraps = gui.wrap;
+		Board board = new Board(boardSize,boardSize,numCellsOnSide,numAgents, whetherBoardWraps, null, gui);
 		board.setBackground(Color.WHITE);
 		board.setBounds(10+borderForCentering, 10+borderForCentering, boardSize, boardSize);
 		//displayPanel.add();
 		frame.getContentPane().add(board);
-		GUI.board = board;
+		gui.board = board;
 		//This section is to avoid bugs in the GUI.
-		board.oldPolarity1 = GUI.getPolarity1();
-		board.oldPolarity2 = GUI.getPolarity2();
-		board.updateGoalStrategy(GUI.goalStrategy);
-		board.setAgentRate(GUI.agentSliderRate);
+		board.oldPolarity1 = gui.getPolarity1();
+		board.oldPolarity2 = gui.getPolarity2();
+		board.updateGoalStrategy(gui.goalStrategy);
+		board.setAgentRate(gui.agentSliderRate);
 
 	}
 	

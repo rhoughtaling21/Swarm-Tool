@@ -14,7 +14,7 @@ import gui.Board;
 import gui.GUI;
 
 /**
- * @authors zak, Nick, Gabriel, Tim
+ * @authors Zak, Nick, Gabriel, Tim
  * description: Cell is a rectangle of one color that is generated in two 2X2 Arrays (cells, cells2) in board
  * parameters: Constructor takes in an X and Y position, a width and height(size X size), and a Color to fill
  */
@@ -22,9 +22,9 @@ import gui.GUI;
 public class CellDisplayBase extends CellDisplay {
 	private Color colorPolarity;
 	
-	public CellDisplayBase(double x, double y, double size, Color colorFill) {
+	public CellDisplayBase(double x, double y, double size, Color colorFill, Board board) {
 		//a lot of these parameters actually belong to Rectangle2D.Double, so we call in the super class GenericCell
-		super(x, y, size, colorFill);
+		super(x, y, size, colorFill, board);
 	}
 
 	//flip color of Cell
@@ -34,14 +34,14 @@ public class CellDisplayBase extends CellDisplay {
 		if (colorFill == Color.BLACK) 
 		{
 			colorFill = Color.WHITE;
-			Board.currBlackCellCounter--;
-			Board.currWhiteCellCounter++;
+			board.currBlackCellCounter--;
+			board.currWhiteCellCounter++;
 		}
 		else
 		{
 			colorFill = Color.BLACK;
-			Board.currWhiteCellCounter--;
-			Board.currBlackCellCounter++;
+			board.currWhiteCellCounter--;
+			board.currBlackCellCounter++;
 		}
 	}
 
@@ -58,14 +58,14 @@ public class CellDisplayBase extends CellDisplay {
 		//Subtract counter for the old color
 		if (colorFill == Color.BLACK) 
 		{
-			Board.currBlackCellCounter--;
+			board.currBlackCellCounter--;
 		}
 		else if (colorFill == Color.WHITE)
 		{
-			Board.currWhiteCellCounter--;
+			board.currWhiteCellCounter--;
 		}
 		else if(colorFill == Color.GRAY) {
-			Board.currGrayCellCounter--;
+			board.currGrayCellCounter--;
 		}
 		//Set new Color
 		colorFill = newColor;
@@ -73,18 +73,18 @@ public class CellDisplayBase extends CellDisplay {
 		//IF center is black; polarity is 2 (blue)
 		if (newColor == Color.BLACK) 
 		{
-			Board.currBlackCellCounter++;
+			board.currBlackCellCounter++;
 			//cellColor = GUI.getPolarity2();
 		}
 		//IF center is white; polarity is 1 (red)
 		else if (newColor == Color.WHITE)
 		{
-			Board.currWhiteCellCounter++;
+			board.currWhiteCellCounter++;
 			//cellColor = GUI.getPolarity1();
 		}
 		//IF center is gray; polarity is 3 (yellow)
 		else if(newColor == Color.GRAY) {
-			Board.currGrayCellCounter++;
+			board.currGrayCellCounter++;
 			//cellColor = GUI.getPolarity3();
 		}	
 	}

@@ -54,59 +54,59 @@ public class GUI {
 	private JTextField textField_TriggerFlip;
 	private JTextField textField_TriggerFlipLayer2;
 
-	public static JLabel lblBoardSizeInt = new JLabel(); // updates BoardSize Label
-	public static JLabel lblSwarmCountInt = new JLabel(); // updates SwarmCount Label
-	public static JLabel lblIntWhiteCells = new JLabel(); // updates InitWhiteCells
-	public static JLabel lblIntBlackCells = new JLabel(); // updates InitBlackCells
-	public static JLabel lblIntGrayCells = new JLabel(); // updates InitGrayCells	MODIFICATION #3
-	public static JLabel lblCurrWhiteCells = new JLabel(); // updates CurrentWhiteCells
-	public static JLabel lblCurrBlackCells = new JLabel(); // updates CurrentBlackCells
-	public static JLabel lblCurrGrayCells = new JLabel(); // updates CurrentGrayCells	MODIFICATION #3
-	public static JLabel lblPolarityOnePercent = new JLabel(); //  updates number of cells with polarity 1  MODIFICATION #4
-	public static JLabel lblPolarityTwoPercent = new JLabel(); //  updates number of cells with polarity 2  MODIFICATION #4
-	public static JLabel lblPolarityThreePercent = new JLabel(); //  updates number of cells with polarity 3  MODIFICATION #4
-	public static JLabel lblPolarityFourPercent = new JLabel(); //  updates number of cells with polarity 4  MODIFICATION #4
-	public static JLabel lblBooleanCompare1 = new JLabel(); //  displays boolean (polarity1 < polarity3)  MODIFICATION #4
-	public static JLabel lblBooleanCompare2 = new JLabel(); //  displays boolean (polarity2 < polarity3)  MODIFICATION #4
-	public static JLabel lblBooleanCompare3 = new JLabel(); //  displays boolean (polarity1+polarity2 < polarity3)  MODIFICATION #4
-	public static JLabel lblCompare1 = new JLabel(); // displays the current constraints MODIFICATION #10
-	public static JLabel lblCompare2 = new JLabel(); // displays the current constraints MODIFICATION #10
-	public static JLabel lblCompare3 = new JLabel(); // displays the current constraints MODIFICATION #10
-	public static JLabel lblStepDisplay = new JLabel(); //displays the number of steps that have occured
+	public JLabel lblBoardSizeInt = new JLabel(); // updates BoardSize Label
+	public JLabel lblSwarmCountInt = new JLabel(); // updates SwarmCount Label
+	public JLabel lblIntWhiteCells = new JLabel(); // updates InitWhiteCells
+	public JLabel lblIntBlackCells = new JLabel(); // updates InitBlackCells
+	public JLabel lblIntGrayCells = new JLabel(); // updates InitGrayCells	MODIFICATION #3
+	public JLabel lblCurrWhiteCells = new JLabel(); // updates CurrentWhiteCells
+	public JLabel lblCurrBlackCells = new JLabel(); // updates CurrentBlackCells
+	public JLabel lblCurrGrayCells = new JLabel(); // updates CurrentGrayCells	MODIFICATION #3
+	public JLabel lblPolarityOnePercent = new JLabel(); //  updates number of cells with polarity 1  MODIFICATION #4
+	public JLabel lblPolarityTwoPercent = new JLabel(); //  updates number of cells with polarity 2  MODIFICATION #4
+	public JLabel lblPolarityThreePercent = new JLabel(); //  updates number of cells with polarity 3  MODIFICATION #4
+	public JLabel lblPolarityFourPercent = new JLabel(); //  updates number of cells with polarity 4  MODIFICATION #4
+	public JLabel lblBooleanCompare1 = new JLabel(); //  displays boolean (polarity1 < polarity3)  MODIFICATION #4
+	public JLabel lblBooleanCompare2 = new JLabel(); //  displays boolean (polarity2 < polarity3)  MODIFICATION #4
+	public JLabel lblBooleanCompare3 = new JLabel(); //  displays boolean (polarity1+polarity2 < polarity3)  MODIFICATION #4
+	public JLabel lblCompare1 = new JLabel(); // displays the current constraints MODIFICATION #10
+	public JLabel lblCompare2 = new JLabel(); // displays the current constraints MODIFICATION #10
+	public JLabel lblCompare3 = new JLabel(); // displays the current constraints MODIFICATION #10
+	public JLabel lblStepDisplay = new JLabel(); //displays the number of steps that have occured
 
 	
-	public static int layer2Draw = 1;// which cell array in board to display
-	public static Board board;// board to be drawn
+	public int layer2Draw = 1;// which cell array in board to display
+	public Board board;// board to be drawn
 	private boolean timerStarted = true;// timer or agent step
-	public static Color polarity1 = Color.RED;// color1 of board.cells2
-	public static Color polarity2 = Color.BLUE;// color2 of board.cells2
-	public static Color polarity3 = Color.YELLOW;
-	public static Color polarity4 = Color.WHITE;
-	public static int initBoardSize, initAgentCount;
-	public static boolean attractOrRepel = true;
-	public static Color agentColor = Color.GREEN;
-	public static Color specialAgentColor = Color.CYAN; //MODIFICATION color for the "special agent"
-	public static boolean whetherAgentsVisible = true;
-	public static AbstractStrategy goalStrategy = new CheckerBoard();
-	public static String newDominantPolarity = "YELLOW";	//MODIFICATION #10 added 7/18 by Morgan Might 	//Keep track of polarity that should be most dominant
-	public static String statementOne = "Red < Yellow :"; //MODIFICATION #10  //These variables will be used to display the constraints
-	public static String statementTwo = "Blue < Yellow :"; //MODIFICATION #10 
-	public static String statementThree = "R + B > Yellow :"; //MODIFICATION #10 
-	public static int agentSliderRate;
-	public static boolean wrap = false;
+	public Color polarity1 = Color.RED;// color1 of board.cells2
+	public Color polarity2 = Color.BLUE;// color2 of board.cells2
+	public Color polarity3 = Color.YELLOW;
+	public Color polarity4 = Color.WHITE;
+	public int initBoardSize, initAgentCount;
+	public boolean attractOrRepel = true;
+	public Color agentColor = Color.GREEN;
+	public Color specialAgentColor = Color.CYAN; //MODIFICATION color for the "special agent"
+	public boolean whetherAgentsVisible = true;
+	public AbstractStrategy goalStrategy = new CheckerBoard();
+	public String newDominantPolarity = "YELLOW";	//MODIFICATION #10 added 7/18 by Morgan Might 	//Keep track of polarity that should be most dominant
+	public String statementOne = "Red < Yellow :"; //MODIFICATION #10  //These variables will be used to display the constraints
+	public String statementTwo = "Blue < Yellow :"; //MODIFICATION #10 
+	public String statementThree = "R + B > Yellow :"; //MODIFICATION #10 
+	public int agentSliderRate;
+	public boolean wrap = false;
 	public int toggleCount = 0; //MODIFICATION:  used in implementing the View Agents Button
-	public static int numSpecialAgents; //MODIFICATION: how many agents should be a separate color
-	public static boolean splitPolarity; //MODIFICATION: if true set the board to be "stuck"
-	public static boolean diagonalLineStart; //MODIFICATION #9 
+	public int numSpecialAgents; //MODIFICATION: how many agents should be a separate color
+	public boolean splitPolarity; //MODIFICATION: if true set the board to be "stuck"
+	public boolean diagonalLineStart; //MODIFICATION #9 
 	
 	public boolean threePol; //MODIFICATION #3   needs fixed
 	public int percentToFlip; //MODIFICATION #2 stores the number of random cells to flip
-	public static int polOneCount = 0; //MODIFICATION #4  stores the number of cells that have polarity 1
-	public static int polTwoCount = 0; //MODIFICATION #4  stores the number of cells that have polarity 2
-	public static int polThreeCount = 0; //MODIFICATION #4  stores the number of cells that have polarity 3
-	public static int polFourCount = 0; //MODIFICATION #4  stores the number of cells that have polarity 4
+	public int polOneCount = 0; //MODIFICATION #4  stores the number of cells that have polarity 1
+	public int polTwoCount = 0; //MODIFICATION #4  stores the number of cells that have polarity 2
+	public int polThreeCount = 0; //MODIFICATION #4  stores the number of cells that have polarity 3
+	public int polFourCount = 0; //MODIFICATION #4  stores the number of cells that have polarity 4
 	
-	public static boolean togglePolarity = false; //MODIFICATION #5 determines if the agents goal is a single polarity or three balanced polarities
+	public boolean togglePolarity = false; //MODIFICATION #5 determines if the agents goal is a single polarity or three balanced polarities
 
 	/**
 	 * Launch the application.
@@ -124,36 +124,36 @@ public class GUI {
 		});
 	}
 
-	public static Color getPolarity1() {
+	public Color getPolarity1() {
 		return polarity1;
 	}
 
-	public static void setPolarity1(Color polarity1) {
-		GUI.polarity1 = polarity1;
+	public void setPolarity1(Color polarity1) {
+		this.polarity1 = polarity1;
 	}
 
-	public static Color getPolarity2() {
+	public Color getPolarity2() {
 		return polarity2;
 	}
 
-	public static void setPolarity2(Color polarity2) {
-		GUI.polarity2 = polarity2;
+	public void setPolarity2(Color polarity2) {
+		this.polarity2 = polarity2;
 	}
 
-	public static Color getPolarity3() {
+	public Color getPolarity3() {
 		return polarity3;
 	}
 
-	public static void setPolarity3(Color polarity3) {
-		GUI.polarity3 = polarity3;
+	public void setPolarity3(Color polarity3) {
+		this.polarity3 = polarity3;
 	}
 
-	public static Color getPolarity4() {
+	public Color getPolarity4() {
 		return polarity4;
 	}
 
-	public static void setPolarity4(Color polarity4) {
-		GUI.polarity4 = polarity4;
+	public void setPolarity4(Color polarity4) {
+		this.polarity4 = polarity4;
 	}
 
 	/**
@@ -1078,16 +1078,26 @@ public class GUI {
 		frmProjectLegion.getContentPane().add(lblFastCycless);
 		// create new NewBoardWindow to make new board
 		JButton btnNewBoard = new JButton("New Board");
-		btnNewBoard.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				// Object obj = new NewBoardWindow();
-				NewBoardWindow newBoardWindow = new NewBoardWindow(frmProjectLegion);
-				newBoardWindow.setVisible(true);
-				tglbtnWrapAgents.setSelected(true);
-				comboGoalStrategy.setSelectedItem(goalStrategy);
-				// lblBoardSizeInt.setText(String.valueOf(board.labelHandler.getInitBoardSize()));
-			}
-		});
+		
+		btnNewBoard.addActionListener(
+			new ActionListener() {
+				private GUI gui;
+				
+				public ActionListener setGUI (GUI gui) {
+					this.gui = gui;
+					return this;
+				}
+		
+				public void actionPerformed(ActionEvent e) {
+					// Object obj = new NewBoardWindow();
+					NewBoardWindow newBoardWindow = new NewBoardWindow(frmProjectLegion, gui);
+					newBoardWindow.setVisible(true);
+					tglbtnWrapAgents.setSelected(true);
+					comboGoalStrategy.setSelectedItem(goalStrategy);
+					// lblBoardSizeInt.setText(String.valueOf(board.labelHandler.getInitBoardSize()));
+				}
+			}.setGUI(this)
+		);
 		btnNewBoard.setBackground(new Color(51, 102, 255));
 		btnNewBoard.setBounds(1338, 726, 125, 23);
 		frmProjectLegion.getContentPane().add(btnNewBoard);
@@ -1096,81 +1106,81 @@ public class GUI {
 	// ************************************************************ OTHER *************************************************************
 	// ************************************************************ OTHER *************************************************************	
 
-	public static void setLblBoardSizeInt(int boardSize) {
+	public void setLblBoardSizeInt(int boardSize) {
 		lblBoardSizeInt.setText(String.valueOf(boardSize));
 	}
 
-	public static void setLblSwarmSizeInt(int swarmSize) {
+	public void setLblSwarmSizeInt(int swarmSize) {
 		lblSwarmCountInt.setText(String.valueOf(swarmSize));
 	}
 
-	public static void setLblIntWhiteCells(int whiteCellSize) {
+	public void setLblIntWhiteCells(int whiteCellSize) {
 		lblIntWhiteCells.setText(String.valueOf(whiteCellSize));
 	}
 	
 	//MODIFICATION #3
 	//Added 5/24 by Morgan Might
-	public static void setLblIntGrayCells(int grayCellSize) {
+	public void setLblIntGrayCells(int grayCellSize) {
 		lblIntGrayCells.setText(String.valueOf(grayCellSize));
 	}
 
-	public static void setLblIntBlackCells(int blackCellSize) {
+	public void setLblIntBlackCells(int blackCellSize) {
 		lblIntBlackCells.setText(String.valueOf(blackCellSize));
 	}
 
-	public static void setLblCurrWhiteCells(int currWhiteCells) {
+	public void setLblCurrWhiteCells(int currWhiteCells) {
 		lblCurrWhiteCells.setText(String.valueOf(currWhiteCells));
 	}
 	
 	//MODIFICATION #3
 	//Added 5/24 by Morgan Might
-	public static void setLblCurrGrayCells(int currGrayCells) {
+	public void setLblCurrGrayCells(int currGrayCells) {
 		lblCurrGrayCells.setText(String.valueOf(currGrayCells));
 	}
 
-	public static void setLblCurrBlackCells(int currBlackCells) {
+	public void setLblCurrBlackCells(int currBlackCells) {
 		lblCurrBlackCells.setText(String.valueOf(currBlackCells));
 	}
 	
 	//MODIFICATION
 	//Added 5/18 by Morgan Might
-	public static void setNumOfSpecialAgents(int numAgents) {
+	public void setNumOfSpecialAgents(int numAgents) {
 		numSpecialAgents = numAgents;
 	}
 	
 	//MODIFICATION
 	//Added 5/18 by Morgan Might
-	public static int getNumOfSpecialAgents() {
+	public int getNumOfSpecialAgents() {
 		return numSpecialAgents;
 	}
 	
 	//MODIFICATION
 	//Added 5/22 by Morgan Might
-	public static void setSplitPolarity(boolean selected) {
+	public void setSplitPolarity(boolean selected) {
 		splitPolarity = selected;
 	}
 	
 	//MODIFICATION
 	//Added 5/22 by Morgan Might
-	public static boolean getSplitPolarity() {
+	public boolean getSplitPolarity() {
 		return splitPolarity;
 	}
 	
 	//MODIFICATION #3  does not work yet
 	//Added 5/30 by Morgan Might
-	public static void setDiagonalLineStart(boolean selected){
+	public void setDiagonalLineStart(boolean selected){
 		diagonalLineStart = selected;
 	}
 	
 	//MODIFICATION #3  does not work yet
 	//Added 5/30 by Morgan Might
-	public static boolean getThreeColor() {
+	public boolean getThreeColor() {
 		return diagonalLineStart;
 	}
 
 	//MODIFICATION #3
 	//Added 5/30 by Morgan Might
-	public static int getTotalNumOfCells() {
+	public int getTotalNumOfCells() {
 		// TODO Auto-generated method stub
 		return board.getTotalNumCells();
 	}
@@ -1182,44 +1192,44 @@ public class GUI {
 	//
 	//
 	//MODIFICATION #4: polarity 1
-	public static int getPolOneCount() {
+	public int getPolOneCount() {
 		return polOneCount;
 	}
 	
-	public static void setPolOneCount(int num) {
+	public void setPolOneCount(int num) {
 		polOneCount = num;
 		double fraction = (double) num/getTotalNumOfCells();
 		lblPolarityOnePercent.setText(String.valueOf(fraction*100) + "%");
 	}
 		
 	//MODIFICATION #4: polarity 2
-	public static int getPolTwoCount() {
+	public int getPolTwoCount() {
 		return polTwoCount;
 	}
 	
-	public static void setPolTwoCount(int num) {
+	public void setPolTwoCount(int num) {
 		polTwoCount = num;
 		double fraction = (double) num/getTotalNumOfCells();
 		lblPolarityTwoPercent.setText(String.valueOf(fraction*100) + "%");
 	}
 		
 	//MODIFICATION #4: polarity 3
-	public static int getPolThreeCount() {
+	public int getPolThreeCount() {
 		return polThreeCount;
 	}
 	
-	public static void setPolThreeCount(int num) {
+	public void setPolThreeCount(int num) {
 		polThreeCount = num;
 		double fraction = (double) num/getTotalNumOfCells();
 		lblPolarityThreePercent.setText(String.valueOf(fraction*100) + "%");
 	}
 		
 	//MODIFICATION #4: polarity 4
-	public static int getPolFourCount() {
+	public int getPolFourCount() {
 		return polFourCount;
 	}
 	
-	public static void setPolFourCount(int num) {
+	public void setPolFourCount(int num) {
 		polFourCount = num;
 		double fraction = (double) num/getTotalNumOfCells();
 		lblPolarityFourPercent.setText(String.valueOf(fraction*100) + "%");
@@ -1235,7 +1245,7 @@ public class GUI {
 	//MODIFICATION #10 
 	//updated 7/19 bby Morgan Might
 	//Consider which polarity is the current dominant one
-	public static String getBooleanCompareOne() {
+	public String getBooleanCompareOne() {
 		if(newDominantPolarity == "YELLOW") {
 			if(getPolOneCount() < getPolThreeCount()) { //Red < Yellow
 				return "True";
@@ -1263,7 +1273,7 @@ public class GUI {
 	//MODIFICATION #10 
 	//updated 7/19 bby Morgan Might
 	//Consider which polarity is the current dominant one
-	public static String getBooleanCompareTwo() {
+	public String getBooleanCompareTwo() {
 		if(newDominantPolarity == "YELLOW") {
 			if(getPolTwoCount() < getPolThreeCount()) { //Blue < Yellow
 				return "True";
@@ -1291,7 +1301,7 @@ public class GUI {
 	//MODIFICATION #10 
 	//updated 7/19 bby Morgan Might
 	//Consider which polarity is the current dominant one
-	public static String getBooleanCompareThree() {
+	public String getBooleanCompareThree() {
 		if(newDominantPolarity == "YELLOW") {
 			if(getPolOneCount() + getPolTwoCount() > getPolThreeCount()) { //R + B > Yellow
 				return "True";
@@ -1317,7 +1327,7 @@ public class GUI {
 	}
 	
 	//MODIFICATION #4: displays in the labels where the statements are "True" or "False"
-	public static void setLblComparisons() {
+	public void setLblComparisons() {
 		lblBooleanCompare1.setText(getBooleanCompareOne());
 		lblBooleanCompare2.setText(getBooleanCompareTwo());
 		lblBooleanCompare3.setText(getBooleanCompareThree());
@@ -1328,7 +1338,7 @@ public class GUI {
 	//
 	//Return the boolean that relates to the toggle button that determines if the agents
 	//should solve for a single polarity or three balanced polarities
-	public static boolean getTogglePolarity() {
+	public boolean getTogglePolarity() {
 		return togglePolarity;
 	}
 	
@@ -1368,15 +1378,18 @@ public class GUI {
 		//Added 7/18 
 		//By Morgan Might
 		//Updates the text in the JLables to display the new constraints		
-		public static void updateComparisonLabels(String one, String two, String three) {
+		public void updateComparisonLabels(String one, String two, String three) {
 			lblCompare1.setText(one);
 			lblCompare2.setText(two);
 			lblCompare3.setText(three);
 		}
 
-		public static void updateStepCountLabel(String count) {
+		public void updateStepCountLabel(String count) {
 			lblStepDisplay.setText(count);
-			
+		}
+
+		public Board getBoard() {
+			return board;
 		}
 		
 }

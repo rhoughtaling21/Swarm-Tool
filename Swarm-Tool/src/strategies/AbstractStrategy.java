@@ -3,11 +3,11 @@ package strategies;
 import cells.Cell;
 import cells.CellDisplayBase;
 import cells.CellDisplayPolarity;
+import gui.Board;
 import other.SwarmAgent;
 
 //Goal strategies are children of AbstractStrategy
 public abstract class AbstractStrategy {
-
 	public abstract CellDisplayPolarity Layer2 (CellDisplayBase[][] layer1, int cellSize, int row, int col, Cell[] neighbor);
 	//MODIFICATION
 	//new parameter, agent, is added to the method

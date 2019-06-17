@@ -20,20 +20,20 @@ import gui.GUI;
  */
 @SuppressWarnings("serial")
 public class CellDisplayPolarity extends CellDisplay {
-	public CellDisplayPolarity(double x, double y, double size, Color colorFill) {
+	public CellDisplayPolarity(double x, double y, double size, Color colorFill, Board board) {
 		//a lot of these parameters actually belong to Rectangle2D.Double, so we call in the super class GenericCell
-		super(x, y, size, colorFill);
+		super(x, y, size, colorFill, board);
 	}
 
 	//flip color of Cell
 	public void flipColor()
 	{
 		//as cells2 can be different colors chosen by the user, the color is set in the GUI
-		if (colorFill == GUI.getPolarity1()) {
-			colorFill = GUI.getPolarity2();
+		if (colorFill == board.getGui().getPolarity1()) {
+			colorFill = board.getGui().getPolarity2();
 		}
 		else {
-			colorFill = GUI.getPolarity1();
+			colorFill = board.getGui().getPolarity1();
 		}
 
 	}

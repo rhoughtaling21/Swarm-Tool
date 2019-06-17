@@ -13,17 +13,25 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.geom.Rectangle2D;
 
+import gui.Board;
+
 @SuppressWarnings("serial")
 public abstract class CellDisplay extends Rectangle2D.Double implements Cell {
 	protected Color colorFill;
+	protected Board board;
 	
-	public CellDisplay(double x, double y, double size, Color colorFill) {
+	public CellDisplay(double x, double y, double size, Color colorFill, Board board) {
 		super(x, y, size, size);
 		this.colorFill = colorFill;
+		this.board = board;
 	}
 
-	public Color getColor(){
+	public Color getColor() {
 		return colorFill;
+	}
+	
+	public Board getBoard() {
+		return board;
 	}
 
 	public void draw(Graphics2D helperGraphics2D) {

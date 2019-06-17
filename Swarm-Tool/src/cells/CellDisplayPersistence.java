@@ -8,12 +8,14 @@ package cells;
 
 import java.awt.Color;
 
+import gui.Board;
+
 @SuppressWarnings("serial")
 public class CellDisplayPersistence extends CellDisplay {
 	int persistenceValue;
 	
-	public CellDisplayPersistence(double x, double y, double size, Color colorFill, int persistenceValue) {
-		super(x, y, size, colorFill);
+	public CellDisplayPersistence(double x, double y, double size, Color colorFill, Board board, int persistenceValue) {
+		super(x, y, size, colorFill, board);
 		this.persistenceValue = persistenceValue;
 	}
 	
