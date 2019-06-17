@@ -33,15 +33,11 @@ public class CellDisplayBase extends CellDisplay {
 		//these first two cases apply to cells as they only are ever black or white
 		if (colorFill == Color.BLACK) 
 		{
-			colorFill = Color.WHITE;
-			board.currBlackCellCounter--;
-			board.currWhiteCellCounter++;
+			setColor(Color.WHITE);
 		}
 		else
 		{
-			colorFill = Color.BLACK;
-			board.currWhiteCellCounter--;
-			board.currBlackCellCounter++;
+			setColor(Color.BLACK);
 		}
 	}
 
@@ -53,40 +49,14 @@ public class CellDisplayBase extends CellDisplay {
 	//MODIFICATION #3
 	//change color of Cell
 	@Override
-	public void setColor(Color newColor)
+	public void setColor(Color colorFill)
 	{
 		//Subtract counter for the old color
-		if (colorFill == Color.BLACK) 
-		{
-			board.currBlackCellCounter--;
-		}
-		else if (colorFill == Color.WHITE)
-		{
-			board.currWhiteCellCounter--;
-		}
-		else if(colorFill == Color.GRAY) {
-			board.currGrayCellCounter--;
-		}
+		board.decrementColorFrequency(this.colorFill);
 		//Set new Color
-		colorFill = newColor;
+		this.colorFill = colorFill;
 		//Set Polarity and add counter for new color
-		//IF center is black; polarity is 2 (blue)
-		if (newColor == Color.BLACK) 
-		{
-			board.currBlackCellCounter++;
-			//cellColor = GUI.getPolarity2();
-		}
-		//IF center is white; polarity is 1 (red)
-		else if (newColor == Color.WHITE)
-		{
-			board.currWhiteCellCounter++;
-			//cellColor = GUI.getPolarity1();
-		}
-		//IF center is gray; polarity is 3 (yellow)
-		else if(newColor == Color.GRAY) {
-			board.currGrayCellCounter++;
-			//cellColor = GUI.getPolarity3();
-		}	
+		board.incrementColorFrequency(colorFill);
 	}
 	
 	@Override

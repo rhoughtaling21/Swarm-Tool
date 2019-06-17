@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -70,12 +71,6 @@ public class Board extends JPanel implements MouseInputListener {
 	public Color storeVisibleColor;	//MODIFICATION: used to store color so the "View Agents" button toggles properly
 	public Color storeSpecialColor; //MODIFICATION: store color of the special agent
 	public boolean viewAgentsToggle; //MODIFICATION: tracks if the button has just been clicked
-	private int blackCellCounter = 0;//info for GUI
-	private int whiteCellCounter = 0;
-	private int grayCellCounter = 0; //MODIFICATION #3
-	public int currBlackCellCounter = 0;
-	public int currWhiteCellCounter = 0;
-	public int currGrayCellCounter = 0; //MODIFICATION #3
 	private CellDisplay[] neighbors = new CellDisplay[8];//the 8 cells that neighbor a given cell in layer 1 are stored here
 	private AbstractStrategy strategy;//strategy that the agents and layer 2 use for their calculations given the current goal
 	public int numberOfAgents; //MODIFICATION
@@ -92,11 +87,17 @@ public class Board extends JPanel implements MouseInputListener {
 	String exportInfoString = "Red,Blue,Yellow\n"; 
 	public int stepCount = 0; //MODIFICATION #6
 	int firstCount = 0, secondCount = 0, thirdCount = 0; //MODIFICATION (7/17/18 by Morgan Might) Allow the start goal to be diagonal lines
-	GUI gui;
+	private GUI gui;
+	private HashMap<Color, Integer> frequencyColorsInitial;
+	private HashMap<Color, Integer> frequencyColorsCurrent;
 
 	public Board(int width, int height, int numCellsOnSide, int numAgents, boolean wrap, CellDisplayBase[][] layer1GetNeighbor, GUI gui) {
 		numberOfAgents = numAgents;
 		this.gui = gui;
+
+		frequencyColorsInitial = new HashMap<Color, Integer>();
+		frequencyColorsCurrent = new HashMap<Color, Integer>();
+
 		//MODIFICATION
 		//Added 7/17/18
 		//By Morgan Might
@@ -125,88 +126,91 @@ public class Board extends JPanel implements MouseInputListener {
 		int rand, randomPosition;
 		Random randGen = new Random();
 		Color initColor;
-		
-			if (!gui.getSplitPolarity()) {
-				for (int row = 0; row < layer1.length; row++) {
-					for (int col = 0; col < layer1[row].length; col++) {
-						rand = (int) (Math.random() * 2);
-						if (rand == 0) {
-							initColor = Color.BLACK;
-							blackCellCounter++;
-							currBlackCellCounter++;
-						} 
-						else{
-							initColor = Color.WHITE;
-							whiteCellCounter++;
-							currWhiteCellCounter++;
-						}
 
-						layer1[row][col] = new CellDisplayBase(row * cellSize, col * cellSize, cellSize, initColor, this);
-						
-		//	//	//	//	//MODIFICATION// // // // // // // // // // // // //
-						//Added 7/17/18
-						//By Morgan Might
-						//Set up polarity counts
-						if(gui.getThreeColor()) {
-							if(initColor == Color.BLACK && (row+col%3 == 0) || initColor == Color.GRAY && (row+col%3 == 1) || initColor == Color.WHITE && (row+col%3 == 2)) {
-								firstCount++;
-							}
-							else if(initColor == Color.GRAY && (row+col%3 == 0) || initColor == Color.WHITE && (row+col%3 == 1) || initColor == Color.BLACK && (row+col%3 == 2)) {
-								secondCount++;
-							}
-							else if(initColor == Color.WHITE && (row+col%3 == 0) || initColor == Color.BLACK && (row+col%3 == 1) || initColor == Color.GRAY && (row+col%3 == 2)) {
-								thirdCount++;
-							}
-						}
-						
+		if (!gui.getSplitPolarity()) {
+			for (int row = 0; row < layer1.length; row++) {
+				for (int col = 0; col < layer1[row].length; col++) {
+					rand = (int) (Math.random() * 2);
+					if (rand == 0) {
+						initColor = Color.BLACK;
+					} 
+					else {
+						initColor = Color.WHITE;
 					}
-				}
-				if(gui.getThreeColor()) {
-					gui.setPolOneCount(firstCount);
-					gui.setPolTwoCount(secondCount);
-					gui.setPolThreeCount(thirdCount);
+					
+					incrementColorFrequencyInitial(initColor);
+					incrementColorFrequency(initColor);
+					
+					layer1[row][col] = new CellDisplayBase(row * cellSize, col * cellSize, cellSize, initColor, this);
+
+					//	//	//	//	//MODIFICATION// // // // // // // // // // // // //
+					//Added 7/17/18
+					//By Morgan Might
+					//Set up polarity counts
+					if(gui.getThreeColor()) {
+						if(initColor == Color.BLACK && (row+col%3 == 0) || initColor == Color.GRAY && (row+col%3 == 1) || initColor == Color.WHITE && (row+col%3 == 2)) {
+							firstCount++;
+						}
+						else if(initColor == Color.GRAY && (row+col%3 == 0) || initColor == Color.WHITE && (row+col%3 == 1) || initColor == Color.BLACK && (row+col%3 == 2)) {
+							secondCount++;
+						}
+						else if(initColor == Color.WHITE && (row+col%3 == 0) || initColor == Color.BLACK && (row+col%3 == 1) || initColor == Color.GRAY && (row+col%3 == 2)) {
+							thirdCount++;
+						}
+					}
+
 				}
 			}
-			
-			// MODIFICATION: This will test swarms when the polarity is split and the agents are no longer affective
-			else if(!gui.getThreeColor()){
-				Color printColor;
-				randomPosition = randGen.nextInt(numCellsOnSide - 5) + 3;
-				System.out.print(randomPosition);
-				int pos;
-				rand = (int) (Math.random() * 2);
-					for (int row = 0; row < layer1.length; row++) {
-						for (int col = 0; col < layer1[row].length; col++) {
-							if(rand ==0) pos = row;
-							else pos = col;
-							if (pos < randomPosition) {
-								if (row % 2 == col % 2) {
-									blackCellCounter++;
-									currBlackCellCounter++;
-									printColor = Color.BLACK;
-								} else {
-									whiteCellCounter++;
-									currWhiteCellCounter++;
-									printColor = Color.WHITE;
-								}
+			if(gui.getThreeColor()) {
+				gui.setPolOneCount(firstCount);
+				gui.setPolTwoCount(secondCount);
+				gui.setPolThreeCount(thirdCount);
+			}
+		}
 
-							} else {
-								if (row % 2 == col % 2) {
-									whiteCellCounter++;
-									currWhiteCellCounter++;
-									printColor = Color.WHITE;
-								} else {
-									blackCellCounter++;
-									currBlackCellCounter++;
-									printColor = Color.BLACK;
-								}
-
-							}
-							layer1[row][col] = new CellDisplayBase(row * cellSize, col * cellSize, cellSize, printColor, this);
-						}
+		// MODIFICATION: This will test swarms when the polarity is split and the agents are no longer affective
+		else if(!gui.getThreeColor()){
+			Color printColor;
+			randomPosition = randGen.nextInt(numCellsOnSide - 5) + 3;
+			System.out.print(randomPosition);
+			int pos;
+			rand = (int) (Math.random() * 2);
+			for (int row = 0; row < layer1.length; row++) {
+				for (int col = 0; col < layer1[row].length; col++) {
+					if(rand == 0) {  
+						pos = row;
 					}
+					else { 
+						pos = col;
+					}
+						
+					if (pos < randomPosition) {
+						if (row % 2 == col % 2) {
+							printColor = Color.BLACK;
+						}
+						else {
+							printColor = Color.WHITE;
+						}
+
+					} 
+					else {
+						if (row % 2 == col % 2) {
+							printColor = Color.WHITE;
+						}
+						else {
+							printColor = Color.BLACK;
+						}
+
+					}
+					
+					incrementColorFrequencyInitial(printColor);
+					incrementColorFrequency(printColor);
+					
+					layer1[row][col] = new CellDisplayBase(row * cellSize, col * cellSize, cellSize, printColor, this);
 				}
-			
+			}
+		}
+
 
 		layer2 = new CellDisplayPolarity[numCellsOnSide][numCellsOnSide];
 		for (int row = 0; row < layer2.length; row++) {
@@ -214,7 +218,7 @@ public class Board extends JPanel implements MouseInputListener {
 				layer2[row][col] = strategy.Layer2(layer1, cellSize, row, col, getNeighbors(layer1, row, col));	
 			}
 		}
-		
+
 		//MODIFICATION #7
 		//by Morgan Might
 		//July 5, 2018
@@ -226,10 +230,10 @@ public class Board extends JPanel implements MouseInputListener {
 				layer4[row][col] = new CellDisplayPersistence(row * cellSize, col * cellSize, cellSize, Color.WHITE, this, 0);
 			}
 		}
-		
-//********************************************************************************************************	
-//*************************MODIFICATION******************************************************************
-//********************************************************************************************************		
+
+		//********************************************************************************************************	
+		//*************************MODIFICATION******************************************************************
+		//********************************************************************************************************		
 		//generates the swarm and adjusts their positions
 		agents = new SwarmAgent[numAgents];
 		boolean specialAgent = false;
@@ -241,7 +245,7 @@ public class Board extends JPanel implements MouseInputListener {
 			agents[i] = new SwarmAgent(width, cellSize, agentSize, specialAgent);
 			specialAgent = false;
 		}
-		
+
 
 		this.addMouseListener(this);
 		this.addMouseMotionListener(this);
@@ -253,9 +257,9 @@ public class Board extends JPanel implements MouseInputListener {
 			gui.layer2Draw = 1;
 		}
 
-		gui.setLblIntBlackCells(blackCellCounter);
-		gui.setLblIntGrayCells(grayCellCounter);
-		gui.setLblIntWhiteCells(whiteCellCounter);
+		gui.setLblIntBlackCells(getColorFrequencyInitial(Color.BLACK));
+		gui.setLblIntGrayCells(getColorFrequencyInitial(Color.GRAY));
+		gui.setLblIntWhiteCells(getColorFrequencyInitial(Color.WHITE));
 	}
 
 	public void StartTimer()
@@ -317,9 +321,9 @@ public class Board extends JPanel implements MouseInputListener {
 			gui.layer2Draw = tempL2D;
 			repaint();
 		}
-//*************************************************************************************************
-//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!MODIFICATION!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-//*************************************************************************************************
+		//*************************************************************************************************
+		//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!MODIFICATION!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+		//*************************************************************************************************
 		//draw agents
 		for (SwarmAgent agent : agents) {
 			// if the agents have been set to non-visible, sets them to a transparent color
@@ -334,7 +338,7 @@ public class Board extends JPanel implements MouseInputListener {
 					storeVisibleColor = agent.getColor();
 				}
 				agent.setColor(transparentColor);
-				
+
 			}
 			agent.draw(g);
 			//if you're sticking off the right or bottom of map, draw another ellipse there too
@@ -347,8 +351,8 @@ public class Board extends JPanel implements MouseInputListener {
 			}
 		}
 	}
-	
-	
+
+
 
 	/**
 	 * @author Nick, zgray17, Tim
@@ -379,7 +383,7 @@ public class Board extends JPanel implements MouseInputListener {
 					}
 				}
 			}
-			
+
 			agent.step(cellSize);
 			if (wrap) {
 				//since there's no walls, this lets the agents "wrap" to the other side of the screen. this is awesome.
@@ -412,40 +416,40 @@ public class Board extends JPanel implements MouseInputListener {
 				}
 			}
 		}
-		gui.setLblCurrBlackCells(currBlackCellCounter);
-		gui.setLblCurrGrayCells(currGrayCellCounter);
-		gui.setLblCurrWhiteCells(currWhiteCellCounter);
-		
+		gui.setLblCurrBlackCells(getColorFrequency(Color.BLACK));
+		gui.setLblCurrGrayCells(getColorFrequency(Color.GRAY));
+		gui.setLblCurrWhiteCells(getColorFrequency(Color.WHITE));
+
 		//MODIFICATION #10
 		//added back in 7/23
 		int redCount = gui.getPolOneCount();
 		int blueCount = gui.getPolTwoCount();
 		int yellowCount = gui.getPolThreeCount();
-		
-			
+
+
 		stepCount++; //keep track of how many steps
 		gui.updateStepCountLabel("" + stepCount + "");	//updates the Step label (added 7/23)
-		
+
 		//MODIFICATION #10
 		//added back in 7/23
 		exportInfoString += "" + redCount + "," + blueCount + "," + yellowCount +"\n";
 		//System.out.println(exportInfoString + " " + stepCount);
-	
+
 		//Now Export to the file		
-//		try {				
-//			outputFile = new File("\\\\kermit\\shome$\\mmight20\\Documents\\RESEARCH\\exportFile1.txt"); 
-//			fileWriter = new FileWriter(outputFile);
-//			writer = new BufferedWriter(fileWriter);
-//			
-//			writer.write(exportInfoString);
-//			writer.close();
-//		}
-//		catch (IOException ex) {
-//			System.out.println("Error: " + ex.getMessage());
-//		}
-		
+		//		try {				
+		//			outputFile = new File("\\\\kermit\\shome$\\mmight20\\Documents\\RESEARCH\\exportFile1.txt"); 
+		//			fileWriter = new FileWriter(outputFile);
+		//			writer = new BufferedWriter(fileWriter);
+		//			
+		//			writer.write(exportInfoString);
+		//			writer.close();
+		//		}
+		//		catch (IOException ex) {
+		//			System.out.println("Error: " + ex.getMessage());
+		//		}
+
 		System.out.println("Step: " + stepCount);
-		
+
 	}
 
 	/**
@@ -743,7 +747,7 @@ public class Board extends JPanel implements MouseInputListener {
 			}
 		}
 	}
-	
+
 	public void updateSpecialAgentColor(Color newColor)
 	{
 		this.agentColor = newColor;
@@ -769,20 +773,20 @@ public class Board extends JPanel implements MouseInputListener {
 	{
 		this.wrap = guiWrap;
 	}
-	
+
 	//MODIFICATION: set the color for each agent using the stored color (this will be the color it was before it went invisible)
 	public void updateVisibleAgentColors() {
 		for (SwarmAgent agent : agents) {
 			// if the agents have been set to non-visible, sets them to a transparent color
-					if (agent.getAgentStatus()) {
-						agent.setColor(storeSpecialColor);
-					}
-					else {
-						agent.setColor(storeVisibleColor);
-					}		
+			if (agent.getAgentStatus()) {
+				agent.setColor(storeSpecialColor);
+			}
+			else {
+				agent.setColor(storeVisibleColor);
+			}		
 		}				
 	}
-	
+
 	//MODIFICATION #2: This method selects random cells to flip
 	public void flipCells(int percentFlipCells) {
 		double percent = percentFlipCells/100.0;
@@ -809,12 +813,12 @@ public class Board extends JPanel implements MouseInputListener {
 			}
 		}
 	}
-	
+
 	//MODIFICATION #3
 	public int getTotalNumCells() {
 		return numCellsOnSide * numCellsOnSide;
 	}
-	
+
 	//MODIFICATION #3
 	public void updateAgents(int numAgents) {
 		Color[] nullArray = new Color[10];
@@ -823,7 +827,7 @@ public class Board extends JPanel implements MouseInputListener {
 			newAgents[i] = new SwarmAgent(agents[i].getX(), agents[i].getY(), agents[i].getWidth(), agents[i].getVelocity(), agents[i].getColor(), nullArray);
 		}
 	}
-	
+
 	//MODIFICATION #7:
 	//Morgan Might on July 5, 2018
 	//This method will reset the layer 4 cell to white
@@ -860,15 +864,58 @@ public class Board extends JPanel implements MouseInputListener {
 				int index = (persistenceNum - 39)*5;
 				layer4[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].setColor(new Color(110-index, 0, 110-index));
 			}
-			
+
 			//Update Persistence Number
 			layer4[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].setPersistenceValue(persistenceNum + 1);
 		}
-		
+
 	}
 
 	public GUI getGui() {
 		return gui;
+	}
+	
+	private int getColorFrequencyInitial(Color color) {
+		if(frequencyColorsInitial.containsKey(color)) {
+			return frequencyColorsInitial.get(color);
+		}
+		
+		return 0;
+	}
+	
+	private int getColorFrequency(Color color) {
+		if(frequencyColorsCurrent.containsKey(color)) {
+			return frequencyColorsCurrent.get(color);
+		}
+		
+		return 0;
+	}
+	
+	public void decrementColorFrequency(Color colorDecrement) {
+		if(frequencyColorsCurrent.containsKey(colorDecrement)) {
+			frequencyColorsCurrent.put(colorDecrement, frequencyColorsCurrent.get(colorDecrement) - 1);
+		}
+		else {
+			frequencyColorsCurrent.put(colorDecrement, 1);
+		}
+	}
+	
+	private void incrementColorFrequencyInitial(Color colorIncrement) {
+		if(frequencyColorsInitial.containsKey(colorIncrement)) {
+			frequencyColorsInitial.put(colorIncrement, frequencyColorsInitial.get(colorIncrement) + 1);
+		}
+		else {
+			frequencyColorsInitial.put(colorIncrement, 1);
+		}
+	}
+	
+	public void incrementColorFrequency(Color colorIncrement) {
+		if(frequencyColorsCurrent.containsKey(colorIncrement)) {
+			frequencyColorsCurrent.put(colorIncrement, frequencyColorsCurrent.get(colorIncrement) + 1);
+		}
+		else {
+			frequencyColorsCurrent.put(colorIncrement, 1);
+		}
 	}
 }
 
