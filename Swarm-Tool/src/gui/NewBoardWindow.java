@@ -147,8 +147,6 @@ public class NewBoardWindow extends JFrame {
 		frame.getContentPane().add(board);
 		gui.board = board;
 		//This section is to avoid bugs in the GUI.
-		board.oldPolarity1 = gui.getPolarity1();
-		board.oldPolarity2 = gui.getPolarity2();
 		board.updateGoalStrategy(gui.goalStrategy);
 		board.setAgentRate(gui.agentSliderRate);
 

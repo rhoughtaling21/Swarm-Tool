@@ -64,13 +64,13 @@ public class SwarmAgent extends Ellipse2D.Double {
 	 * of the board. A random velocity is also generated for the agent. The super class is
 	 * Ellipse2D.Double; the constructor is passing it an x and y and the ellipse's dimensions.
 	 * @param boardWidth
-	 * @param size
+	 * @param agentSize
 	 */
 	//Modification!!!
 	//Make all the agents green. But create one that is cyan.
 	//Problem down the road: how do you modify the color of the special agent
-	public SwarmAgent(int boardWidth, int cellSize, int size, boolean specialAgent) {
-		super((int)(Math.random()*boardWidth), (int)(Math.random()*boardWidth), size, size);
+	public SwarmAgent(int boardWidth, double cellSize, double agentSize, boolean specialAgent) {
+		super((int)(Math.random()*boardWidth), (int)(Math.random()*boardWidth), agentSize, agentSize);
 		this.velocity = new Point2D.Double(cellSize*(Math.random()-0.5), cellSize*(Math.random()-0.5));
 		if(specialAgent) {
 			this.colorFill = Color.CYAN;
@@ -127,7 +127,7 @@ public class SwarmAgent extends Ellipse2D.Double {
 	 * but not too often. The range of the velocity is between (-5, 5) in both the x
 	 * and y directions so that values will be evenly distributed in each direction.
 	 */
-	public void step(int cellSize) {
+	public void step(double cellSize) {
 		this.setX(x+velocity.getX());
 		this.setY(y+velocity.getY());
 

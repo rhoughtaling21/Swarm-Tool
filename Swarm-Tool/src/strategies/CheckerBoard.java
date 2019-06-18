@@ -18,13 +18,13 @@ public class CheckerBoard extends AbstractStrategy {
 	boolean adjustCellColor = false;
 	
 	@Override
-	public CellDisplayPolarity Layer2(SwarmAgent agent, CellDisplayBase[][] layer1, int cellSize, int row, int col, Cell[] neighbor) {
+	public CellDisplayPolarity Layer2(SwarmAgent agent, CellDisplayBase[][] layer1, double cellSize, int row, int col, Cell[] neighbor) {
 		//This method does nothing
 		return null;
 	}
 
 	@Override
-	public CellDisplayPolarity Layer2(CellDisplayBase[][] layer1,  int cellSize, int row, int col, Cell[] neighbor) {
+	public CellDisplayPolarity Layer2(CellDisplayBase[][] layer1,  double cellSize, int row, int col, Cell[] neighbor) {
 		CellDisplayPolarity layer2 = new CellDisplayPolarity(0, 0, 0, Color.RED, layer1[row][col].getBoard());
 		{
 			if(layer1[row][col].getColor() == Color.BLACK)
@@ -86,7 +86,7 @@ public class CheckerBoard extends AbstractStrategy {
 		return layer2;
 	}
 
-	public void logic(SwarmAgent agent, CellDisplayBase[][] layer1, CellDisplayPolarity[][] layer2, Cell[] neighbors, int cellSize) {
+	public void logic(SwarmAgent agent, CellDisplayBase[][] layer1, CellDisplayPolarity[][] layer2, Cell[] neighbors, double cellSize) {
 		int cornerCount = 0;
 		int edgeCount = 0;
 		for(int index = 0; index<neighbors.length; index++)
@@ -119,7 +119,7 @@ public class CheckerBoard extends AbstractStrategy {
 			//goodCount++;
 			if(cornerCount>edgeCount)//if more corners are black than edges, you should be black in the center
 			{
-				if(layer1[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].getColor() == Color.BLACK)
+				if(layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getColor() == Color.BLACK)
 				{
 					cornerCount = 0;
 					edgeCount = 0;
@@ -127,8 +127,8 @@ public class CheckerBoard extends AbstractStrategy {
 				}
 				else
 				{
-					layer1[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].flipColor();
-					layer2[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].flipColor();
+					layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].flipColor();
+					layer2[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].flipColor();
 					cornerCount = 0;
 					edgeCount = 0;
 					adjustCellColor = true; //Flip cell from white to black
@@ -136,10 +136,10 @@ public class CheckerBoard extends AbstractStrategy {
 			}
 			else if(edgeCount>cornerCount)//if more edges are black than corners, the center should be white
 			{
-				if(layer1[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].getColor() == Color.BLACK)
+				if(layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getColor() == Color.BLACK)
 				{
-					layer1[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].flipColor();
-					layer2[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].flipColor();
+					layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].flipColor();
+					layer2[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].flipColor();
 					cornerCount = 0;
 					edgeCount = 0;
 					adjustCellColor = true; //Flip cell from black to white
@@ -156,8 +156,8 @@ public class CheckerBoard extends AbstractStrategy {
 				double flipCoin = Math.random();// and if you are tied, like if all are black
 				if (flipCoin >.5)// flip a coin
 				{
-					layer1[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].flipColor();
-					layer2[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].flipColor();
+					layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].flipColor();
+					layer2[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].flipColor();
 					cornerCount = 0;
 					edgeCount = 0;
 					adjustCellColor = true; //The cell will flip
@@ -165,8 +165,8 @@ public class CheckerBoard extends AbstractStrategy {
 			}
 		}
 		else {
-			layer1[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].flipColor();
-			layer2[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].flipColor();
+			layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].flipColor();
+			layer2[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].flipColor();
 			adjustCellColor = true; //The cell will flip
 		}	
 		
@@ -176,11 +176,11 @@ public class CheckerBoard extends AbstractStrategy {
 		
 		//If the cell was flipped reset the layer 4 cell to white
 		if(adjustCellColor) {
-			layer1[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].getBoard().resetToWhite(agent, cellSize); //needs to be static????
+			layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getBoard().resetToWhite(agent, cellSize); //needs to be static????
 		}
 		//If the cell does not need changed, darken the purple
 		else {
-			layer1[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].getBoard().addPurple(agent, cellSize); 
+			layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getBoard().addPurple(agent, cellSize); 
 		}
 	}
 

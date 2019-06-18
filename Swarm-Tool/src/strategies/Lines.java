@@ -20,13 +20,13 @@ public class Lines extends AbstractStrategy{
 	
 	//This method does nothing
 	@Override
-	public CellDisplayPolarity Layer2(SwarmAgent agent, CellDisplayBase[][] layer1, int cellSize, int row, int col, Cell[] neighbor) {
+	public CellDisplayPolarity Layer2(SwarmAgent agent, CellDisplayBase[][] layer1, double cellSize, int row, int col, Cell[] neighbor) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 	
 	@Override
-	public CellDisplayPolarity Layer2(CellDisplayBase[][] layer1, int cellSize, int row, int col, Cell[] neighbors) {
+	public CellDisplayPolarity Layer2(CellDisplayBase[][] layer1, double cellSize, int row, int col, Cell[] neighbors) {
 		//Layer 2 in this sense shows 4 colors. one for each variation of straight lines. In the final, solved state,
 		//the 4 colors indicate the 4 faces of the pyramid.
 		CellDisplayPolarity layer2 = new CellDisplayPolarity(0, 0, 0, Color.RED, layer1[row][col].getBoard());
@@ -190,7 +190,7 @@ public class Lines extends AbstractStrategy{
 
 	@Override
 	//this is the exact same logic as the checkerboard, but with edgeCount and cornerCount flipped.
-	public void logic(SwarmAgent agent, CellDisplayBase[][] layer1, CellDisplayPolarity[][] layer2, Cell[] neighbors, int cellSize) {
+	public void logic(SwarmAgent agent, CellDisplayBase[][] layer1, CellDisplayPolarity[][] layer2, Cell[] neighbors, double cellSize) {
 		int cornerCount = 0;
 		int edgeCount = 0;
 		//if (Math.random() < 0.1) {
@@ -222,7 +222,7 @@ public class Lines extends AbstractStrategy{
 		//if(probabilityNum >0) {
 			if(cornerCount>edgeCount)
 			{
-				if(layer1[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].getColor() == Color.BLACK)
+				if(layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getColor() == Color.BLACK)
 				{
 					cornerCount = 0;
 					edgeCount = 0;
@@ -230,8 +230,8 @@ public class Lines extends AbstractStrategy{
 				}
 				else
 				{
-					layer1[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].flipColor();
-					layer2[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize] = Layer2(agent, layer1, cellSize, (int)agent.getCenterX()/cellSize, (int)agent.getCenterY()/cellSize, neighbors);
+					layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].flipColor();
+					layer2[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)] = Layer2(agent, layer1, cellSize, (int)(agent.getCenterX() / cellSize), (int)(agent.getCenterY() / cellSize), neighbors);
 					cornerCount = 0;
 					edgeCount = 0;
 					adjustCellColor = true; //Flip the Cell from White to Black
@@ -239,10 +239,10 @@ public class Lines extends AbstractStrategy{
 			}
 			else if(edgeCount>cornerCount)
 			{
-				if(layer1[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].getColor() == Color.BLACK)
+				if(layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getColor() == Color.BLACK)
 				{
-					layer1[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].flipColor();
-					layer2[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize] = Layer2(agent, layer1, cellSize, (int)agent.getCenterX()/cellSize, (int)agent.getCenterY()/cellSize, neighbors);
+					layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].flipColor();
+					layer2[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)] = Layer2(agent, layer1, cellSize, (int)(agent.getCenterX() / cellSize), (int)(agent.getCenterY() / cellSize), neighbors);
 
 					cornerCount = 0;
 					edgeCount = 0;
@@ -260,8 +260,8 @@ public class Lines extends AbstractStrategy{
 				double flipCoin = Math.random();
 				if (flipCoin >.5)
 				{
-					layer1[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].flipColor();
-					layer2[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize] = Layer2(agent, layer1, cellSize, (int)agent.getCenterX()/cellSize, (int)agent.getCenterY()/cellSize, neighbors);
+					layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].flipColor();
+					layer2[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)] = Layer2(agent, layer1, cellSize, (int)(agent.getCenterX() / cellSize), (int)(agent.getCenterY() / cellSize), neighbors);
 
 					cornerCount = 0;
 					edgeCount = 0;
@@ -270,18 +270,18 @@ public class Lines extends AbstractStrategy{
 			}
 		//}
 		//else {
-		//	layer1[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].flipColor();
-		//	layer2[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize] = Layer2(layer1, cellSize, (int)agent.getCenterX()/cellSize, (int)agent.getCenterY()/cellSize, neighbors);
+		//	layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].flipColor();
+		//	layer2[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)] = Layer2(layer1, cellSize, (int)agent.getCenterX()/cellSize, (int)agent.getCenterY()/cellSize, neighbors);
 		//}
 		
 			//MODIFICATION #7:
 			//If the cell was flipped reset the layer 4 cell to white
 			if(adjustCellColor) {
-				layer1[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].getBoard().resetToWhite(agent, cellSize);
+				layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getBoard().resetToWhite(agent, cellSize);
 			}
 			//If the cell does not need changed, darken the purple
 			else {
-				layer1[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].getBoard().addPurple(agent, cellSize); 
+				layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getBoard().addPurple(agent, cellSize); 
 			}
 
 	}

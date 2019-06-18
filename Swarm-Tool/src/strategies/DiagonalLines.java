@@ -20,7 +20,7 @@ public class DiagonalLines extends AbstractStrategy {
 	 */
 
 	@Override
-	public CellDisplayPolarity Layer2(CellDisplayBase[][] layer1, int cellSize, int row, int col, Cell[] neighbor) {
+	public CellDisplayPolarity Layer2(CellDisplayBase[][] layer1, double cellSize, int row, int col, Cell[] neighbor) {
 		// TODO Auto-generated method stub
 		//Layer 2 in this sense shows 3 colors. one for each variation of diagonal lines. 
 		
@@ -121,7 +121,7 @@ public class DiagonalLines extends AbstractStrategy {
 
 
 	@Override
-	public CellDisplayPolarity Layer2(SwarmAgent agent, CellDisplayBase[][] layer1, int cellSize, int row, int col, Cell[] neighbors) {
+	public CellDisplayPolarity Layer2(SwarmAgent agent, CellDisplayBase[][] layer1, double cellSize, int row, int col, Cell[] neighbors) {
 		//Layer 2 in this sense shows 3 colors. one for each variation of diagonal lines. 
 		CellDisplayPolarity layer2 = new CellDisplayPolarity(0, 0, 0, Color.RED, layer1[row][col].getBoard());
 		int polarityNum = 0;
@@ -227,15 +227,15 @@ public class DiagonalLines extends AbstractStrategy {
 	//
 	//Added 6/13/2018 by Morgan Might
 	@Override
-	public void logic(SwarmAgent agent, CellDisplayBase[][] layer1, CellDisplayPolarity[][] layer2, Cell[] neighbors, int cellSize) {
-		int totalCells = layer1[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].getBoard().numCellsOnSide*layer1[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].getBoard().numCellsOnSide;
-		int row = (int) agent.getCenterX() / cellSize;
-		int col = (int) agent.getCenterY() / cellSize;
+	public void logic(SwarmAgent agent, CellDisplayBase[][] layer1, CellDisplayPolarity[][] layer2, Cell[] neighbors, double cellSize) {
+		int totalCells = layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getBoard().numCellsOnSide*layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getBoard().numCellsOnSide;
+		int row = (int)(agent.getCenterX() / cellSize);
+		int col = (int)(agent.getCenterY() / cellSize);
 		
 		agent.printColorsInArray();
 		
 		//MODIFICATION #7:
-		Color oldColor = layer1[(int) agent.getCenterX() / cellSize][(int) agent.getCenterY() / cellSize].getColor();
+		Color oldColor = layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getColor();
 		Color newColor = Color.GREEN;
 		
 		
@@ -243,7 +243,7 @@ public class DiagonalLines extends AbstractStrategy {
 		//added 7/10 by Morgan Might
 		//Must get a count of the neighboring cells' polarity to grow certain color polarity
 		Color newPolarityColor = Color.WHITE;
-		Color oldPolarityColor = layer1[(int) agent.getCenterX() / cellSize][(int) agent.getCenterY() / cellSize].getPolarityColor();
+		Color oldPolarityColor = layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getPolarityColor();
 	
 	//	
 	//COLLECT INFO	
@@ -290,7 +290,7 @@ public class DiagonalLines extends AbstractStrategy {
 	//DETERMINE NEW POLARITY	
 	//
 		//If the agent's memory array is not yet filled or the goal is a single polarity
-		if(!agent.getColorArrayFilled() || layer1[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].getBoard().getGui().togglePolarity) {
+		if(!agent.getColorArrayFilled() || layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getBoard().getGui().togglePolarity) {
 			//RULE #1
 			//If the cell is surrounded by one color
 			if(redPolCount == neighborCount) {	//Surrounded by RED
@@ -529,7 +529,7 @@ public class DiagonalLines extends AbstractStrategy {
 			//Now the constraints can be altered based on the dominant polarity chosen
 			if(agent.getRedCount() >= 18 || agent.getBlueCount() >= 18 || agent.getYellowCount() >= 18) {
 				//YELLOW is the dominant polarity
-				if(layer1[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].getBoard().getGui().newDominantPolarity == "YELLOW") {
+				if(layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getBoard().getGui().newDominantPolarity == "YELLOW") {
 					if (agent.getRedCount() > agent.getYellowCount()) {
 						if(yellowPolCount >=2) {
 							newPolarityColor = Color.YELLOW;
@@ -560,7 +560,7 @@ public class DiagonalLines extends AbstractStrategy {
 					}
 				}
 				//BLUE is the dominant polarity
-				else if(layer1[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].getBoard().getGui().newDominantPolarity == "BLUE") {
+				else if(layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getBoard().getGui().newDominantPolarity == "BLUE") {
 					if (agent.getRedCount() > agent.getBlueCount()) {
 						if(bluePolCount >=2) {
 							newPolarityColor = Color.BLUE;
@@ -591,7 +591,7 @@ public class DiagonalLines extends AbstractStrategy {
 					}
 				}
 				//RED is the dominant polarity
-				else if(layer1[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].getBoard().getGui().newDominantPolarity == "RED") {
+				else if(layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getBoard().getGui().newDominantPolarity == "RED") {
 					if (agent.getBlueCount() > agent.getRedCount()) {
 						if(redPolCount >=2) {
 							newPolarityColor = Color.RED;
@@ -669,16 +669,15 @@ public class DiagonalLines extends AbstractStrategy {
 		//July 5, 2018
 		
 		//MODIFICATION #9
-		layer1[(int) agent.getCenterX() / cellSize][(int) agent.getCenterY() / cellSize].setColor(newColor);
-		layer2[(int) agent.getCenterX() / cellSize][(int) agent.getCenterY() / cellSize] = Layer2(agent, layer1, cellSize,
-			(int) agent.getCenterX() / cellSize, (int) agent.getCenterY() / cellSize, neighbors);
+		layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].setColor(newColor);
+		layer2[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)] = Layer2(agent, layer1, cellSize, (int)(agent.getCenterX() / cellSize), (int)(agent.getCenterY() / cellSize), neighbors);
 		//If the cell was flipped reset the layer 4 cell to white
 		if(newColor != oldColor) {
-			layer1[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].getBoard().resetToWhite(agent, cellSize); //needs to be static????
+			layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getBoard().resetToWhite(agent, cellSize); //needs to be static????
 		}
 		//If the cell does not need changed, darken the purple
 		else {
-			layer1[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].getBoard().addPurple(agent, cellSize); 
+			layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getBoard().addPurple(agent, cellSize); 
 		}
 	}
 	

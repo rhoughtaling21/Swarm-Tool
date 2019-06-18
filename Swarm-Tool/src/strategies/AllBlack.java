@@ -18,12 +18,12 @@ public class AllBlack extends AbstractStrategy {
 
 	//This method does nothing	
 	@Override
-	public CellDisplayPolarity Layer2(SwarmAgent agent, CellDisplayBase[][] layer1, int cellSize, int row, int col, Cell[] neighbor) {
+	public CellDisplayPolarity Layer2(SwarmAgent agent, CellDisplayBase[][] layer1, double cellSize, int row, int col, Cell[] neighbor) {
 		return null;
 	}
 
 	@Override
-	public CellDisplayPolarity Layer2(CellDisplayBase[][] layer1, int cellSize, int row, int col, Cell[] neighbor) {
+	public CellDisplayPolarity Layer2(CellDisplayBase[][] layer1, double cellSize, int row, int col, Cell[] neighbor) {
 		CellDisplayPolarity layer2 = new CellDisplayPolarity(0,0,0,Color.RED, layer1[row][col].getBoard());
 		if(layer1[row][col].getColor() == Color.BLACK)
 			//if the layer 1 cell is black
@@ -42,26 +42,26 @@ public class AllBlack extends AbstractStrategy {
 	}
 
 	@Override
-	public void logic(SwarmAgent agent, CellDisplayBase[][] layer1, CellDisplayPolarity[][] layer2, Cell[] neighbors, int cellSize) {
+	public void logic(SwarmAgent agent, CellDisplayBase[][] layer1, CellDisplayPolarity[][] layer2, Cell[] neighbors, double cellSize) {
 
-		if(layer1[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].getColor() == Color.BLACK)
+		if(layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getColor() == Color.BLACK)
 		{
 			adjustCellColor = false; //Leave the cell Black
 		}
 		else
 		{
-			layer1[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].flipColor();
-			layer2[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize] = Layer2(agent, layer1, cellSize, (int)agent.getCenterX()/cellSize, (int)agent.getCenterY()/cellSize, neighbors);
+			layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].flipColor();
+			layer2[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)] = Layer2(agent, layer1, cellSize, (int)(agent.getCenterX() / cellSize), (int)(agent.getCenterY() / cellSize), neighbors);
 			adjustCellColor = true; //Change cell from white to black
 		}
 		
 		//If the cell was flipped reset the layer 4 cell to white
 				if(adjustCellColor) {
-					layer1[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].getBoard().resetToWhite(agent, cellSize); //needs to be static????
+					layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getBoard().resetToWhite(agent, cellSize); //needs to be static????
 				}
 				//If the cell does not need changed, darken the purple
 				else {
-					layer1[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].getBoard().addPurple(agent, cellSize); 
+					layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getBoard().addPurple(agent, cellSize); 
 				}
 
 	}

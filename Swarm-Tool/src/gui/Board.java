@@ -50,23 +50,25 @@ public class Board extends JPanel implements MouseInputListener {
 	private CellDisplayPolarity[][] layer2;
 	private CellDisplayPersistence[][] layer4;  //MODIFICATION #7: new layer of cells for persistency
 	private CellDisplay[][] layerDisplay; //layer to paint
+	private CellDisplay[][][] layers;
 	public int numCellsOnSide; //these are the numbers of cells in the board, NOT the graphical dimensions of the board
-	private boolean wrap = false; //whether the walls of the Board wrap or not; by default, they don't
-	private int cellSize; //pixel dimensions of each cell
-	private int agentSize; //pixel dimensions of each agent
+	private boolean wrap; //whether the walls of the Board wrap or not; by default, they don't
+	private double cellSize; //pixel dimensions of each cell
+	//private int agentSize; //pixel dimensions of each agent
 	private SwarmAgent[] agents;
-	private Color agentColor;
+	//private Color agentColor;
 	private double attractorStrength = 1;
 	private int attractorMaxDistance; //distance in cells, not pixels
 	private int attractOrRepel = 1; //1 if attract, -1 if repel
-	private int tempL2D;//temporary layer 2 used in calculations
+	private int indexDisplay;
+	//private int tempL2D;//temporary layer 2 used in calculations
 	private int agentRate = 50;//delay between timer firing
 	public int period = 100000;
 	public Timer t;//main timer
-	public Color oldPolarity1 = Color.RED;//old polarity color is saved so that it is possible to change them to new polarity
-	public Color oldPolarity2 = Color.BLUE;
-	public Color oldPolarity3 = Color.YELLOW;
-	public Color oldPolarity4 = Color.WHITE;
+//	public Color oldPolarity1 = Color.RED;//old polarity color is saved so that it is possible to change them to new polarity
+//	public Color oldPolarity2 = Color.BLUE;
+//	public Color oldPolarity3 = Color.YELLOW;
+//	public Color oldPolarity4 = Color.WHITE;
 	public Color transparentColor = new Color(0,1,0,0);
 	public Color storeVisibleColor;	//MODIFICATION: used to store color so the "View Agents" button toggles properly
 	public Color storeSpecialColor; //MODIFICATION: store color of the special agent
@@ -97,7 +99,7 @@ public class Board extends JPanel implements MouseInputListener {
 
 		frequencyColorsInitial = new HashMap<Color, Integer>();
 		frequencyColorsCurrent = new HashMap<Color, Integer>();
-
+		
 		//MODIFICATION
 		//Added 7/17/18
 		//By Morgan Might
@@ -108,53 +110,51 @@ public class Board extends JPanel implements MouseInputListener {
 		else {
 			strategy = new CheckerBoard();
 		}
-		agentColor = gui.agentColor;
+
 		//set preferred graphical dimensions of the board
 		setPreferredSize(new Dimension(width, height));
 		this.numCellsOnSide = numCellsOnSide;
 		this.wrap = wrap;
-		layerDisplay = new CellDisplay[numCellsOnSide][numCellsOnSide];
+		
 		//set the graphical dimensions of the cells themselves. the cells are always square, but the
 		//space they take up is constrained by the width and height of the board and by the number of cells.
-		cellSize = width/numCellsOnSide;
-		agentSize = (int)(cellSize*0.7);
+		cellSize = (width / numCellsOnSide);
+		double agentSize = (cellSize * 0.7);
 
-		attractorMaxDistance = cellSize*5; //the attractor affects everything in a five cell block radius
+		attractorMaxDistance = (int)(cellSize * 5); //the attractor affects everything in a five cell block radius
 
 		//layer 1
 		layer1 = new CellDisplayBase[numCellsOnSide][numCellsOnSide];
-		int rand, randomPosition;
-		Random randGen = new Random();
-		Color initColor;
+		int randomPosition;
+		Color colorInitial;
 
 		if (!gui.getSplitPolarity()) {
-			for (int row = 0; row < layer1.length; row++) {
-				for (int col = 0; col < layer1[row].length; col++) {
-					rand = (int) (Math.random() * 2);
-					if (rand == 0) {
-						initColor = Color.BLACK;
+			for (int indexRow = 0; indexRow < layer1.length; indexRow++) {
+				for (int indexColumn = 0; indexColumn < layer1[indexRow].length; indexColumn++) {
+					if (Math.random() < 0.5) {
+						colorInitial = Color.BLACK;
 					} 
 					else {
-						initColor = Color.WHITE;
+						colorInitial = Color.WHITE;
 					}
 					
-					incrementColorFrequencyInitial(initColor);
-					incrementColorFrequency(initColor);
+					incrementColorFrequencyInitial(colorInitial);
+					incrementColorFrequency(colorInitial);
 					
-					layer1[row][col] = new CellDisplayBase(row * cellSize, col * cellSize, cellSize, initColor, this);
+					layer1[indexRow][indexColumn] = new CellDisplayBase(indexRow * cellSize, indexColumn * cellSize, cellSize, colorInitial, this);
 
 					//	//	//	//	//MODIFICATION// // // // // // // // // // // // //
 					//Added 7/17/18
 					//By Morgan Might
 					//Set up polarity counts
 					if(gui.getThreeColor()) {
-						if(initColor == Color.BLACK && (row+col%3 == 0) || initColor == Color.GRAY && (row+col%3 == 1) || initColor == Color.WHITE && (row+col%3 == 2)) {
+						if(colorInitial == Color.BLACK && (indexRow+indexColumn%3 == 0) || colorInitial == Color.GRAY && (indexRow+indexColumn%3 == 1) || colorInitial == Color.WHITE && (indexRow+indexColumn%3 == 2)) {
 							firstCount++;
 						}
-						else if(initColor == Color.GRAY && (row+col%3 == 0) || initColor == Color.WHITE && (row+col%3 == 1) || initColor == Color.BLACK && (row+col%3 == 2)) {
+						else if(colorInitial == Color.GRAY && (indexRow+indexColumn%3 == 0) || colorInitial == Color.WHITE && (indexRow+indexColumn%3 == 1) || colorInitial == Color.BLACK && (indexRow+indexColumn%3 == 2)) {
 							secondCount++;
 						}
-						else if(initColor == Color.WHITE && (row+col%3 == 0) || initColor == Color.BLACK && (row+col%3 == 1) || initColor == Color.GRAY && (row+col%3 == 2)) {
+						else if(colorInitial == Color.WHITE && (indexRow+indexColumn%3 == 0) || colorInitial == Color.BLACK && (indexRow+indexColumn%3 == 1) || colorInitial == Color.GRAY && (indexRow+indexColumn%3 == 2)) {
 							thirdCount++;
 						}
 					}
@@ -168,24 +168,23 @@ public class Board extends JPanel implements MouseInputListener {
 			}
 		}
 
-		// MODIFICATION: This will test swarms when the polarity is split and the agents are no longer affective
+		// MODIFICATION: This will test swarms when the polarity is split and the agents are no longer effective
 		else if(!gui.getThreeColor()){
 			Color printColor;
-			randomPosition = randGen.nextInt(numCellsOnSide - 5) + 3;
+			randomPosition = (int)(Math.random() * (numCellsOnSide - 5)) + 3;
 			System.out.print(randomPosition);
 			int pos;
-			rand = (int) (Math.random() * 2);
-			for (int row = 0; row < layer1.length; row++) {
-				for (int col = 0; col < layer1[row].length; col++) {
-					if(rand == 0) {  
-						pos = row;
+			for (int indexRow = 0; indexRow < layer1.length; indexRow++) {
+				for (int indexColumn = 0; indexColumn < layer1[indexRow].length; indexColumn++) {
+					if(Math.random() < 0.5) {  
+						pos = indexRow;
 					}
 					else { 
-						pos = col;
+						pos = indexColumn;
 					}
 						
 					if (pos < randomPosition) {
-						if (row % 2 == col % 2) {
+						if (indexRow % 2 == indexColumn % 2) {
 							printColor = Color.BLACK;
 						}
 						else {
@@ -194,7 +193,7 @@ public class Board extends JPanel implements MouseInputListener {
 
 					} 
 					else {
-						if (row % 2 == col % 2) {
+						if (indexRow % 2 == indexColumn % 2) {
 							printColor = Color.WHITE;
 						}
 						else {
@@ -206,7 +205,7 @@ public class Board extends JPanel implements MouseInputListener {
 					incrementColorFrequencyInitial(printColor);
 					incrementColorFrequency(printColor);
 					
-					layer1[row][col] = new CellDisplayBase(row * cellSize, col * cellSize, cellSize, printColor, this);
+					layer1[indexRow][indexColumn] = new CellDisplayBase(indexRow * cellSize, indexColumn * cellSize, cellSize, printColor, this);
 				}
 			}
 		}
@@ -231,6 +230,8 @@ public class Board extends JPanel implements MouseInputListener {
 			}
 		}
 
+		layers = new CellDisplay[][][]{layer1, layer2, null, layer4};
+		
 		//********************************************************************************************************	
 		//*************************MODIFICATION******************************************************************
 		//********************************************************************************************************		
@@ -265,8 +266,7 @@ public class Board extends JPanel implements MouseInputListener {
 	public void StartTimer()
 	{
 		t = new Timer();
-		t.scheduleAtFixedRate(new TimerTask() {
-
+		TimerTask task = new TimerTask() {
 			@Override
 			public void run() {
 				step();
@@ -275,52 +275,32 @@ public class Board extends JPanel implements MouseInputListener {
 				t.cancel(); // cancel time
 				StartTimer();
 			}
-		}, 500-agentRate,period);
+		};
+		t.scheduleAtFixedRate(task, 500 - agentRate, period);
 	}
 
-	protected void paintComponent(Graphics arg0) {
-		super.paintComponent(arg0);
+	@Override
+	protected void paintComponent(Graphics helperGraphics) {
+		super.paintComponent(helperGraphics);
 
-		Graphics2D g = (Graphics2D)arg0;
-
+		Graphics2D helperGraphics2D = (Graphics2D)helperGraphics;
+		
 		//draw boards
-		if (gui.layer2Draw == 1)
-		{
-			for (int row = 0; row < numCellsOnSide; row++) {
-				for (int col = 0; col <numCellsOnSide; col++) {
-					layerDisplay[row][col] = layer1[row][col];
-					layerDisplay[row][col].draw(g);
-				}
-			}
-			tempL2D = 1;
-		}
-		else if(gui.layer2Draw == 2)
-		{
-			for (int row = 0; row < numCellsOnSide; row++) {
-				for (int col = 0; col <numCellsOnSide; col++) {
-					layerDisplay[row][col] = layer2[row][col];
-					layerDisplay[row][col].draw(g);
-				}
-			}
-			tempL2D = 2;
-		}
-		//MODIFICATION #7: needed to display the persistency board when on layer 4
-		//by Morgan Might on July 5, 2018
-		else if(gui.layer2Draw == 4)
-		{
-			for (int row = 0; row < numCellsOnSide; row++) {
-				for (int col = 0; col <numCellsOnSide; col++) {
-					layerDisplay[row][col] = layer4[row][col];
-					layerDisplay[row][col].draw(g);
-				}
-			}
-			tempL2D = 4;
-		}
-		else
-		{
-			gui.layer2Draw = tempL2D;
+		if(gui.layer2Draw == 3) {
+			gui.layer2Draw = indexDisplay + 1;
 			repaint();
 		}
+		else {
+			indexDisplay = gui.layer2Draw - 1;
+			layerDisplay = layers[indexDisplay];
+			
+			for(int indexRow = 0; indexRow < layerDisplay.length; indexRow++) {
+				for(int indexColumn = 0; indexColumn < layerDisplay[indexRow].length; indexColumn++) {
+					layerDisplay[indexRow][indexColumn].draw(helperGraphics2D);
+				}
+			}
+		}
+		
 		//*************************************************************************************************
 		//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!MODIFICATION!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 		//*************************************************************************************************
@@ -340,14 +320,14 @@ public class Board extends JPanel implements MouseInputListener {
 				agent.setColor(transparentColor);
 
 			}
-			agent.draw(g);
+			agent.draw(helperGraphics2D);
 			//if you're sticking off the right or bottom of map, draw another ellipse there too
 			//this is a hack; really, i think this should be a job for the agent's draw method.
-			if (wrap && agent.getX()+agentSize > this.getWidth()) {
-				g.fill(new Ellipse2D.Double(agent.getX()-this.getWidth(), agent.getY(), agentSize, agentSize));
+			if (wrap && agent.getMaxX() > this.getWidth()) {
+				helperGraphics2D.fill(new Ellipse2D.Double(agent.getX() - this.getWidth(), agent.getY(), agent.getWidth(), agent.getHeight()));
 			}
-			if (wrap && agent.getY()+agentSize > this.getHeight()) {
-				g.fill(new Ellipse2D.Double(agent.getX(), agent.getY()-this.getHeight(), agentSize, agentSize));
+			if (wrap && agent.getMaxY() > this.getHeight()) {
+				helperGraphics2D.fill(new Ellipse2D.Double(agent.getX(), agent.getY() - this.getHeight(), agent.getWidth(), agent.getHeight()));
 			}
 		}
 	}
@@ -370,7 +350,7 @@ public class Board extends JPanel implements MouseInputListener {
 			//TESTING NEIGHBORS
 			int cornerCount = 0;
 			int edgeCount = 0;
-			neighbors = getNeighbors(layer1, (int)agent.getCenterX()/cellSize, (int)agent.getCenterY()/cellSize);
+			neighbors = getNeighbors(layer1, (int)(agent.getCenterX() / cellSize), (int)(agent.getCenterY() / cellSize));
 			int rowMax = layer1.length-1;
 			int colMax = layer1[rowMax-1].length-1;
 			if((int)agent.getCenterX()/cellSize<=rowMax && (int)agent.getCenterY()/cellSize<=colMax)
@@ -398,19 +378,19 @@ public class Board extends JPanel implements MouseInputListener {
 				//the board. If it does, then it has the agent "bounce" off the board's wall. This is kind of a hack--
 				//the desirable behavior, actually, is actually just always bouncing it, but that will require refactoring
 				//this, and the agent's own step method, at a later date.
-				if (agent.x < agent.getWidth() && agent.getVelocity().getX() < 0)  
+				if (agent.getX() < agent.getWidth() && agent.getVelocity().getX() < 0)  
 				{
 					agent.xBounce();
 				}
-				if (agent.y < agent.getHeight() && agent.getVelocity().getY() < 0)
+				if (agent.getY() < agent.getHeight() && agent.getVelocity().getY() < 0)
 				{
 					agent.yBounce();
 				}
-				if (agent.x+agentSize > numCellsOnSide*cellSize+agent.getWidth() && agent.getVelocity().getX() > 0)
+				if (agent.getMaxX() > numCellsOnSide*cellSize+agent.getWidth() && agent.getVelocity().getX() > 0)
 				{
 					agent.xBounce();
 				}
-				if (agent.y+agentSize > numCellsOnSide*cellSize+agent.getHeight() && agent.getVelocity().getY() > 0)
+				if (agent.getMaxY() > numCellsOnSide*cellSize+agent.getHeight() && agent.getVelocity().getY() > 0)
 				{
 					agent.yBounce();
 				}
@@ -592,41 +572,33 @@ public class Board extends JPanel implements MouseInputListener {
 
 	@Override
 	public void mouseClicked(MouseEvent arg0) {
-		// TODO Auto-generated method stub
 		System.out.println((int)(arg0.getX()/cellSize));
 		System.out.println((int)(arg0.getY()/cellSize));
 		System.out.println();
-
-
 	}
 
 	@Override
 	public void mouseEntered(MouseEvent arg0) {
-		// TODO Auto-generated method stub
 
 	}
 
 	@Override
 	public void mouseExited(MouseEvent arg0) {
-		// TODO Auto-generated method stub
 
 	}
 
 	@Override
 	public void mousePressed(MouseEvent arg0) {
-		// TODO Auto-generated method stub
 
 	}
 
 	@Override
 	public void mouseReleased(MouseEvent arg0) {
-		// TODO Auto-generated method stub
 
 	}
 
 	@Override
 	public void mouseDragged(MouseEvent arg0) {
-		// TODO Auto-generated method stub
 		double magnitude;
 		Point2D.Double towardMouse;
 
@@ -657,7 +629,6 @@ public class Board extends JPanel implements MouseInputListener {
 
 	@Override
 	public void mouseMoved(MouseEvent e) {
-		// TODO Auto-generated method stub
 
 	}
 
@@ -666,94 +637,101 @@ public class Board extends JPanel implements MouseInputListener {
 	 * This method updates the rate of the agent clock. Blah blah blah.
 	 * @param rate
 	 */
-	public void setAgentRate(int rate)
-	{
+	public void setAgentRate(int rate) {
 		agentRate = rate;
 	}
 
-	/**
-	 * @author zgray17
-	 * This method updates the polarity color 1. Blah blah blah.
-	 * @param polarity1
-	 */
-	public void updateNewPolarityColor1(Color polarity1)
-	{
-		for (int row = 0; row < layer2.length; row++) {
-			for (int col = 0; col < layer2[row].length; col++) {
-				if(layer2[row][col].getColor() == oldPolarity1)
-				{
-					layer2[row][col].setColor(polarity1);
+	public void updatePolarityColor(Color colorPolarityOld, Color colorPolarityNew) {
+		for(int indexRow = 0; indexRow < layer2.length; indexRow++) {
+			for(int indexColumn = 0; indexColumn < layer2[indexRow].length; indexColumn++) {
+				if(layer2[indexRow][indexColumn].getColor().equals(colorPolarityOld)) {
+					layer2[indexRow][indexColumn].setColor(colorPolarityNew);
 				}
 			}
 		}
-		oldPolarity1 = polarity1;
 	}
-
-	/**
-	 * @author zgray17
-	 * This method updates the polarity of color 2. Blah blah blah.
-	 * @param polarity2
-	 */
-	public void updateNewPolarityColor2(Color polarity2)
-	{
-		for (int row = 0; row < layer2.length; row++) {
-			for (int col = 0; col < layer2[row].length; col++) {
-				if(layer2[row][col].getColor() == oldPolarity2)
-				{
-					layer2[row][col].setColor(polarity2);
-				}
-			}
-		}
-		oldPolarity2 = polarity2;
-	}
-
-	public void updateNewPolarityColor3(Color polarity3)
-	{
-		for (int row = 0; row < layer2.length; row++) {
-			for (int col = 0; col < layer2[row].length; col++) {
-				if(layer2[row][col].getColor() == oldPolarity3)
-				{
-					layer2[row][col].setColor(polarity3);
-				}
-			}
-		}
-		oldPolarity3 = polarity3;
-	}
-
-	public void updateNewPolarityColor4(Color polarity4)
-	{
-		for (int row = 0; row < layer2.length; row++) {
-			for (int col = 0; col < layer2[row].length; col++) {
-				if(layer2[row][col].getColor() == oldPolarity4)
-				{
-					layer2[row][col].setColor(polarity4);
-				}
-			}
-		}
-		oldPolarity4 = polarity4;
-	}
+	
+//	/**
+//	 * @author zgray17
+//	 * This method updates the polarity color 1. Blah blah blah.
+//	 * @param polarity1
+//	 */
+//	public void updateNewPolarityColor1(Color polarity1)
+//	{
+//		for (int row = 0; row < layer2.length; row++) {
+//			for (int col = 0; col < layer2[row].length; col++) {
+//				if(layer2[row][col].getColor() == oldPolarity1)
+//				{
+//					layer2[row][col].setColor(polarity1);
+//				}
+//			}
+//		}
+//		oldPolarity1 = polarity1;
+//	}
+//
+//	/**
+//	 * @author zgray17
+//	 * This method updates the polarity of color 2. Blah blah blah.
+//	 * @param polarity2
+//	 */
+//	public void updateNewPolarityColor2(Color polarity2)
+//	{
+//		for (int row = 0; row < layer2.length; row++) {
+//			for (int col = 0; col < layer2[row].length; col++) {
+//				if(layer2[row][col].getColor() == oldPolarity2)
+//				{
+//					layer2[row][col].setColor(polarity2);
+//				}
+//			}
+//		}
+//		oldPolarity2 = polarity2;
+//	}
+//
+//	public void updateNewPolarityColor3(Color polarity3)
+//	{
+//		for (int row = 0; row < layer2.length; row++) {
+//			for (int col = 0; col < layer2[row].length; col++) {
+//				if(layer2[row][col].getColor() == oldPolarity3)
+//				{
+//					layer2[row][col].setColor(polarity3);
+//				}
+//			}
+//		}
+//		oldPolarity3 = polarity3;
+//	}
+//
+//	public void updateNewPolarityColor4(Color polarity4)
+//	{
+//		for (int row = 0; row < layer2.length; row++) {
+//			for (int col = 0; col < layer2[row].length; col++) {
+//				if(layer2[row][col].getColor() == oldPolarity4)
+//				{
+//					layer2[row][col].setColor(polarity4);
+//				}
+//			}
+//		}
+//		oldPolarity4 = polarity4;
+//	}
 
 	/**
 	 * @author zgray17
 	 * This method updates the color of the agents. Blah blah blah.
 	 * @param newColor
 	 */
-	public void updateAgentColor(Color newColor)
+	public void updateAgentColor(Color colorAgent)
 	{
-		this.agentColor = newColor;
 		for (int i = 0; i < agents.length; i++) {
 			if(!agents[i].getAgentStatus()) {
-				agents[i].setColor(agentColor);
+				agents[i].setColor(colorAgent);
 			}
 		}
 	}
 
-	public void updateSpecialAgentColor(Color newColor)
+	public void updateSpecialAgentColor(Color colorAgentSpecial)
 	{
-		this.agentColor = newColor;
 		for (int i = 0; i < agents.length; i++) {
 			if(agents[i].getAgentStatus()) {
-				agents[i].setColor(agentColor);
+				agents[i].setColor(colorAgentSpecial);
 			}
 		}
 	}
@@ -769,8 +747,7 @@ public class Board extends JPanel implements MouseInputListener {
 		}
 	}
 
-	public void setWrap(boolean guiWrap)
-	{
+	public void setWrap(boolean guiWrap) {
 		this.wrap = guiWrap;
 	}
 
@@ -831,42 +808,42 @@ public class Board extends JPanel implements MouseInputListener {
 	//MODIFICATION #7:
 	//Morgan Might on July 5, 2018
 	//This method will reset the layer 4 cell to white
-	public void resetToWhite(SwarmAgent agent, int cellSize){
-		layer4[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].setColor(Color.WHITE);
-		layer4[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].setPersistenceValue(0);
+	public void resetToWhite(SwarmAgent agent, double cellSize){
+		layer4[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].setColor(Color.WHITE);
+		layer4[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].setPersistenceValue(0);
 	}
 
-	public void addPurple(SwarmAgent agent, int cellSize) {
-		int persistenceNum = layer4[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].getPersistenceValue();
+	public void addPurple(SwarmAgent agent, double cellSize) {
+		int persistenceNum = layer4[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getPersistenceValue();
 		System.out.println("Persistence Num: " + persistenceNum);
-		if(layer4[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].getColor() == Color.WHITE) {
-			layer4[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].setColor(new Color(195,125,195));
-			layer4[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].setPersistenceValue(1);
+		if(layer4[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getColor() == Color.WHITE) {
+			layer4[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].setColor(new Color(195,125,195));
+			layer4[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].setPersistenceValue(1);
 		}
 		else {
 			if(persistenceNum <= 3){ //(195, 125, 195) down to (180, 110, 180)
 				int index = 5 * persistenceNum;
-				layer4[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].setColor(new Color(195-index, 125-index, 195-index));
+				layer4[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].setColor(new Color(195-index, 125-index, 195-index));
 			}
 			else if(persistenceNum <= 15){ //down to (180, 50, 180)
 				int index = 5 * persistenceNum;
-				layer4[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].setColor(new Color(180, 125-index, 180));
+				layer4[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].setColor(new Color(180, 125-index, 180));
 			}
 			else if(persistenceNum <= 29) { //down to (110, 50, 110)
 				int index = (persistenceNum - 15)*5;
-				layer4[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].setColor(new Color(180- index, 50, 180- index));
+				layer4[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].setColor(new Color(180- index, 50, 180- index));
 			}
 			else if(persistenceNum <= 39) { //down to (110, 0, 110)
 				int index = (persistenceNum - 29)*5;
-				layer4[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].setColor(new Color(110, 50-index, 110));
+				layer4[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].setColor(new Color(110, 50-index, 110));
 			}
 			else if(persistenceNum <= 49) { //down to (60, 0, 60)
 				int index = (persistenceNum - 39)*5;
-				layer4[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].setColor(new Color(110-index, 0, 110-index));
+				layer4[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].setColor(new Color(110-index, 0, 110-index));
 			}
 
 			//Update Persistence Number
-			layer4[(int)agent.getCenterX()/cellSize][(int)agent.getCenterY()/cellSize].setPersistenceValue(persistenceNum + 1);
+			layer4[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].setPersistenceValue(persistenceNum + 1);
 		}
 
 	}

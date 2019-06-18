@@ -128,32 +128,16 @@ public class GUI {
 		return polarity1;
 	}
 
-	public void setPolarity1(Color polarity1) {
-		this.polarity1 = polarity1;
-	}
-
 	public Color getPolarity2() {
 		return polarity2;
-	}
-
-	public void setPolarity2(Color polarity2) {
-		this.polarity2 = polarity2;
 	}
 
 	public Color getPolarity3() {
 		return polarity3;
 	}
 
-	public void setPolarity3(Color polarity3) {
-		this.polarity3 = polarity3;
-	}
-
 	public Color getPolarity4() {
 		return polarity4;
-	}
-
-	public void setPolarity4(Color polarity4) {
-		this.polarity4 = polarity4;
 	}
 
 	/**
@@ -356,22 +340,23 @@ public class GUI {
 		lblPrimaryPolarityColor.setBounds(25, 25, 125, 14);
 		tabLayer2.add(lblPrimaryPolarityColor);
 		// update the first color of cells in board.cells2
-		JComboBox comboPrimary = new JComboBox();
-		comboPrimary.setModel(new DefaultComboBoxModel(new String[] { "RED", "BLUE", "GREEN", "CYAN", "YELLOW" }));
-		Color[] primaryColorList = new Color[] { Color.RED, Color.BLUE, Color.GREEN, Color.CYAN, Color.YELLOW };
+		JComboBox<String> comboPrimary = new JComboBox<String>();
+		comboPrimary.setModel(new DefaultComboBoxModel<String>(new String[] { "RED", "BLUE", "GREEN", "CYAN", "YELLOW" }));
+		Color[] primaryColorList = new Color[] {Color.RED, Color.BLUE, Color.GREEN, Color.CYAN, Color.YELLOW };
 		comboPrimary.setBounds(25, 50, 125, 22);
 		comboPrimary.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-
-				JComboBox src = (JComboBox) e.getSource();
-				if (polarity2 == primaryColorList[src.getSelectedIndex()]) {
+				Color colorSelected = primaryColorList[((JComboBox<String>)e.getSource()).getSelectedIndex()];
+				if (polarity2 == colorSelected) {
 					int temp = Arrays.asList(primaryColorList).indexOf(polarity1);
 					comboPrimary.setSelectedIndex(temp);
-				} else {
-					polarity1 = primaryColorList[src.getSelectedIndex()];
-					board.updateNewPolarityColor1(polarity1);
 				}
+				else {
+					board.updatePolarityColor(polarity1, colorSelected);
+					polarity1 = colorSelected;
+				}
+				
 				if (!timerStarted) {
 					board.repaint();
 				}
@@ -386,25 +371,26 @@ public class GUI {
 		lblSecondaryPolarityColor.setBounds(238, 25, 150, 14);
 		tabLayer2.add(lblSecondaryPolarityColor);
 		// update the second color of cells in board.cells2
-		JComboBox comboSecondary = new JComboBox();
-		comboSecondary.setModel(new DefaultComboBoxModel(new String[] { "BLUE", "RED", "GREEN", "CYAN" }));
+		JComboBox<String> comboSecondary = new JComboBox<String>();
+		comboSecondary.setModel(new DefaultComboBoxModel<String>(new String[] { "BLUE", "RED", "GREEN", "CYAN" }));
 		Color[] secondaryColorList = new Color[] { Color.BLUE, Color.RED, Color.GREEN, Color.CYAN };
 		comboSecondary.setBounds(238, 50, 125, 22);
 		comboSecondary.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				JComboBox src = (JComboBox) e.getSource();
-				if (polarity1 == secondaryColorList[src.getSelectedIndex()]) {
+				Color colorSelected = secondaryColorList[((JComboBox<String>)e.getSource()).getSelectedIndex()];
+				if (polarity1 == colorSelected) {
 					int temp = Arrays.asList(secondaryColorList).indexOf(polarity2);
 					comboSecondary.setSelectedIndex(temp);
-				} else {
-					polarity2 = secondaryColorList[src.getSelectedIndex()];
-					board.updateNewPolarityColor2(polarity2);
 				}
+				else {
+					board.updatePolarityColor(polarity2, colorSelected);
+					polarity2 = colorSelected;
+				}
+				
 				if (!timerStarted) {
 					board.repaint();
 				}
-
 			}
 		});
 		tabLayer2.add(comboSecondary);
@@ -415,29 +401,32 @@ public class GUI {
 		lblTertiaryPolarityColor.setBounds(25, 100, 125, 14);
 		tabLayer2.add(lblTertiaryPolarityColor);
 
-		JComboBox comboTertiary = new JComboBox();
-		comboTertiary.setModel(
-				new DefaultComboBoxModel(new String[] { "YELLOW", "BLUE", "RED", "GREEN", "CYAN", "BLACK", "WHITE" }));
+		JComboBox<String> comboTertiary = new JComboBox<String>();
+		comboTertiary.setModel(new DefaultComboBoxModel<String>(new String[] { "YELLOW", "BLUE", "RED", "GREEN", "CYAN", "BLACK", "WHITE" }));
 		Color[] tertiaryColorList = new Color[] { Color.YELLOW, Color.BLUE, Color.RED, Color.GREEN, Color.CYAN,
 				Color.BLACK, Color.WHITE };
 		comboTertiary.setBounds(25, 125, 125, 22);
 		comboTertiary.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				JComboBox src = (JComboBox) e.getSource();
-				if (polarity1 == tertiaryColorList[src.getSelectedIndex()]) {
+				Color colorSelected = tertiaryColorList[((JComboBox)e.getSource()).getSelectedIndex()];
+				if (polarity1.equals(colorSelected)) {
 					int temp = Arrays.asList(tertiaryColorList).indexOf(polarity3);
 					comboTertiary.setSelectedIndex(temp);
-				} else if (polarity2 == tertiaryColorList[src.getSelectedIndex()]) {
-					int temp = Arrays.asList(tertiaryColorList).indexOf(polarity3);
-					comboTertiary.setSelectedIndex(temp);
-				} else if (polarity4 == tertiaryColorList[src.getSelectedIndex()]) {
-					int temp = Arrays.asList(tertiaryColorList).indexOf(polarity3);
-					comboTertiary.setSelectedIndex(temp);
-				} else {
-					polarity3 = tertiaryColorList[src.getSelectedIndex()];
-					board.updateNewPolarityColor3(polarity3);
 				}
+				else if (polarity2.equals(colorSelected)) {
+					int temp = Arrays.asList(tertiaryColorList).indexOf(polarity3);
+					comboTertiary.setSelectedIndex(temp);
+				}
+				else if (polarity4.equals(colorSelected)) {
+					int temp = Arrays.asList(tertiaryColorList).indexOf(polarity3);
+					comboTertiary.setSelectedIndex(temp);
+				} 
+				else {
+					board.updatePolarityColor(polarity3, colorSelected);
+					polarity3 = colorSelected;
+				}
+				
 				if (!timerStarted) {
 					board.repaint();
 				}
@@ -450,29 +439,31 @@ public class GUI {
 		lblQuaternaryPolarityColor.setBounds(238, 100, 150, 22);
 		tabLayer2.add(lblQuaternaryPolarityColor);
 
-		JComboBox comboQuaternary = new JComboBox();
-		comboQuaternary.setModel(
-				new DefaultComboBoxModel(new String[] { "WHITE", "BLUE", "RED", "GREEN", "CYAN", "BLACK", "YELLOW" }));
-		Color[] quaternaryColorList = new Color[] { Color.WHITE, Color.BLUE, Color.RED, Color.GREEN, Color.CYAN,
-				Color.BLACK, Color.YELLOW };
+		JComboBox<String> comboQuaternary = new JComboBox<String>();
+		comboQuaternary.setModel(new DefaultComboBoxModel<String>(new String[] {"WHITE", "BLUE", "RED", "GREEN", "CYAN", "BLACK", "YELLOW" }));
+		Color[] quaternaryColorList = new Color[] { Color.WHITE, Color.BLUE, Color.RED, Color.GREEN, Color.CYAN, Color.BLACK, Color.YELLOW };
 		comboQuaternary.setBounds(238, 125, 125, 22);
 		comboQuaternary.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				JComboBox src = (JComboBox) e.getSource();
-				if (polarity1 == tertiaryColorList[src.getSelectedIndex()]) {
+				Color colorSelected = quaternaryColorList[((JComboBox<String>)e.getSource()).getSelectedIndex()];
+				if (polarity1.equals(colorSelected)) {
 					int temp = Arrays.asList(tertiaryColorList).indexOf(polarity4);
 					comboQuaternary.setSelectedIndex(temp);
-				} else if (polarity2 == tertiaryColorList[src.getSelectedIndex()]) {
-					int temp = Arrays.asList(tertiaryColorList).indexOf(polarity4);
-					comboQuaternary.setSelectedIndex(temp);
-				} else if (polarity3 == tertiaryColorList[src.getSelectedIndex()]) {
-					int temp = Arrays.asList(tertiaryColorList).indexOf(polarity4);
-					comboQuaternary.setSelectedIndex(temp);
-				} else {
-					polarity4 = quaternaryColorList[src.getSelectedIndex()];
-					board.updateNewPolarityColor4(polarity4);
 				}
+				else if (polarity2.equals(colorSelected)) {
+					int temp = Arrays.asList(tertiaryColorList).indexOf(polarity4);
+					comboQuaternary.setSelectedIndex(temp);
+				}
+				else if (polarity3.equals(colorSelected)) {
+					int temp = Arrays.asList(tertiaryColorList).indexOf(polarity4);
+					comboQuaternary.setSelectedIndex(temp);
+				}
+				else {
+					board.updatePolarityColor(polarity4, colorSelected);
+					polarity4 = colorSelected;
+				}
+				
 				if (!timerStarted) {
 					board.repaint();
 				}
@@ -488,11 +479,10 @@ public class GUI {
 		lblReginalStability.setBounds(25, 175, 125, 14);
 		tabLayer2.add(lblReginalStability);
 
-		JComboBox reginalStablility = new JComboBox();  //Does not work
-		reginalStablility.setModel(
-				new DefaultComboBoxModel(new String[] { "50/50", "60/40", "70/30", "80/20", "90/10", "100/0" }));
-		reginalStablility.setBounds(25, 200, 125, 22);
-		tabLayer2.add(reginalStablility);
+		JComboBox<String> regionalStability = new JComboBox<String>();  //Does not work
+		regionalStability.setModel(new DefaultComboBoxModel<String>(new String[] {"50/50", "60/40", "70/30", "80/20", "90/10", "100/0" }));
+		regionalStability.setBounds(25, 200, 125, 22);
+		tabLayer2.add(regionalStability);
 
 		// ************************************************************ Updates the
 		// polarity to what is entered on the radio buttons
@@ -501,8 +491,8 @@ public class GUI {
 		lblPolarity.setBounds(238, 175, 150, 14);
 		tabLayer2.add(lblPolarity);
 
-		JComboBox comboGoalStrategy = new JComboBox();
-		comboGoalStrategy.setModel(new DefaultComboBoxModel(new String[] { "CheckerBoard", "Lines", "All Black", "Diagonal Lines" }));
+		JComboBox<String> comboGoalStrategy = new JComboBox<String>();
+		comboGoalStrategy.setModel(new DefaultComboBoxModel<String>(new String[] { "CheckerBoard", "Lines", "All Black", "Diagonal Lines" }));
 		AllBlack allBlack = new AllBlack();
 		CheckerBoard checkerBoard = new CheckerBoard();
 		Lines lines = new Lines();
@@ -517,7 +507,7 @@ public class GUI {
 		comboGoalStrategy.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				JComboBox src = (JComboBox) e.getSource();
+				JComboBox<String> src = (JComboBox<String>) e.getSource();
 				goalStrategy = goalStrategyList[src.getSelectedIndex()];
 				board.updateGoalStrategy(goalStrategy);
 				whetherAgentsVisible = true;
@@ -589,14 +579,14 @@ public class GUI {
 		tabLayer2.add(lblDominantPolairy);
 
 		//Action added 7/18 by Morgan Might
-		JComboBox dominantPolarity = new JComboBox();  //Does not work
-		dominantPolarity.setModel(new DefaultComboBoxModel(new String[] { "YELLOW", "BLUE", "RED" }));
+		JComboBox<String> dominantPolarity = new JComboBox<String>();  //Does not work
+		dominantPolarity.setModel(new DefaultComboBoxModel<String>(new String[] { "YELLOW", "BLUE", "RED" }));
 		String[] dominantPolarityList = new String[] { "YELLOW", "BLUE", "RED" };
 		dominantPolarity.setBounds(25, 350, 125, 22);
 		dominantPolarity.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				JComboBox src = (JComboBox) e.getSource();
+				JComboBox<String> src = (JComboBox<String>) e.getSource();
 				newDominantPolarity = dominantPolarityList[src.getSelectedIndex()];
 				updateDominantPolarity(newDominantPolarity);
 				
@@ -741,17 +731,15 @@ public class GUI {
 		lblAgentsColor.setBounds(440, 25, 125, 14);
 		tabLayer3.add(lblAgentsColor);
 		// update the color of agents in board.agents[]
-		JComboBox comboBox_AgentColor = new JComboBox();
-		comboBox_AgentColor.setModel(new DefaultComboBoxModel(
-				new String[] { "GREEN", "YELLOW", "ORANGE", "MAGENTA", "BLUE", "RED", "WHITE", "BLACK", "CYAN" }));
-		Color[] agentColorList = new Color[] { Color.GREEN, Color.YELLOW, Color.ORANGE, Color.MAGENTA, Color.BLUE,
-				Color.RED, Color.WHITE, Color.BLACK, Color.CYAN };
+		JComboBox<String> comboBox_AgentColor = new JComboBox<String>();
+		comboBox_AgentColor.setModel(new DefaultComboBoxModel<String>(new String[] { "GREEN", "YELLOW", "ORANGE", "MAGENTA", "BLUE", "RED", "WHITE", "BLACK", "CYAN" }));
+		Color[] agentColorList = new Color[] { Color.GREEN, Color.YELLOW, Color.ORANGE, Color.MAGENTA, Color.BLUE, Color.RED, Color.WHITE, Color.BLACK, Color.CYAN };
 		comboBox_AgentColor.setBounds(568, 23, 100, 20);
 		comboBox_AgentColor.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 
-				JComboBox src = (JComboBox) e.getSource();
+				JComboBox<String> src = (JComboBox<String>) e.getSource();
 				agentColor = agentColorList[src.getSelectedIndex()];
 				board.updateAgentColor(agentColor);
 				whetherAgentsVisible = true;
@@ -774,15 +762,14 @@ public class GUI {
 		tabLayer3.add(lblSpecialAgentsColor);
 		// update the color of the special agent in board.agents[]
 		JComboBox comboBox_SpecialAgentColor = new JComboBox();
-		comboBox_SpecialAgentColor.setModel(new DefaultComboBoxModel(
-				new String[] {"CYAN", "GREEN", "YELLOW", "ORANGE", "MAGENTA", "BLUE", "RED", "WHITE", "BLACK"}));
+		comboBox_SpecialAgentColor.setModel(new DefaultComboBoxModel(new String[] {"CYAN", "GREEN", "YELLOW", "ORANGE", "MAGENTA", "BLUE", "RED", "WHITE", "BLACK"}));
 		Color[] specialAgentColorList = new Color[] { Color.CYAN, Color.GREEN, Color.YELLOW, Color.ORANGE, Color.MAGENTA, Color.BLUE,
 				Color.RED, Color.WHITE, Color.BLACK};
 		comboBox_SpecialAgentColor.setBounds(568, 56, 100, 20);
 		comboBox_SpecialAgentColor.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				JComboBox src = (JComboBox) e.getSource();
+				JComboBox<String> src = (JComboBox<String>) e.getSource();
 				specialAgentColor = specialAgentColorList[src.getSelectedIndex()];
 				board.updateSpecialAgentColor(specialAgentColor);
 				whetherAgentsVisible = true;
@@ -839,9 +826,8 @@ public class GUI {
 		lblPharamoneTrailColor.setBounds(440, 91, 125, 14);
 		tabLayer3.add(lblPharamoneTrailColor);
 
-		JComboBox comboBox_PheromoneColor = new JComboBox();
-		comboBox_PheromoneColor.setModel(new DefaultComboBoxModel(
-				new String[] { "WHITE", "GREEN", "YELLOW", "ORANGE", "MAGENTA", "BLUE", "RED", "BLACK" }));
+		JComboBox<String> comboBox_PheromoneColor = new JComboBox<String>();
+		comboBox_PheromoneColor.setModel(new DefaultComboBoxModel<String>(new String[] { "WHITE", "GREEN", "YELLOW", "ORANGE", "MAGENTA", "BLUE", "RED", "BLACK" }));
 		comboBox_PheromoneColor.setBounds(568, 89, 100, 20);
 		tabLayer3.add(comboBox_PheromoneColor);
 
@@ -1181,7 +1167,6 @@ public class GUI {
 	//MODIFICATION #3
 	//Added 5/30 by Morgan Might
 	public int getTotalNumOfCells() {
-		// TODO Auto-generated method stub
 		return board.getTotalNumCells();
 	}
 	
