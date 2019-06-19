@@ -16,79 +16,52 @@ public class CheckerBoard extends AbstractStrategy {
 	//by Morgan Might
 	//July 5, 2018
 	boolean adjustCellColor = false;
+
+	@Override
+	public Color determinePolarity(Board board, int row, int col) {
+		GUI gui = board.getGui();
+		CellDisplay[][] layer1 = board.getLayer(1);
+//		if(layer1[row][col].getColor() == Color.BLACK) { //if the layer 1 cell is black
+//			if(col%2 == row%2) { //if its in a spot that should be black
+//				//then you are the same polarity as cell[0][0]	
+//				return gui.getPolarity1();
+//			}
+//			else { //if its in a spot that SHOULDN'T be black
+//				return gui.getPolarity2();
+//				//then you are in the opposite polarity than cells[0][0]
+//			}
+//		}
+//		else { //if the layer 1 cell is white
+//			if(col%2 == row%2) { //if its in a spot that SHOULDN'T be white 
+//				return gui.getPolarity2();
+//				// then its in the opposite polarity than cells[0]
+//			}
+//			else { //if its in a spot that should be white
+//				return gui.getPolarity1();
+//				//then its in the same polarity as cells[0][0]
+//			}
+//		}
 	
-	@Override
-	public CellDisplayPolarity Layer2(SwarmAgent agent, CellDisplayBase[][] layer1, double cellSize, int row, int col, Cell[] neighbor) {
-		//This method does nothing
-		return null;
+		if(layer1[row][col].getColor() == Color.WHITE) {
+			if(col%2 == row%2) {
+				return gui.getPolarity1();
+			}
+			
+			return gui.getPolarity2();
+		}
+		
+		if(col%2 == row%2) {
+			return gui.getPolarity2();
+		}
+		
+		return gui.getPolarity1();
 	}
 
 	@Override
-	public CellDisplayPolarity Layer2(CellDisplayBase[][] layer1,  double cellSize, int row, int col, Cell[] neighbor) {
-		CellDisplayPolarity layer2 = new CellDisplayPolarity(0, 0, 0, Color.RED, layer1[row][col].getBoard());
-		{
-			if(layer1[row][col].getColor() == Color.BLACK)
-				//if the layer 1 cell is black
-			{
-				if(col%2 == row%2)
-					//if its in a spot that should be black
-				{
-					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity1(), layer1[row][col].getBoard());
-					//then you are the same polarity as cell[0][0]
-				}
-				else
-					//if its in a spot that SHOULDN'T be black
-				{
-					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity2(), layer1[row][col].getBoard());
-					//then you are in the opposite polarity than cells[0][0]
-				}
-			}
-			else
-				//if the layer 1 cell is white
-			{
-				if(col%2 == row%2)
-					//if its in a spot that SHOULDN'T be 
-				{
-					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity2(), layer1[row][col].getBoard());
-					// then its in the opposite polarity than cells[0]
-				}
-				else
-					//if its in a spot that should be white
-				{
-					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity1(), layer1[row][col].getBoard());
-					//then its in the same polarity as cells[0][0]
-				}
-			}
-		}
-		if(layer1[row][col].getColor() == Color.WHITE)
-		{
-			if(col%2 == row%2)
-			{
-				layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity1(), layer1[row][col].getBoard());
-			}
-			else
-			{
-				layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity2(), layer1[row][col].getBoard());
-			}
-		}
-		else
-		{
-			if(col%2 == row%2)
-			{
-				layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity2(), layer1[row][col].getBoard());
-			}
-			else
-			{
-				layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity1(), layer1[row][col].getBoard());
-			}
-		}
-
-		return layer2;
-	}
-
 	public void logic(SwarmAgent agent, CellDisplayBase[][] layer1, CellDisplayPolarity[][] layer2, Cell[] neighbors, double cellSize) {
 		int cornerCount = 0;
 		int edgeCount = 0;
+		
 		for(int index = 0; index<neighbors.length; index++)
 		{
 			if(neighbors[index] != null)

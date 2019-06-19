@@ -20,8 +20,6 @@ import gui.GUI;
  */
 @SuppressWarnings("serial")
 public class CellDisplayBase extends CellDisplay {
-	private Color colorPolarity;
-	
 	public CellDisplayBase(double x, double y, double size, Color colorFill, Board board) {
 		//a lot of these parameters actually belong to Rectangle2D.Double, so we call in the super class GenericCell
 		super(x, y, size, colorFill, board);
@@ -40,11 +38,6 @@ public class CellDisplayBase extends CellDisplay {
 			setColor(Color.BLACK);
 		}
 	}
-
-	@Override
-	public Color getPolarityColor() {
-		return colorPolarity;
-	}
 	
 	//MODIFICATION #3
 	//change color of Cell
@@ -57,11 +50,6 @@ public class CellDisplayBase extends CellDisplay {
 		this.colorFill = colorFill;
 		//Set Polarity and add counter for new color
 		board.incrementColorFrequency(colorFill);
-	}
-	
-	@Override
-	public void setPolarityColor(Color colorPolarity) {
-		this.colorPolarity = colorPolarity;
 	}
 }
 

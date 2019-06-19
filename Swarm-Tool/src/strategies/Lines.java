@@ -17,51 +17,38 @@ public class Lines extends AbstractStrategy{
 	 */
 	//MODIFICATION #7
 	boolean adjustCellColor = false;
-	
-	//This method does nothing
+
 	@Override
-	public CellDisplayPolarity Layer2(SwarmAgent agent, CellDisplayBase[][] layer1, double cellSize, int row, int col, Cell[] neighbor) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-	
-	@Override
-	public CellDisplayPolarity Layer2(CellDisplayBase[][] layer1, double cellSize, int row, int col, Cell[] neighbors) {
+	public Color determinePolarity(Board board, int row, int col) {
 		//Layer 2 in this sense shows 4 colors. one for each variation of straight lines. In the final, solved state,
 		//the 4 colors indicate the 4 faces of the pyramid.
-		CellDisplayPolarity layer2 = new CellDisplayPolarity(0, 0, 0, Color.RED, layer1[row][col].getBoard());
-		int[] listOfPolarities = new int[4];
-		int max = listOfPolarities[0], chosenPolarity = 0, cornerCount = 0, edgeCount = 0, vertical = 0, horizontal = 0;
-		for(int index = 0; index<neighbors.length; index++)
-		{
+		GUI gui = board.getGui();
+		CellDisplay[][] layer1 = board.getLayer(1);
+
+		Cell[] neighbors = Board.getNeighbors((CellDisplayBase[][])layer1, row, col);
+		int chosenPolarity = 0, cornerCount = 0, edgeCount = 0, vertical = 0, horizontal = 0;
+		for(int index = 0; index < neighbors.length; index++){
 			if(neighbors[index] != null)
 			{
-				if(index%2==0)
-				{
+				if(index%2==0) {
 					if (neighbors[index].getColor() == Color.BLACK){
 						cornerCount++;
 					}
 				}
-				else
-				{
+				else {
 					if (neighbors[index].getColor() == Color.BLACK){
 						edgeCount++;
-						if(index==1||index==5)
-						{
+						if(index==1||index==5) {
 							vertical++;
 						}
-						if(index==3||index==7)
-						{
+						if(index==3||index==7) {
 							horizontal++;
 						}
 					}
 				}
 			}
-			else
-			{
-
-			}
 		}
+
 		if(layer1[row][col].getColor()==Color.BLACK)
 		{
 			edgeCount+=2;
@@ -90,102 +77,61 @@ public class Lines extends AbstractStrategy{
 		}
 		//This section is necessary to allow for the alternating colors of layer 1 to be classified as the same polarity. 
 		//For example, a black row then a white row then a black row are the same polarity, but appear opposite on a case-by-case basis
-		if(layer1[row][col].getColor()==Color.BLACK)
-		{
-			if(chosenPolarity == 0)
-			{
-				if(row%2==0)
-				{
-					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity1(), layer1[row][col].getBoard());
+		if(layer1[row][col].getColor().equals(Color.BLACK))	{
+			if(chosenPolarity == 0) {
+				if(row%2==0) {
+					return gui.getPolarity1();
 				}
-				else
-				{
-					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity2(), layer1[row][col].getBoard());
-				}
+
+				return gui.getPolarity2();
 			}
-			else if(chosenPolarity == 1)
-			{
-				if(row%2==0)
-				{
-					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity1(), layer1[row][col].getBoard());
+			else if(chosenPolarity == 1) {
+				if(row%2==0) {
+					return gui.getPolarity1();
 				}
-				else
-				{
-					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity2(), layer1[row][col].getBoard());
-				}
+
+				return gui.getPolarity2();
 			}
-			else if(chosenPolarity == 2)
-			{
-				if(col%2==0)
-				{
-					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity4(), layer1[row][col].getBoard());
+			else if(chosenPolarity == 2) {
+				if(col%2==0) {
+					return gui.getPolarity4();
 				}
-				else
-				{
-					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity3(), layer1[row][col].getBoard());
-				}
+
+				return gui.getPolarity3();
 			}
-			else
-			{
-				if(col%2==0)
-				{
-					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity4(), layer1[row][col].getBoard());
-				}
-				else
-				{
-					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity3(), layer1[row][col].getBoard());
-				}
+
+			if(col%2==0) {
+				return gui.getPolarity4();
 			}
+
+			return gui.getPolarity3();
 		}
-		else
-		{
-			if(chosenPolarity == 0)
-			{
-				if(row%2==0)
-				{
-					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity2(), layer1[row][col].getBoard());
-				}
-				else
-				{
-					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity1(), layer1[row][col].getBoard());
-				}
+		if(chosenPolarity == 0)	{
+			if(row%2==0) {
+				return gui.getPolarity2();
 			}
-			else if(chosenPolarity == 1)
-			{
-				if(row%2==0)
-				{
-					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity2(), layer1[row][col].getBoard());
-				}
-				else
-				{
-					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity1(), layer1[row][col].getBoard());
-				}
+
+			return gui.getPolarity1();
+		}
+		else if(chosenPolarity == 1) {
+			if(row%2==0) {
+				return gui.getPolarity2();
 			}
-			else if(chosenPolarity == 2)
-			{
-				if(col%2==0)
-				{
-					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity3(), layer1[row][col].getBoard());
-				}
-				else
-				{
-					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity4(), layer1[row][col].getBoard());
-				}
+
+			return gui.getPolarity1();
+		}
+		else if(chosenPolarity == 2) {
+			if(col%2==0) {
+				return gui.getPolarity3();
 			}
-			else
-			{
-				if(col%2==0)
-				{
-					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity3(), layer1[row][col].getBoard());
-				}
-				else
-				{
-					layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity4(), layer1[row][col].getBoard());
-				}
-			}
+
+			return gui.getPolarity4();
+		}
+		if(col%2==0) {
+			return gui.getPolarity3();
 		}
 
-		return layer2;
+		return gui.getPolarity4();
 	}
 
 	@Override
@@ -220,69 +166,69 @@ public class Lines extends AbstractStrategy{
 		//Random rand = new Random();
 		//int probabilityNum = rand.nextInt(300);
 		//if(probabilityNum >0) {
-			if(cornerCount>edgeCount)
+		if(cornerCount>edgeCount)
+		{
+			if(layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getColor() == Color.BLACK)
 			{
-				if(layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getColor() == Color.BLACK)
-				{
-					cornerCount = 0;
-					edgeCount = 0;
-					adjustCellColor = false; //Leave the cell Black
-				}
-				else
-				{
-					layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].flipColor();
-					layer2[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)] = Layer2(agent, layer1, cellSize, (int)(agent.getCenterX() / cellSize), (int)(agent.getCenterY() / cellSize), neighbors);
-					cornerCount = 0;
-					edgeCount = 0;
-					adjustCellColor = true; //Flip the Cell from White to Black
-				}
-			}
-			else if(edgeCount>cornerCount)
-			{
-				if(layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getColor() == Color.BLACK)
-				{
-					layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].flipColor();
-					layer2[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)] = Layer2(agent, layer1, cellSize, (int)(agent.getCenterX() / cellSize), (int)(agent.getCenterY() / cellSize), neighbors);
-
-					cornerCount = 0;
-					edgeCount = 0;
-					adjustCellColor = true; //Flip the Cell from Black to White
-				}
-				else
-				{
-					cornerCount = 0;
-					edgeCount = 0;
-					adjustCellColor = false; //Leave the Cell White
-				}
+				cornerCount = 0;
+				edgeCount = 0;
+				adjustCellColor = false; //Leave the cell Black
 			}
 			else
 			{
-				double flipCoin = Math.random();
-				if (flipCoin >.5)
-				{
-					layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].flipColor();
-					layer2[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)] = Layer2(agent, layer1, cellSize, (int)(agent.getCenterX() / cellSize), (int)(agent.getCenterY() / cellSize), neighbors);
-
-					cornerCount = 0;
-					edgeCount = 0;
-					adjustCellColor = true; //Flip the Cell
-				}
+				layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].flipColor();
+				layer2[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)] = createPolarityCell(layer2[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getBoard(), agent);
+				cornerCount = 0;
+				edgeCount = 0;
+				adjustCellColor = true; //Flip the Cell from White to Black
 			}
+		}
+		else if(edgeCount>cornerCount)
+		{
+			if(layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getColor() == Color.BLACK)
+			{
+				layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].flipColor();
+				layer2[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)] = createPolarityCell(layer2[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getBoard(), agent);
+
+				cornerCount = 0;
+				edgeCount = 0;
+				adjustCellColor = true; //Flip the Cell from Black to White
+			}
+			else
+			{
+				cornerCount = 0;
+				edgeCount = 0;
+				adjustCellColor = false; //Leave the Cell White
+			}
+		}
+		else
+		{
+			double flipCoin = Math.random();
+			if (flipCoin >.5)
+			{
+				layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].flipColor();
+				layer2[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)] = createPolarityCell(layer2[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getBoard(), agent);
+
+				cornerCount = 0;
+				edgeCount = 0;
+				adjustCellColor = true; //Flip the Cell
+			}
+		}
 		//}
 		//else {
 		//	layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].flipColor();
 		//	layer2[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)] = Layer2(layer1, cellSize, (int)agent.getCenterX()/cellSize, (int)agent.getCenterY()/cellSize, neighbors);
 		//}
-		
-			//MODIFICATION #7:
-			//If the cell was flipped reset the layer 4 cell to white
-			if(adjustCellColor) {
-				layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getBoard().resetToWhite(agent, cellSize);
-			}
-			//If the cell does not need changed, darken the purple
-			else {
-				layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getBoard().addPurple(agent, cellSize); 
-			}
+
+		//MODIFICATION #7:
+		//If the cell was flipped reset the layer 4 cell to white
+		if(adjustCellColor) {
+			layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getBoard().resetToWhite(agent, cellSize);
+		}
+		//If the cell does not need changed, darken the purple
+		else {
+			layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getBoard().addPurple(agent, cellSize); 
+		}
 
 	}
 

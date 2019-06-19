@@ -38,16 +38,6 @@ public class CellDisplayPolarity extends CellDisplay {
 
 	}
 	
-	@Override
-	public Color getPolarityColor() {
-		return getColor();
-	}
-
-	@Override
-	public void setPolarityColor(Color colorPolarity) {
-		setColor(colorPolarity);
-	}
-	
 	//MODIFICATION #3
 	//change color of Cell
 	@Override

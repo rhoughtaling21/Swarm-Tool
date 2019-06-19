@@ -31,17 +31,7 @@ public class CellNull implements Cell {
 	}
 	
 	@Override
-	public Color getPolarityColor() {
-		return null;
-	}
-	
-	@Override
 	public void setColor(Color colorFill) {
-		
-	}
-	
-	@Override
-	public void setPolarityColor(Color colorPolarity) {
 		
 	}
 

@@ -20,9 +20,12 @@ public class DiagonalLines extends AbstractStrategy {
 	 */
 
 	@Override
-	public CellDisplayPolarity Layer2(CellDisplayBase[][] layer1, double cellSize, int row, int col, Cell[] neighbor) {
-		// TODO Auto-generated method stub
+	public Color determinePolarity(Board board, int row, int col) {
 		//Layer 2 in this sense shows 3 colors. one for each variation of diagonal lines. 
+		
+		GUI gui = board.getGui();
+		CellDisplay[][] layer1 = board.getLayer(1);
+		CellDisplay[][] layer2 = board.getLayer(2);
 		
 		//MODIFICATION FOR SET UP BUTTON 
 		//Will allow DiagonalLines to be the original goal
@@ -30,156 +33,54 @@ public class DiagonalLines extends AbstractStrategy {
 		//By Morgan Might
 		//For displaying purposes:
 		//These if statements keep track of the counters of the polarities
-		if(layer1[row][col].getBoard().getGui().diagonalLineStart && layer1[row][col].getBoard().stepCount < 1) {
-			layer1[row][col].getBoard().getGui().setPolOneCount(layer1[row][col].getBoard().getGui().getPolOneCount());
-			layer1[row][col].getBoard().getGui().setPolTwoCount(layer1[row][col].getBoard().getGui().getPolTwoCount());
-			layer1[row][col].getBoard().getGui().setPolThreeCount(layer1[row][col].getBoard().getGui().getPolTwoCount());
+		if(gui.diagonalLineStart && board.stepCount < 1) {
+			gui.setPolOneCount(gui.getPolOneCount());
+			gui.setPolTwoCount(gui.getPolTwoCount());
+			gui.setPolThreeCount(gui.getPolTwoCount()); //TODO PolTwoCount??
 		}
 		else {
-			if(layer1[row][col].getPolarityColor() == layer1[row][col].getBoard().getGui().getPolarity1()) {
-				layer1[row][col].getBoard().getGui().setPolOneCount(layer1[row][col].getBoard().getGui().getPolOneCount() - 1);
+			if(layer2[row][col].getColor() == gui.getPolarity1()) {
+				gui.setPolOneCount(gui.getPolOneCount() - 1);
 			}
-			else if(layer1[row][col].getPolarityColor() == layer1[row][col].getBoard().getGui().getPolarity2()) {
-				layer1[row][col].getBoard().getGui().setPolTwoCount(layer1[row][col].getBoard().getGui().getPolTwoCount() - 1);
+			else if(layer2[row][col].getColor() == gui.getPolarity2()) {
+				gui.setPolTwoCount(gui.getPolTwoCount() - 1);
 			}
-			else if(layer1[row][col].getPolarityColor() == layer1[row][col].getBoard().getGui().getPolarity3()) {
-				layer1[row][col].getBoard().getGui().setPolThreeCount(layer1[row][col].getBoard().getGui().getPolThreeCount() - 1);
+			else if(layer2[row][col].getColor() == gui.getPolarity3()) {
+				gui.setPolThreeCount(gui.getPolThreeCount() - 1);
 			}
 		}
 		
-		
-		
 		int polarityNum = 0;
-				CellDisplayPolarity layer2 = new CellDisplayPolarity(0, 0, 0, Color.RED, layer1[row][col].getBoard());	
-				//If the Cell's color is Black. Based on its location determine polarity of the Cell
-				if(layer1[row][col].getColor() == Color.BLACK) {
-					//Polarity
-					if((row + col)%3 ==0) {
-						layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity1(), layer1[row][col].getBoard());
-						polarityNum = 1;
-					}
-					else if((row + col)%3 ==1) {
-						layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity3(), layer1[row][col].getBoard());
-						polarityNum = 3;
-					}
-					else if((row + col)%3 ==2) {
-						layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity2(), layer1[row][col].getBoard());
-						polarityNum = 2;
-					}
-					
-				}
-				//If the Cell's color is Gray. Based on its location determine polarity of the Cell
-				else if(layer1[row][col].getColor() == Color.GRAY) {
-					//Polarity
-					if((row + col)%3 ==0) {
-						layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity2(), layer1[row][col].getBoard());
-						polarityNum = 2;
-					}
-					else if((row + col)%3 ==1) {
-						layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity1(), layer1[row][col].getBoard());
-						polarityNum = 1;
-					}
-					else if((row + col)%3 ==2) {
-						layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity3(), layer1[row][col].getBoard());
-						polarityNum = 3;
-					}
-				}
-				//If the Cell's color is White. Based on its location determine polarity of the Cell
-				else if(layer1[row][col].getColor() == Color.WHITE) {
-					//Polarity
-					if((row + col)%3 ==0) {
-						layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity3(), layer1[row][col].getBoard());
-						polarityNum = 3;
-					}
-					else if((row + col)%3 ==1) {
-						layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity2(), layer1[row][col].getBoard());
-						polarityNum = 2;
-					}
-					else if((row + col)%3 ==2) {
-						layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity1(), layer1[row][col].getBoard());
-						polarityNum = 1;
-					}
-				}
-				//Update the polarity count and set the Cell's polarity color
-				if(polarityNum == 1) {
-					layer1[row][col].getBoard().getGui().setPolOneCount(layer1[row][col].getBoard().getGui().getPolOneCount() + 1);
-					layer1[row][col].setPolarityColor(layer1[row][col].getBoard().getGui().getPolarity1());
-				}
-				else if(polarityNum == 2) {
-					layer1[row][col].getBoard().getGui().setPolTwoCount(layer1[row][col].getBoard().getGui().getPolTwoCount() + 1);
-					layer1[row][col].setPolarityColor(layer1[row][col].getBoard().getGui().getPolarity2());
-				}
-				if(polarityNum == 3) {
-					layer1[row][col].getBoard().getGui().setPolThreeCount(layer1[row][col].getBoard().getGui().getPolThreeCount() + 1);
-					layer1[row][col].setPolarityColor(layer1[row][col].getBoard().getGui().getPolarity3());
-				}
-				//Display the comparison's in the labels
-				layer1[row][col].getBoard().getGui().setLblComparisons();
-				return layer2;
-		
-	}
-
-
-	@Override
-	public CellDisplayPolarity Layer2(SwarmAgent agent, CellDisplayBase[][] layer1, double cellSize, int row, int col, Cell[] neighbors) {
-		//Layer 2 in this sense shows 3 colors. one for each variation of diagonal lines. 
-		CellDisplayPolarity layer2 = new CellDisplayPolarity(0, 0, 0, Color.RED, layer1[row][col].getBoard());
-		int polarityNum = 0;
-		
-		
-		//MODIFICATION FOR SET UP BUTTON 
-		//Will allow DiagonalLines to be the original goal
-		//Updated: 7/17/18
-		//By Morgan Might
-		//For displaying purposes:
-		//These if statements keep track of the counters of the polarities
-		if(layer1[row][col].getBoard().getGui().diagonalLineStart && layer1[row][col].getBoard().stepCount < 1) {
-			layer1[row][col].getBoard().getGui().setPolOneCount(layer1[row][col].getBoard().getGui().getPolOneCount());
-			layer1[row][col].getBoard().getGui().setPolTwoCount(layer1[row][col].getBoard().getGui().getPolTwoCount());
-			layer1[row][col].getBoard().getGui().setPolThreeCount(layer1[row][col].getBoard().getGui().getPolTwoCount());
-		}
-		else {
-			if(layer1[row][col].getPolarityColor() == layer1[row][col].getBoard().getGui().getPolarity1()) {
-				layer1[row][col].getBoard().getGui().setPolOneCount(layer1[row][col].getBoard().getGui().getPolOneCount() - 1);
-			}
-			else if(layer1[row][col].getPolarityColor() == layer1[row][col].getBoard().getGui().getPolarity2()) {
-				layer1[row][col].getBoard().getGui().setPolTwoCount(layer1[row][col].getBoard().getGui().getPolTwoCount() - 1);
-			}
-			else if(layer1[row][col].getPolarityColor() == layer1[row][col].getBoard().getGui().getPolarity3()) {
-				layer1[row][col].getBoard().getGui().setPolThreeCount(layer1[row][col].getBoard().getGui().getPolThreeCount() - 1);
-			}
-		}		
-		
+		Color colorPolarity = null;
 		//If the Cell's color is Black. Based on its location determine polarity of the Cell
 		if(layer1[row][col].getColor() == Color.BLACK) {
 			//Polarity
 			if((row + col)%3 ==0) {
-				layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity1(), layer1[row][col].getBoard());
 				polarityNum = 1;
+				colorPolarity = gui.getPolarity1();
 			}
 			else if((row + col)%3 ==1) {
-				layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity3(), layer1[row][col].getBoard());
+				colorPolarity = gui.getPolarity3();
 				polarityNum = 3;
 			}
-			else if((row + col)%3 ==2) {
-				layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity2(), layer1[row][col].getBoard());
+			else {
+				colorPolarity = gui.getPolarity2();
 				polarityNum = 2;
-			}
-			
+			}	
 		}
 		//If the Cell's color is Gray. Based on its location determine polarity of the Cell
 		else if(layer1[row][col].getColor() == Color.GRAY) {
 			//Polarity
 			if((row + col)%3 ==0) {
-				layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity2(), layer1[row][col].getBoard());
+				colorPolarity = gui.getPolarity2();
 				polarityNum = 2;
 			}
 			else if((row + col)%3 ==1) {
-				layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity1(), layer1[row][col].getBoard());
+				colorPolarity = gui.getPolarity1();
 				polarityNum = 1;
 			}
-			else if((row + col)%3 ==2) {
-				layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity3(), layer1[row][col].getBoard());
+			else {
+				colorPolarity = gui.getPolarity3();
 				polarityNum = 3;
 			}
 		}
@@ -187,38 +88,141 @@ public class DiagonalLines extends AbstractStrategy {
 		else if(layer1[row][col].getColor() == Color.WHITE) {
 			//Polarity
 			if((row + col)%3 ==0) {
-				layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity3(), layer1[row][col].getBoard());
 				polarityNum = 3;
+				colorPolarity = gui.getPolarity3();
 			}
 			else if((row + col)%3 ==1) {
-				layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity2(), layer1[row][col].getBoard());
+				colorPolarity = gui.getPolarity2();
 				polarityNum = 2;
 			}
-			else if((row + col)%3 ==2) {
-				layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity1(), layer1[row][col].getBoard());
+			else {
 				polarityNum = 1;
+				colorPolarity = gui.getPolarity1();
 			}
 		}
-		//Update the polarity count, set the Cell's polarity color, and add the most recent Cell's polarity
-		//to the agent's array of recent polarities it has seen
+		//Update the polarity count and set the Cell's polarity color
 		if(polarityNum == 1) {
-			agent.setLayer2Array(layer1[row][col].getBoard().getGui().getPolarity1());
-			layer1[row][col].getBoard().getGui().setPolOneCount(layer1[row][col].getBoard().getGui().getPolOneCount() + 1);
-			layer1[row][col].setPolarityColor(layer1[row][col].getBoard().getGui().getPolarity1());
+			gui.setPolOneCount(gui.getPolOneCount() + 1);
+			//layer1[row][col].setPolarityColor(layer1[row][col].getBoard().getGui().getPolarity1());
 		}
 		else if(polarityNum == 2) {
-			agent.setLayer2Array(Color.BLUE);
-			layer1[row][col].getBoard().getGui().setPolTwoCount(layer1[row][col].getBoard().getGui().getPolTwoCount() + 1);
-			layer1[row][col].setPolarityColor(layer1[row][col].getBoard().getGui().getPolarity2());
+			gui.setPolTwoCount(gui.getPolTwoCount() + 1);
+			//layer1[row][col].setPolarityColor(layer1[row][col].getBoard().getGui().getPolarity2());
 		}
-		if(polarityNum == 3) {
-			agent.setLayer2Array(Color.YELLOW);
-			layer1[row][col].getBoard().getGui().setPolThreeCount(layer1[row][col].getBoard().getGui().getPolThreeCount() + 1);
-			layer1[row][col].setPolarityColor(layer1[row][col].getBoard().getGui().getPolarity3());
+		else if(polarityNum == 3) {
+			gui.setPolThreeCount(gui.getPolThreeCount() + 1);
+			//layer1[row][col].setPolarityColor(layer1[row][col].getBoard().getGui().getPolarity3());
 		}
 		//Display the comparison's in the labels
-		layer1[row][col].getBoard().getGui().setLblComparisons();
-		return layer2;
+		gui.setLblComparisons();
+		return colorPolarity;		
+	}
+
+
+	@Override
+	public CellDisplayPolarity createPolarityCell(Board board, SwarmAgent agent) {
+//		//Layer 2 in this sense shows 3 colors. one for each variation of diagonal lines. 
+//		CellDisplayPolarity layer2 = new CellDisplayPolarity(0, 0, 0, Color.RED, layer1[row][col].getBoard());
+//		int polarityNum = 0;
+//		
+//		
+//		//MODIFICATION FOR SET UP BUTTON 
+//		//Will allow DiagonalLines to be the original goal
+//		//Updated: 7/17/18
+//		//By Morgan Might
+//		//For displaying purposes:
+//		//These if statements keep track of the counters of the polarities
+//		if(layer1[row][col].getBoard().getGui().diagonalLineStart && layer1[row][col].getBoard().stepCount < 1) {
+//			layer1[row][col].getBoard().getGui().setPolOneCount(layer1[row][col].getBoard().getGui().getPolOneCount());
+//			layer1[row][col].getBoard().getGui().setPolTwoCount(layer1[row][col].getBoard().getGui().getPolTwoCount());
+//			layer1[row][col].getBoard().getGui().setPolThreeCount(layer1[row][col].getBoard().getGui().getPolTwoCount());
+//		}
+//		else {
+//			if(layer1[row][col].getPolarityColor() == layer1[row][col].getBoard().getGui().getPolarity1()) {
+//				layer1[row][col].getBoard().getGui().setPolOneCount(layer1[row][col].getBoard().getGui().getPolOneCount() - 1);
+//			}
+//			else if(layer1[row][col].getPolarityColor() == layer1[row][col].getBoard().getGui().getPolarity2()) {
+//				layer1[row][col].getBoard().getGui().setPolTwoCount(layer1[row][col].getBoard().getGui().getPolTwoCount() - 1);
+//			}
+//			else if(layer1[row][col].getPolarityColor() == layer1[row][col].getBoard().getGui().getPolarity3()) {
+//				layer1[row][col].getBoard().getGui().setPolThreeCount(layer1[row][col].getBoard().getGui().getPolThreeCount() - 1);
+//			}
+//		}		
+//		
+//		//If the Cell's color is Black. Based on its location determine polarity of the Cell
+//		if(layer1[row][col].getColor() == Color.BLACK) {
+//			//Polarity
+//			if((row + col)%3 ==0) {
+//				layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity1(), layer1[row][col].getBoard());
+//				polarityNum = 1;
+//			}
+//			else if((row + col)%3 ==1) {
+//				layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity3(), layer1[row][col].getBoard());
+//				polarityNum = 3;
+//			}
+//			else if((row + col)%3 ==2) {
+//				layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity2(), layer1[row][col].getBoard());
+//				polarityNum = 2;
+//			}
+//			
+//		}
+//		//If the Cell's color is Gray. Based on its location determine polarity of the Cell
+//		else if(layer1[row][col].getColor() == Color.GRAY) {
+//			//Polarity
+//			if((row + col)%3 ==0) {
+//				layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity2(), layer1[row][col].getBoard());
+//				polarityNum = 2;
+//			}
+//			else if((row + col)%3 ==1) {
+//				layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity1(), layer1[row][col].getBoard());
+//				polarityNum = 1;
+//			}
+//			else if((row + col)%3 ==2) {
+//				layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity3(), layer1[row][col].getBoard());
+//				polarityNum = 3;
+//			}
+//		}
+//		//If the Cell's color is White. Based on its location determine polarity of the Cell
+//		else if(layer1[row][col].getColor() == Color.WHITE) {
+//			//Polarity
+//			if((row + col)%3 ==0) {
+//				layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity3(), layer1[row][col].getBoard());
+//				polarityNum = 3;
+//			}
+//			else if((row + col)%3 ==1) {
+//				layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity2(), layer1[row][col].getBoard());
+//				polarityNum = 2;
+//			}
+//			else if((row + col)%3 ==2) {
+//				layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity1(), layer1[row][col].getBoard());
+//				polarityNum = 1;
+//			}
+//		}
+//		//Update the polarity count, set the Cell's polarity color, and add the most recent Cell's polarity
+//		//to the agent's array of recent polarities it has seen
+//		if(polarityNum == 1) {
+//			agent.setLayer2Array(layer1[row][col].getBoard().getGui().getPolarity1());
+//			layer1[row][col].getBoard().getGui().setPolOneCount(layer1[row][col].getBoard().getGui().getPolOneCount() + 1);
+//			layer1[row][col].setPolarityColor(layer1[row][col].getBoard().getGui().getPolarity1());
+//		}
+//		else if(polarityNum == 2) {
+//			agent.setLayer2Array(Color.BLUE);
+//			layer1[row][col].getBoard().getGui().setPolTwoCount(layer1[row][col].getBoard().getGui().getPolTwoCount() + 1);
+//			layer1[row][col].setPolarityColor(layer1[row][col].getBoard().getGui().getPolarity2());
+//		}
+//		if(polarityNum == 3) {
+//			agent.setLayer2Array(Color.YELLOW);
+//			layer1[row][col].getBoard().getGui().setPolThreeCount(layer1[row][col].getBoard().getGui().getPolThreeCount() + 1);
+//			layer1[row][col].setPolarityColor(layer1[row][col].getBoard().getGui().getPolarity3());
+//		}
+//		//Display the comparison's in the labels
+//		layer1[row][col].getBoard().getGui().setLblComparisons();
+//		return layer2;
+		
+		
+		CellDisplayPolarity cellPolarity = super.createPolarityCell(board, agent);
+		agent.setLayer2Array(cellPolarity.getColor());
+		return cellPolarity;
 	}
 		
 
@@ -243,7 +247,7 @@ public class DiagonalLines extends AbstractStrategy {
 		//added 7/10 by Morgan Might
 		//Must get a count of the neighboring cells' polarity to grow certain color polarity
 		Color newPolarityColor = Color.WHITE;
-		Color oldPolarityColor = layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getPolarityColor();
+		Color oldPolarityColor = layer2[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getColor();
 	
 	//	
 	//COLLECT INFO	
@@ -252,28 +256,31 @@ public class DiagonalLines extends AbstractStrategy {
 		int redCrossCount = 0, blueCrossCount = 0, yellowCrossCount = 0;	//These keep track of how many of each color appear in the cell above, below, left and right
 		int neighborCount = 0;  //Keeps track of how many cells surround the current cell
 		boolean cellAbove = false, cellBelow = false, cellLeft = false, cellRight = false; //Keep track of cells around so you may tell which side its on, or what corner
+		
+		neighbors = Board.getNeighbors(layer2, row, col);
+		
 		for (int index = 0; index < neighbors.length; index++) {
 			if (neighbors[index] != null) {
 				neighborCount++;
 				//Get Polarity of Neighbors MODIFICATION #9
-				if(neighbors[index].getPolarityColor() == Color.RED) {
+				if(neighbors[index].getColor() == Color.RED) {
 					redPolCount++;
 				}
-				else if(neighbors[index].getPolarityColor() == Color.BLUE) {
+				else if(neighbors[index].getColor() == Color.BLUE) {
 					bluePolCount++;
 				}
-				else if(neighbors[index].getPolarityColor() == Color.YELLOW) {
+				else if(neighbors[index].getColor() == Color.YELLOW) {
 					yellowPolCount++;
 				}
 				//Collect the Cross Counts
 				if(index == 1 || index == 3 || index == 5 || index == 7) {
-					if (neighbors[index].getPolarityColor() == Color.RED) {
+					if (neighbors[index].getColor() == Color.RED) {
 						redCrossCount++;
 					}
-					else if (neighbors[index].getPolarityColor() == Color.BLUE) {
+					else if (neighbors[index].getColor() == Color.BLUE) {
 						blueCrossCount++;
 					}
-					else if (neighbors[index].getPolarityColor() == Color.YELLOW) {
+					else if (neighbors[index].getColor() == Color.YELLOW) {
 						yellowCrossCount++;
 					}
 				}
@@ -670,7 +677,7 @@ public class DiagonalLines extends AbstractStrategy {
 		
 		//MODIFICATION #9
 		layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].setColor(newColor);
-		layer2[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)] = Layer2(agent, layer1, cellSize, (int)(agent.getCenterX() / cellSize), (int)(agent.getCenterY() / cellSize), neighbors);
+		layer2[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)] = createPolarityCell(layer2[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getBoard(), agent);
 		//If the cell was flipped reset the layer 4 cell to white
 		if(newColor != oldColor) {
 			layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getBoard().resetToWhite(agent, cellSize); //needs to be static????

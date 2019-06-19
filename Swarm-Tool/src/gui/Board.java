@@ -50,7 +50,6 @@ public class Board extends JPanel implements MouseInputListener {
 	private CellDisplayPolarity[][] layer2;
 	private CellDisplayPersistence[][] layer4;  //MODIFICATION #7: new layer of cells for persistency
 	private CellDisplay[][] layerDisplay; //layer to paint
-	private CellDisplay[][][] layers;
 	public int numCellsOnSide; //these are the numbers of cells in the board, NOT the graphical dimensions of the board
 	private boolean wrap; //whether the walls of the Board wrap or not; by default, they don't
 	private double cellSize; //pixel dimensions of each cell
@@ -92,6 +91,7 @@ public class Board extends JPanel implements MouseInputListener {
 	private GUI gui;
 	private HashMap<Color, Integer> frequencyColorsInitial;
 	private HashMap<Color, Integer> frequencyColorsCurrent;
+	private HashMap<Integer, CellDisplay[][]> layers;
 
 	public Board(int width, int height, int numCellsOnSide, int numAgents, boolean wrap, CellDisplayBase[][] layer1GetNeighbor, GUI gui) {
 		numberOfAgents = numAgents;
@@ -99,6 +99,7 @@ public class Board extends JPanel implements MouseInputListener {
 
 		frequencyColorsInitial = new HashMap<Color, Integer>();
 		frequencyColorsCurrent = new HashMap<Color, Integer>();
+		layers = new HashMap<Integer, CellDisplay[][]>(3);
 		
 		//MODIFICATION
 		//Added 7/17/18
@@ -209,14 +210,16 @@ public class Board extends JPanel implements MouseInputListener {
 				}
 			}
 		}
+		layers.put(1, layer1);
 
 
 		layer2 = new CellDisplayPolarity[numCellsOnSide][numCellsOnSide];
 		for (int row = 0; row < layer2.length; row++) {
 			for (int col = 0; col < layer2[row].length; col++) {
-				layer2[row][col] = strategy.Layer2(layer1, cellSize, row, col, getNeighbors(layer1, row, col));	
+				layer2[row][col] = strategy.createPolarityCell(this, row, col);	
 			}
 		}
+		layers.put(2, layer2);
 
 		//MODIFICATION #7
 		//by Morgan Might
@@ -229,8 +232,7 @@ public class Board extends JPanel implements MouseInputListener {
 				layer4[row][col] = new CellDisplayPersistence(row * cellSize, col * cellSize, cellSize, Color.WHITE, this, 0);
 			}
 		}
-
-		layers = new CellDisplay[][][]{layer1, layer2, null, layer4};
+		layers.put(4, layer4);
 		
 		//********************************************************************************************************	
 		//*************************MODIFICATION******************************************************************
@@ -287,12 +289,12 @@ public class Board extends JPanel implements MouseInputListener {
 		
 		//draw boards
 		if(gui.layer2Draw == 3) {
-			gui.layer2Draw = indexDisplay + 1;
+			gui.layer2Draw = indexDisplay;
 			repaint();
 		}
 		else {
-			indexDisplay = gui.layer2Draw - 1;
-			layerDisplay = layers[indexDisplay];
+			indexDisplay = gui.layer2Draw;
+			layerDisplay = layers.get(indexDisplay);
 			
 			for(int indexRow = 0; indexRow < layerDisplay.length; indexRow++) {
 				for(int indexColumn = 0; indexColumn < layerDisplay[indexRow].length; indexColumn++) {
@@ -359,7 +361,7 @@ public class Board extends JPanel implements MouseInputListener {
 				for (int row = 0; row < layer2.length; row++) {
 					for (int col = 0; col < layer2[row].length; col++) {
 						CellDisplay[] neighbors =  getNeighbors(layer1, row, col);
-						layer2[row][col] = strategy.Layer2(layer1, cellSize, row, col, neighbors);
+						layer2[row][col] = strategy.createPolarityCell(this, row, col);
 					}
 				}
 			}
@@ -444,9 +446,9 @@ public class Board extends JPanel implements MouseInputListener {
 	 * @param colNum
 	 * @return an array of all of the neighbors of the cell whose row and column number has been provided.
 	 */
-	public static CellDisplay[] getNeighbors(CellDisplayBase[][] cells, int rowNum, int colNum) {
+	public static CellDisplay[] getNeighbors(CellDisplay[][] cells, int rowNum, int colNum) {
 		//each cell only has 8 neighbors! for now at least.... :(
-		CellDisplay[] neighbors = new CellDisplayBase[8];
+		CellDisplay[] neighbors = new CellDisplay[8];
 		int rowMax = cells.length-1;
 		int colMax = cells[rowMax-1].length-1;
 		//This is an attempt to use nullCell singletons on the edge of the board to handle edge cases
@@ -742,7 +744,7 @@ public class Board extends JPanel implements MouseInputListener {
 		for (int row = 0; row < layer2.length; row++) {
 			for (int col = 0; col < layer2[row].length; col++) {
 				CellDisplay[] neighbors =  getNeighbors(layer1, row, col);
-				layer2[row][col] = strategy.Layer2(layer1, cellSize, row, col, neighbors);
+				layer2[row][col] = strategy.createPolarityCell(this, row, col);
 			}
 		}
 	}
@@ -783,7 +785,7 @@ public class Board extends JPanel implements MouseInputListener {
 			for (int col = 0; col < layer1[row].length; col++) {
 				if(flipCell[count]) {
 					layer1[row][col].flipColor();
-					layer2[row][col] = strategy.Layer2(layer1, cellSize, row, col, getNeighbors(layer1, row, col));
+					layer2[row][col] = strategy.createPolarityCell(this, row, col);
 					System.out.println("FLIP: " + count);
 				}
 				count++;
@@ -893,6 +895,14 @@ public class Board extends JPanel implements MouseInputListener {
 		else {
 			frequencyColorsCurrent.put(colorIncrement, 1);
 		}
+	}
+	
+	public CellDisplay[][] getLayer(int indexLayer) {
+		return layers.get(indexLayer);
+	}
+	
+	public double getCellSize() {
+		return cellSize;
 	}
 }
 

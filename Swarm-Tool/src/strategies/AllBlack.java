@@ -16,29 +16,16 @@ import other.SwarmAgent;
 public class AllBlack extends AbstractStrategy {
 	boolean adjustCellColor = false; //MODIFICATION #7
 
-	//This method does nothing	
 	@Override
-	public CellDisplayPolarity Layer2(SwarmAgent agent, CellDisplayBase[][] layer1, double cellSize, int row, int col, Cell[] neighbor) {
-		return null;
-	}
-
-	@Override
-	public CellDisplayPolarity Layer2(CellDisplayBase[][] layer1, double cellSize, int row, int col, Cell[] neighbor) {
-		CellDisplayPolarity layer2 = new CellDisplayPolarity(0,0,0,Color.RED, layer1[row][col].getBoard());
-		if(layer1[row][col].getColor() == Color.BLACK)
-			//if the layer 1 cell is black
-		{
-			layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity1(), layer1[row][col].getBoard());
+	public Color determinePolarity(Board board, int row, int col) {
+		GUI gui = board.getGui();
+		
+		if(board.getLayer(1)[row][col].getColor().equals(Color.BLACK)) { //if the layer 1 cell is black
+			return gui.getPolarity1();
 		}
-		else
-			//if the layer 1 cell is white
-		{
-			layer2 = new CellDisplayPolarity(row*cellSize, col*cellSize, cellSize, layer1[row][col].getBoard().getGui().getPolarity2(), layer1[row][col].getBoard());
-		}
-
-
-
-		return layer2;
+		
+		//if the layer 1 cell is white
+		return gui.getPolarity2();
 	}
 
 	@Override
@@ -51,7 +38,7 @@ public class AllBlack extends AbstractStrategy {
 		else
 		{
 			layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].flipColor();
-			layer2[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)] = Layer2(agent, layer1, cellSize, (int)(agent.getCenterX() / cellSize), (int)(agent.getCenterY() / cellSize), neighbors);
+			layer2[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)] = createPolarityCell(layer2[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getBoard(), agent);
 			adjustCellColor = true; //Change cell from white to black
 		}
 		

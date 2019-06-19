@@ -24,17 +24,8 @@ public class CellDisplayPersistence extends CellDisplay {
 	}
 	
 	@Override
-	public Color getPolarityColor() {
-		return null;
-	}
-	
-	@Override
 	public void setColor(Color colorFill) {
 		this.colorFill = colorFill;
-	}
-	
-	public void setPolarityColor(Color colorPolarity) {
-		
 	}
 	
 	public void setPersistenceValue(int num) {
