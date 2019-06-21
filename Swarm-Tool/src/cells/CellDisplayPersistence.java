@@ -28,7 +28,7 @@ public class CellDisplayPersistence extends CellDisplay {
 		this.colorFill = colorFill;
 	}
 	
-	public void setPersistenceValue(int num) {
-		persistenceValue = num;
+	public void setPersistenceValue(int persistenceValue) {
+		this.persistenceValue = persistenceValue;
 	}
 }

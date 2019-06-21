@@ -117,7 +117,8 @@ public class GUI {
 				try {
 					GUI window = new GUI();
 					window.frmProjectLegion.setVisible(true);
-				} catch (Exception e) {
+				}
+				catch (Exception e) {
 					e.printStackTrace();
 				}
 			}
@@ -348,7 +349,7 @@ public class GUI {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				Color colorSelected = primaryColorList[((JComboBox<String>)e.getSource()).getSelectedIndex()];
-				if (polarity2 == colorSelected) {
+				if (polarity2.equals(colorSelected)) {
 					int temp = Arrays.asList(primaryColorList).indexOf(polarity1);
 					comboPrimary.setSelectedIndex(temp);
 				}
@@ -379,7 +380,7 @@ public class GUI {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				Color colorSelected = secondaryColorList[((JComboBox<String>)e.getSource()).getSelectedIndex()];
-				if (polarity1 == colorSelected) {
+				if (polarity1.equals(colorSelected)) {
 					int temp = Arrays.asList(secondaryColorList).indexOf(polarity2);
 					comboSecondary.setSelectedIndex(temp);
 				}
@@ -430,7 +431,6 @@ public class GUI {
 				if (!timerStarted) {
 					board.repaint();
 				}
-
 			}
 		});
 		tabLayer2.add(comboTertiary);
@@ -474,7 +474,7 @@ public class GUI {
 
 		// ************************************************************ Sets what the
 		// polarity ratios should be for the two colors.
-		JLabel lblReginalStability = new JLabel("Reginal Stability");  //Does not work
+		JLabel lblReginalStability = new JLabel("Regional Stability");  //Does not work
 		lblReginalStability.setForeground(Color.LIGHT_GRAY);
 		lblReginalStability.setBounds(25, 175, 125, 14);
 		tabLayer2.add(lblReginalStability);
@@ -507,7 +507,7 @@ public class GUI {
 		comboGoalStrategy.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				JComboBox<String> src = (JComboBox<String>) e.getSource();
+				JComboBox<String> src = (JComboBox<String>)e.getSource();
 				goalStrategy = goalStrategyList[src.getSelectedIndex()];
 				board.updateGoalStrategy(goalStrategy);
 				whetherAgentsVisible = true;
@@ -761,15 +761,15 @@ public class GUI {
 		lblSpecialAgentsColor.setBounds(440, 58, 125, 14);
 		tabLayer3.add(lblSpecialAgentsColor);
 		// update the color of the special agent in board.agents[]
-		JComboBox comboBox_SpecialAgentColor = new JComboBox();
-		comboBox_SpecialAgentColor.setModel(new DefaultComboBoxModel(new String[] {"CYAN", "GREEN", "YELLOW", "ORANGE", "MAGENTA", "BLUE", "RED", "WHITE", "BLACK"}));
+		JComboBox<String> comboBox_SpecialAgentColor = new JComboBox<String>();
+		comboBox_SpecialAgentColor.setModel(new DefaultComboBoxModel<String>(new String[] {"CYAN", "GREEN", "YELLOW", "ORANGE", "MAGENTA", "BLUE", "RED", "WHITE", "BLACK"}));
 		Color[] specialAgentColorList = new Color[] { Color.CYAN, Color.GREEN, Color.YELLOW, Color.ORANGE, Color.MAGENTA, Color.BLUE,
 				Color.RED, Color.WHITE, Color.BLACK};
 		comboBox_SpecialAgentColor.setBounds(568, 56, 100, 20);
 		comboBox_SpecialAgentColor.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				JComboBox<String> src = (JComboBox<String>) e.getSource();
+				JComboBox<String> src = (JComboBox<String>)e.getSource();
 				specialAgentColor = specialAgentColorList[src.getSelectedIndex()];
 				board.updateSpecialAgentColor(specialAgentColor);
 				whetherAgentsVisible = true;
@@ -918,7 +918,8 @@ public class GUI {
 				board.setWrap(wrap);
 				if (wrap) {
 					tglbtnWrapAgents.setText("Wrap Agents");
-				} else {
+				}
+				else {
 					tglbtnWrapAgents.setText("Bounce Agents");
 				}
 			}
@@ -972,7 +973,7 @@ public class GUI {
 		sliderSwarmSpeed.addChangeListener(new ChangeListener() {
 			@Override
 			public void stateChanged(ChangeEvent e) {
-				JSlider src = (JSlider) e.getSource();
+				JSlider src = (JSlider)e.getSource();
 				agentSliderRate = src.getValue();
 				board.setAgentRate((int) agentSliderRate * 5);
 			}
@@ -1049,7 +1050,9 @@ public class GUI {
 		btnNewScreenSave.setForeground(Color.LIGHT_GRAY);
 		btnNewScreenSave.setBackground(new Color(204, 51, 255));
 		btnNewScreenSave.addActionListener(new ActionListener() {
+			@Override
 			public void actionPerformed(ActionEvent arg0) {
+				
 			}
 		});
 		btnNewScreenSave.setBounds(1338, 767, 125, 23);
@@ -1074,6 +1077,7 @@ public class GUI {
 					return this;
 				}
 		
+				@Override
 				public void actionPerformed(ActionEvent e) {
 					// Object obj = new NewBoardWindow();
 					NewBoardWindow newBoardWindow = new NewBoardWindow(frmProjectLegion, gui);
@@ -1231,27 +1235,29 @@ public class GUI {
 	//updated 7/19 bby Morgan Might
 	//Consider which polarity is the current dominant one
 	public String getBooleanCompareOne() {
-		if(newDominantPolarity == "YELLOW") {
+		if(newDominantPolarity.equalsIgnoreCase("YELLOW")) {
 			if(getPolOneCount() < getPolThreeCount()) { //Red < Yellow
 				return "True";
 			}
+			
 			return "False";
 		}
-		else if(newDominantPolarity == "BLUE") {
+		else if(newDominantPolarity.equalsIgnoreCase("BLUE")) {
 			if(getPolOneCount() < getPolTwoCount()) { //Red < Blue
 				return "True";
 			}
+			
 			return "False";
 		}
-		else if(newDominantPolarity == "RED") {
+		else if(newDominantPolarity.equalsIgnoreCase("RED")) {
 			if(getPolTwoCount() < getPolOneCount()) { //Blue < Red
 				return "True";
 			}
+			
 			return "False";
 		}
-		else {
-			return "Error";
-		}
+		
+		return "Error";
 	}
 	
 	//MODIFICATION #4: compares Blue < Yellow
@@ -1259,27 +1265,29 @@ public class GUI {
 	//updated 7/19 bby Morgan Might
 	//Consider which polarity is the current dominant one
 	public String getBooleanCompareTwo() {
-		if(newDominantPolarity == "YELLOW") {
+		if(newDominantPolarity.equalsIgnoreCase("YELLOW")) {
 			if(getPolTwoCount() < getPolThreeCount()) { //Blue < Yellow
 				return "True";
 			}
+			
 			return "False";
 		}
-		else if(newDominantPolarity == "BLUE") {
+		else if(newDominantPolarity.equalsIgnoreCase("BLUE")) {
 			if(getPolThreeCount() < getPolTwoCount()) { //Yellow < Blue
 				return "True";
 			}
+			
 			return "False";
 		}
-		else if(newDominantPolarity == "RED") {
+		else if(newDominantPolarity.equalsIgnoreCase("RED")) {
 			if(getPolThreeCount() < getPolOneCount()) { //Yellow < Red
 				return "True";
 			}
+			
 			return "False";
 		}
-		else {
-			return "Error";
-		}
+		
+		return "Error";
 	}
 	
 	//MODIFICATION #4: compares Red+Blue > Yellow
@@ -1287,28 +1295,29 @@ public class GUI {
 	//updated 7/19 bby Morgan Might
 	//Consider which polarity is the current dominant one
 	public String getBooleanCompareThree() {
-		if(newDominantPolarity == "YELLOW") {
+		if(newDominantPolarity.equalsIgnoreCase("YELLOW")) {
 			if(getPolOneCount() + getPolTwoCount() > getPolThreeCount()) { //R + B > Yellow
 				return "True";
 			}
+			
 			return "False";
 		}
-		else if(newDominantPolarity == "BLUE") {
+		else if(newDominantPolarity.equalsIgnoreCase("BLUE")) {
 			if(getPolOneCount() + getPolThreeCount() > getPolTwoCount()) { //R + Y < Blue
 				return "True";
 			}
+			
 			return "False";
 		}
-		else if(newDominantPolarity == "RED") {
+		else if(newDominantPolarity.equalsIgnoreCase("RED")) {
 			if(getPolTwoCount() + getPolThreeCount() > getPolOneCount()) { //B + Y < Red
 				return "True";
 			}
+			
 			return "False";
 		}
-		else {
-			return "Error";
-		}
-		
+
+		return "Error";
 	}
 	
 	//MODIFICATION #4: displays in the labels where the statements are "True" or "False"
@@ -1333,30 +1342,27 @@ public class GUI {
 		//This method updates the label and goal of the constraints
 		public void updateDominantPolarity(String polarity) {
 			newDominantPolarity = polarity;
-			if(newDominantPolarity == "YELLOW") {
+			if(newDominantPolarity.equals("YELLOW")) {
 				//Change Label
 				statementOne = "Red < Yellow :";
 				statementTwo = "Blue < Yellow :";
 				statementThree = "R + B > Yellow :";
 				//Change constraint
-				
-				
 			}
-			else if(newDominantPolarity == "BLUE") {
+			else if(newDominantPolarity.equals("BLUE")) {
 				//Change Label
 				statementOne = "Red < Blue :";
 				statementTwo = "Yellow < Blue :";
 				statementThree = "R + Y > Blue :";
-				
 			}
-			else if(newDominantPolarity == "RED") {
+			else if(newDominantPolarity.equals("RED")) {
 				//Change Label
 				statementOne = "Blue < Red :";
 				statementTwo = "Yellow < Red :";
 				statementThree = "B + Y > Red :";
 			}
-			updateComparisonLabels(statementOne, statementTwo, statementThree);
 			
+			updateComparisonLabels(statementOne, statementTwo, statementThree);
 		}
 
 	//MODIFICATION #10
@@ -1376,6 +1382,5 @@ public class GUI {
 		public Board getBoard() {
 			return board;
 		}
-		
 }
 

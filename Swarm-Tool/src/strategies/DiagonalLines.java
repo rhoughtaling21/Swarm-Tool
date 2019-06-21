@@ -39,13 +39,13 @@ public class DiagonalLines extends AbstractStrategy {
 			gui.setPolThreeCount(gui.getPolTwoCount()); //TODO PolTwoCount??
 		}
 		else {
-			if(layer2[row][col].getColor() == gui.getPolarity1()) {
+			if(layer2[row][col].getColor().equals(gui.getPolarity1())) {
 				gui.setPolOneCount(gui.getPolOneCount() - 1);
 			}
-			else if(layer2[row][col].getColor() == gui.getPolarity2()) {
+			else if(layer2[row][col].getColor().equals(gui.getPolarity2())) {
 				gui.setPolTwoCount(gui.getPolTwoCount() - 1);
 			}
-			else if(layer2[row][col].getColor() == gui.getPolarity3()) {
+			else if(layer2[row][col].getColor().equals(gui.getPolarity3())) {
 				gui.setPolThreeCount(gui.getPolThreeCount() - 1);
 			}
 		}
@@ -53,13 +53,13 @@ public class DiagonalLines extends AbstractStrategy {
 		int polarityNum = 0;
 		Color colorPolarity = null;
 		//If the Cell's color is Black. Based on its location determine polarity of the Cell
-		if(layer1[row][col].getColor() == Color.BLACK) {
+		if(layer1[row][col].getColor().equals(Color.BLACK)) {
 			//Polarity
-			if((row + col)%3 ==0) {
+			if((row + col)%3 == 0) {
 				polarityNum = 1;
 				colorPolarity = gui.getPolarity1();
 			}
-			else if((row + col)%3 ==1) {
+			else if((row + col)%3 == 1) {
 				colorPolarity = gui.getPolarity3();
 				polarityNum = 3;
 			}
@@ -69,13 +69,13 @@ public class DiagonalLines extends AbstractStrategy {
 			}	
 		}
 		//If the Cell's color is Gray. Based on its location determine polarity of the Cell
-		else if(layer1[row][col].getColor() == Color.GRAY) {
+		else if(layer1[row][col].getColor().equals(Color.GRAY)) {
 			//Polarity
-			if((row + col)%3 ==0) {
+			if((row + col)%3 == 0) {
 				colorPolarity = gui.getPolarity2();
 				polarityNum = 2;
 			}
-			else if((row + col)%3 ==1) {
+			else if((row + col)%3 == 1) {
 				colorPolarity = gui.getPolarity1();
 				polarityNum = 1;
 			}
@@ -85,13 +85,13 @@ public class DiagonalLines extends AbstractStrategy {
 			}
 		}
 		//If the Cell's color is White. Based on its location determine polarity of the Cell
-		else if(layer1[row][col].getColor() == Color.WHITE) {
+		else if(layer1[row][col].getColor().equals(Color.WHITE)) {
 			//Polarity
-			if((row + col)%3 ==0) {
+			if((row + col)%3 == 0) {
 				polarityNum = 3;
 				colorPolarity = gui.getPolarity3();
 			}
-			else if((row + col)%3 ==1) {
+			else if((row + col)%3 == 1) {
 				colorPolarity = gui.getPolarity2();
 				polarityNum = 2;
 			}
@@ -263,24 +263,24 @@ public class DiagonalLines extends AbstractStrategy {
 			if (neighbors[index] != null) {
 				neighborCount++;
 				//Get Polarity of Neighbors MODIFICATION #9
-				if(neighbors[index].getColor() == Color.RED) {
+				if(neighbors[index].getColor().equals(Color.RED)) {
 					redPolCount++;
 				}
-				else if(neighbors[index].getColor() == Color.BLUE) {
+				else if(neighbors[index].getColor().equals(Color.BLUE)) {
 					bluePolCount++;
 				}
-				else if(neighbors[index].getColor() == Color.YELLOW) {
+				else if(neighbors[index].getColor().equals(Color.YELLOW)) {
 					yellowPolCount++;
 				}
 				//Collect the Cross Counts
 				if(index == 1 || index == 3 || index == 5 || index == 7) {
-					if (neighbors[index].getColor() == Color.RED) {
+					if (neighbors[index].getColor().equals(Color.RED)) {
 						redCrossCount++;
 					}
-					else if (neighbors[index].getColor() == Color.BLUE) {
+					else if (neighbors[index].getColor().equals(Color.BLUE)) {
 						blueCrossCount++;
 					}
-					else if (neighbors[index].getColor() == Color.YELLOW) {
+					else if (neighbors[index].getColor().equals(Color.YELLOW)) {
 						yellowCrossCount++;
 					}
 				}
@@ -327,10 +327,9 @@ public class DiagonalLines extends AbstractStrategy {
 			//If the neighboring cells are ONLY 2 COLORS, match one of those colors or leave as is
 			//If there is no RED, only yellow and blue
 			else if (redPolCount == 0) { 
-				if(oldPolarityColor == Color.RED) {
+				if(oldPolarityColor.equals(Color.RED)) {
 					//RANDOMLY choose YELLOW or BLUE
-					double random = Math.random();
-					if(random < 0.5) {
+					if(Math.random() < 0.5) {
 						newPolarityColor = Color.YELLOW;
 					}
 					else {
@@ -343,7 +342,7 @@ public class DiagonalLines extends AbstractStrategy {
 			}
 			//If there is no BLUE, only yellow and red
 			else if (bluePolCount == 0) { 
-				if(oldPolarityColor == Color.BLUE) {
+				if(oldPolarityColor.equals(Color.BLUE)) {
 					//RANDOMLY choose YELLOW or RED
 					double random = Math.random();
 					if(random < 0.5) {
@@ -359,7 +358,7 @@ public class DiagonalLines extends AbstractStrategy {
 			}
 			//If there is no YELLOW, only blue and red
 			else if (yellowPolCount == 0) {
-				if(oldPolarityColor == Color.YELLOW) {
+				if(oldPolarityColor.equals(Color.YELLOW)) {
 					//RANDOMLY choose RED or BLUE
 					double random = Math.random();
 					if(random < 0.5) {
@@ -413,10 +412,9 @@ public class DiagonalLines extends AbstractStrategy {
 			//If the neighboring cells are ONLY 2 COLORS, match one of those colors or leave as is
 			//If there is no RED, only yellow and blue
 			else if (redPolCount == 0) { 
-				if(oldPolarityColor == Color.RED) {
+				if(oldPolarityColor.equals(Color.RED)) {
 					//RANDOMLY choose YELLOW or BLUE
-					double random = Math.random();
-					if(random < 0.5) {
+					if(Math.random() < 0.5) {
 						newPolarityColor = Color.YELLOW;
 					}
 					else {
@@ -431,8 +429,7 @@ public class DiagonalLines extends AbstractStrategy {
 			else if (bluePolCount == 0) { 
 				if(oldPolarityColor == Color.BLUE) {
 					//RANDOMLY choose YELLOW or RED
-					double random = Math.random();
-					if(random < 0.5) {
+					if(Math.random() < 0.5) {
 						newPolarityColor = Color.YELLOW;
 					}
 					else {
@@ -445,10 +442,9 @@ public class DiagonalLines extends AbstractStrategy {
 			}
 			//If there is no YELLOW, only blue and red
 			else if (yellowPolCount == 0) {
-				if(oldPolarityColor == Color.YELLOW) {
+				if(oldPolarityColor.equals(Color.YELLOW)) {
 					//RANDOMLY choose RED or BLUE
-					double random = Math.random();
-					if(random < 0.5) {
+					if(Math.random() < 0.5) {
 						newPolarityColor = Color.RED;
 					}
 					else {
@@ -464,10 +460,9 @@ public class DiagonalLines extends AbstractStrategy {
 			//If there are 2 colors in the cross section, make sure the center matches one of them
 			//2 RED and 2 BLUE
 			else if(redCrossCount == 2 && blueCrossCount == 2) {
-				if(oldPolarityColor == Color.YELLOW) {
+				if(oldPolarityColor.equals(Color.YELLOW)) {
 					//RANDOMLY choose RED or BLUE
-					double random = Math.random();
-					if(random < 0.5) {
+					if(Math.random() < 0.5) {
 						newPolarityColor = Color.RED;
 					}
 					else {
@@ -480,10 +475,9 @@ public class DiagonalLines extends AbstractStrategy {
 			}
 			//2 YELLOW and 2 BLUE
 			else if(yellowCrossCount == 2 && blueCrossCount == 2) {
-				if(oldPolarityColor == Color.RED) {
+				if(oldPolarityColor.equals(Color.RED)) {
 					//RANDOMLY choose YELLOW or BLUE
-					double random = Math.random();
-					if(random < 0.5) {
+					if(Math.random() < 0.5) {
 						newPolarityColor = Color.YELLOW;
 					}
 					else {
@@ -496,10 +490,9 @@ public class DiagonalLines extends AbstractStrategy {
 			}
 			//2 RED and 2 YELLOW
 			else if(redCrossCount == 2 && yellowCrossCount == 2) {
-				if(oldPolarityColor == Color.BLUE) {
+				if(oldPolarityColor.equals(Color.BLUE)) {
 					//RANDOMLY choose RED or YELLOW
-					double random = Math.random();
-					if(random < 0.5) {
+					if(Math.random() < 0.5) {
 						newPolarityColor = Color.RED;
 					}
 					else {
@@ -556,8 +549,7 @@ public class DiagonalLines extends AbstractStrategy {
 						}
 						else if(redPolCount >=2 && redPolCount == bluePolCount) {
 							//RANDOMLY choose RED or BLUE
-							double random = Math.random();
-							if(random < 0.5) {
+							if(Math.random() < 0.5) {
 								newPolarityColor = Color.RED;
 							}
 							else {
@@ -618,8 +610,7 @@ public class DiagonalLines extends AbstractStrategy {
 						}
 						else if(yellowPolCount >=2 && yellowPolCount == bluePolCount) {
 							//RANDOMLY choose YELLOW or BLUE
-							double random = Math.random();
-							if(random < 0.5) {
+							if(Math.random() < 0.5) {
 								newPolarityColor = Color.YELLOW;
 							}
 							else {
@@ -635,7 +626,7 @@ public class DiagonalLines extends AbstractStrategy {
 	//DETERMINE NEW COLOR	
 		//MODIFICATION #9 continued
 		//Based on the new polarity color change the Cell color (Black, Gray, or White)
-		if(newPolarityColor == Color.RED) {
+		if(newPolarityColor.equals(Color.RED)) {
 			if((row+col)%3 == 0) {
 				newColor = Color.BLACK;
 			}
@@ -646,7 +637,7 @@ public class DiagonalLines extends AbstractStrategy {
 				newColor = Color.WHITE;
 			}
 		}
-		if(newPolarityColor == Color.BLUE) {
+		if(newPolarityColor.equals(Color.BLUE)) {
 			if((row+col)%3 == 2) {
 				newColor = Color.BLACK;
 			}
@@ -657,7 +648,7 @@ public class DiagonalLines extends AbstractStrategy {
 				newColor = Color.WHITE;
 			}
 		}
-		if(newPolarityColor == Color.YELLOW) {
+		if(newPolarityColor.equals(Color.YELLOW)) {
 			if((row+col)%3 == 1) {
 				newColor = Color.BLACK;
 			}

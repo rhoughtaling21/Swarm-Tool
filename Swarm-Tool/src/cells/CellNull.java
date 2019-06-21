@@ -23,7 +23,7 @@ public class CellNull implements Cell {
 		return nullCell;
 	}
 	
-	//everything that a cell extending gencell would do, does nothing following this
+	//everything that a Cell would do, does nothing following this
 	
 	@Override
 	public Color getColor() {

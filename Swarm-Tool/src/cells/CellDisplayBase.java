@@ -11,7 +11,6 @@ package cells;
 import java.awt.Color;
 
 import gui.Board;
-import gui.GUI;
 
 /**
  * @authors Zak, Nick, Gabriel, Tim
@@ -21,20 +20,17 @@ import gui.GUI;
 @SuppressWarnings("serial")
 public class CellDisplayBase extends CellDisplay {
 	public CellDisplayBase(double x, double y, double size, Color colorFill, Board board) {
-		//a lot of these parameters actually belong to Rectangle2D.Double, so we call in the super class GenericCell
+		//a lot of these parameters actually belong to Rectangle2D.Double, so we call in the super class CellDisplay
 		super(x, y, size, colorFill, board);
 	}
 
 	//flip color of Cell
-	public void flipColor()
-	{
+	public void flipColor() {
 		//these first two cases apply to cells as they only are ever black or white
-		if (colorFill == Color.BLACK) 
-		{
+		if (colorFill.equals(Color.BLACK)) {
 			setColor(Color.WHITE);
 		}
-		else
-		{
+		else {
 			setColor(Color.BLACK);
 		}
 	}
@@ -42,8 +38,7 @@ public class CellDisplayBase extends CellDisplay {
 	//MODIFICATION #3
 	//change color of Cell
 	@Override
-	public void setColor(Color colorFill)
-	{
+	public void setColor(Color colorFill) {
 		//Subtract counter for the old color
 		board.decrementColorFrequency(this.colorFill);
 		//Set new Color

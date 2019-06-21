@@ -28,15 +28,14 @@ public class Lines extends AbstractStrategy{
 		Cell[] neighbors = Board.getNeighbors((CellDisplayBase[][])layer1, row, col);
 		int chosenPolarity = 0, cornerCount = 0, edgeCount = 0, vertical = 0, horizontal = 0;
 		for(int index = 0; index < neighbors.length; index++){
-			if(neighbors[index] != null)
-			{
+			if(neighbors[index] != null) {
 				if(index%2==0) {
-					if (neighbors[index].getColor() == Color.BLACK){
+					if (neighbors[index].getColor().equals(Color.BLACK)){
 						cornerCount++;
 					}
 				}
 				else {
-					if (neighbors[index].getColor() == Color.BLACK){
+					if (neighbors[index].getColor().equals(Color.BLACK)){
 						edgeCount++;
 						if(index==1||index==5) {
 							vertical++;
@@ -49,29 +48,22 @@ public class Lines extends AbstractStrategy{
 			}
 		}
 
-		if(layer1[row][col].getColor()==Color.BLACK)
-		{
+		if(layer1[row][col].getColor().equals(Color.BLACK)) {
 			edgeCount+=2;
 		}
-		if (edgeCount>cornerCount)
-		{
-			if(vertical>horizontal)
-			{
+		if (edgeCount>cornerCount) {
+			if(vertical>horizontal) {
 				chosenPolarity = 2;//Top and bottom rows white and middle row black
 			}
-			else
-			{
+			else {
 				chosenPolarity = 0;//Left and right column white and middle column black
 			}
 		}
-		else
-		{
-			if(vertical>horizontal)
-			{
+		else {
+			if(vertical>horizontal) {
 				chosenPolarity = 1;// Top and bottom rows black and middle row white
 			}
-			else
-			{
+			else {
 				chosenPolarity = 3;//Left and right column black and middle column white
 			}
 		}
@@ -140,36 +132,26 @@ public class Lines extends AbstractStrategy{
 		int cornerCount = 0;
 		int edgeCount = 0;
 		//if (Math.random() < 0.1) {
-		for(int index = 0; index<neighbors.length; index++)
-		{
-			if(neighbors[index] != null)
-			{
-				if(index%2==0)
-				{
-					if (neighbors[index].getColor() == Color.BLACK){
+		for(int index = 0; index<neighbors.length; index++) {
+			if(neighbors[index] != null) {
+				if(index%2==0) {
+					if (neighbors[index].getColor().equals(Color.BLACK)) {
 						edgeCount++;
 					}
 				}
-				else
-				{
-					if (neighbors[index].getColor() == Color.BLACK){
+				else {
+					if (neighbors[index].getColor().equals(Color.BLACK)) {
 						cornerCount++;
 					}
 				}
-			}
-			else
-			{
-
 			}
 		}
 		//MODIFICATION #2: 99.6% follow rules and 0.3% flip no matter what.
 		//Random rand = new Random();
 		//int probabilityNum = rand.nextInt(300);
 		//if(probabilityNum >0) {
-		if(cornerCount>edgeCount)
-		{
-			if(layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getColor() == Color.BLACK)
-			{
+		if(cornerCount>edgeCount) {
+			if(layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getColor().equals(Color.BLACK)) {
 				cornerCount = 0;
 				edgeCount = 0;
 				adjustCellColor = false; //Leave the cell Black
@@ -183,10 +165,8 @@ public class Lines extends AbstractStrategy{
 				adjustCellColor = true; //Flip the Cell from White to Black
 			}
 		}
-		else if(edgeCount>cornerCount)
-		{
-			if(layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getColor() == Color.BLACK)
-			{
+		else if(edgeCount>cornerCount) {
+			if(layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getColor().equals(Color.BLACK)) {
 				layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].flipColor();
 				layer2[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)] = createPolarityCell(layer2[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getBoard(), agent);
 
@@ -194,18 +174,15 @@ public class Lines extends AbstractStrategy{
 				edgeCount = 0;
 				adjustCellColor = true; //Flip the Cell from Black to White
 			}
-			else
-			{
+			else {
 				cornerCount = 0;
 				edgeCount = 0;
 				adjustCellColor = false; //Leave the Cell White
 			}
 		}
-		else
-		{
+		else {
 			double flipCoin = Math.random();
-			if (flipCoin >.5)
-			{
+			if (flipCoin >.5) {
 				layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].flipColor();
 				layer2[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)] = createPolarityCell(layer2[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getBoard(), agent);
 

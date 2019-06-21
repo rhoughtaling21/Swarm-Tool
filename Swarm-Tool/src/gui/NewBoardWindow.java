@@ -28,7 +28,7 @@ public class NewBoardWindow extends JFrame {
 	private JCheckBox threeColorsBox; //MODIFICATION #3
 	private int numCellsOnSide, numAgents;
 	public int numSpecialAgents, splitPolNum;
-	int totalCells; //MODIFICATION #3
+	private int totalCells; //MODIFICATION #3
 	private GUI gui;
 
 	/**
@@ -127,8 +127,7 @@ public class NewBoardWindow extends JFrame {
 
 	//This will be the code that will make a new board and set the variables in the Primary GUI to the selected ones in this.
 	protected void MakeNewBoard(JFrame frame) {
-		if(gui.board != null)
-		{
+		if(gui.board != null) {
 			frame.remove(gui.board);
 		}
 		//		GUI.board.getGraphics().setColor(Color.WHITE);
@@ -149,7 +148,6 @@ public class NewBoardWindow extends JFrame {
 		//This section is to avoid bugs in the GUI.
 		board.updateGoalStrategy(gui.goalStrategy);
 		board.setAgentRate(gui.agentSliderRate);
-
 	}
 	
 	public void setTotalNumOfCells() {
@@ -159,5 +157,4 @@ public class NewBoardWindow extends JFrame {
 	public int getTotalNumOfCells() {
 		return totalCells;
 	}
-
 }

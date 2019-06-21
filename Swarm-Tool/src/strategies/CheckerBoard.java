@@ -42,7 +42,7 @@ public class CheckerBoard extends AbstractStrategy {
 //			}
 //		}
 	
-		if(layer1[row][col].getColor() == Color.WHITE) {
+		if(layer1[row][col].getColor().equals(Color.WHITE)) {
 			if(col%2 == row%2) {
 				return gui.getPolarity1();
 			}
@@ -62,26 +62,18 @@ public class CheckerBoard extends AbstractStrategy {
 		int cornerCount = 0;
 		int edgeCount = 0;
 		
-		for(int index = 0; index<neighbors.length; index++)
-		{
-			if(neighbors[index] != null)
-			{
-				if(index%2==0)
-				{
-					if (neighbors[index].getColor() == Color.BLACK){//if on the corner...
+		for(int index = 0; index<neighbors.length; index++)	{
+			if(neighbors[index] != null) {
+				if(index%2==0) {
+					if (neighbors[index].getColor().equals(Color.BLACK)){//if on the corner...
 						cornerCount++;// cornerCount increases
 					}
 				}
-				else
-				{
-					if (neighbors[index].getColor() == Color.BLACK){//if on the edge...
+				else {
+					if (neighbors[index].getColor().equals(Color.BLACK)){//if on the edge...
 						edgeCount++;//edgeCount in creases
 					}
 				}
-			}
-			else
-			{
-
 			}
 		}
 		//MODIFICATION #2: use if statement to lower probability of agents following the rigid rules
@@ -90,16 +82,13 @@ public class CheckerBoard extends AbstractStrategy {
 		if(probabilityNum >0) {
 			//System.out.println("Good: " + probabilityNum);
 			//goodCount++;
-			if(cornerCount>edgeCount)//if more corners are black than edges, you should be black in the center
-			{
-				if(layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getColor() == Color.BLACK)
-				{
+			if(cornerCount>edgeCount) { //if more corners are black than edges, you should be black in the center
+				if(layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getColor().equals(Color.BLACK)) {
 					cornerCount = 0;
 					edgeCount = 0;
 					adjustCellColor = false; //Leave the cell black
 				}
-				else
-				{
+				else {
 					layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].flipColor();
 					layer2[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].flipColor();
 					cornerCount = 0;
@@ -107,28 +96,23 @@ public class CheckerBoard extends AbstractStrategy {
 					adjustCellColor = true; //Flip cell from white to black
 				}
 			}
-			else if(edgeCount>cornerCount)//if more edges are black than corners, the center should be white
-			{
-				if(layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getColor() == Color.BLACK)
-				{
+			else if(edgeCount>cornerCount) { //if more edges are black than corners, the center should be white
+				if(layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getColor().equals(Color.BLACK)) {
 					layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].flipColor();
 					layer2[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].flipColor();
 					cornerCount = 0;
 					edgeCount = 0;
 					adjustCellColor = true; //Flip cell from black to white
 				}
-				else
-				{
+				else {
 					cornerCount = 0;
 					edgeCount = 0;
 					adjustCellColor = false; //Leave the cell white
 				}
 			}
-			else
-			{
+			else {
 				double flipCoin = Math.random();// and if you are tied, like if all are black
-				if (flipCoin >.5)// flip a coin
-				{
+				if (flipCoin >.5) { // flip a coin
 					layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].flipColor();
 					layer2[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].flipColor();
 					cornerCount = 0;
