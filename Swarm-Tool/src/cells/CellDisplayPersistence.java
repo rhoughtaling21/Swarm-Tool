@@ -12,7 +12,7 @@ import gui.Board;
 
 @SuppressWarnings("serial")
 public class CellDisplayPersistence extends CellDisplay {
-	int persistenceValue;
+	private int persistenceValue;
 	
 	public CellDisplayPersistence(double x, double y, double size, Color colorFill, Board board, int persistenceValue) {
 		super(x, y, size, colorFill, board);

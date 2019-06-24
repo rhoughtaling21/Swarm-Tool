@@ -112,8 +112,8 @@ public class NewBoardWindow extends JFrame {
 				numAgents = Integer.parseInt(txtNewswarmsize.getText());
 				numSpecialAgents = Integer.parseInt(newNumSpecialAgents.getText());
 				//splitPolNum = Integer.parseInt(splitPolarity.getText());
-				gui.setLblBoardSizeInt(numCellsOnSide);
-				gui.setLblSwarmSizeInt(numAgents);
+				//gui.setLblBoardSizeInt(numCellsOnSide);
+				//gui.setLblSwarmSizeInt(numAgents);
 				gui.setNumOfSpecialAgents(numSpecialAgents);
 				gui.setSplitPolarity(splitPolarityBox.isSelected());
 				gui.setDiagonalLineStart(threeColorsBox.isSelected());
@@ -144,7 +144,7 @@ public class NewBoardWindow extends JFrame {
 		board.setBounds(10+borderForCentering, 10+borderForCentering, boardSize, boardSize);
 		//displayPanel.add();
 		frame.getContentPane().add(board);
-		gui.board = board;
+		gui.setBoard(board);
 		//This section is to avoid bugs in the GUI.
 		board.updateGoalStrategy(gui.goalStrategy);
 		board.setAgentRate(gui.agentSliderRate);

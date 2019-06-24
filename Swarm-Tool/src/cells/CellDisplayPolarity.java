@@ -23,6 +23,7 @@ public class CellDisplayPolarity extends CellDisplay {
 	public CellDisplayPolarity(double x, double y, double size, Color colorFill, Board board) {
 		//a lot of these parameters actually belong to Rectangle2D.Double, so we call in the super class CellDisplay
 		super(x, y, size, colorFill, board);
+		board.adjustPolarityFrequency(colorFill, 1);
 	}
 
 	//flip color of Cell
@@ -30,20 +31,24 @@ public class CellDisplayPolarity extends CellDisplay {
 		//as cells2 can be different colors chosen by the user, the color is set in the GUI
 		GUI gui = board.getGui();
 		
-		if (colorFill.equals(gui.getPolarity1())) {
-			colorFill = gui.getPolarity2();
+		if (colorFill.equals(gui.getPolarityColor(1))) {
+			setColor(gui.getPolarityColor(2));
 		}
 		else {
-			colorFill = gui.getPolarity1();
+			setColor(gui.getPolarityColor(1));
 		}
 	}
 	
 	//MODIFICATION #3
 	//change color of Cell
 	@Override
-	public void setColor(Color newColor) {
+	public void setColor(Color colorFill) {
+		//Subtract counter for the old color
+		board.adjustPolarityFrequency(this.colorFill, -1);
 		//Set new Color
-		colorFill = newColor;
+		this.colorFill = colorFill;
+		//Set Polarity and add counter for new color
+		board.adjustPolarityFrequency(colorFill, 1);
 	}
 }
 

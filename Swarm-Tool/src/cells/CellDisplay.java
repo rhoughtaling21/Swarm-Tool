@@ -26,6 +26,7 @@ public abstract class CellDisplay extends Rectangle2D.Double implements Cell {
 		this.board = board;
 	}
 
+	@Override
 	public Color getColor() {
 		return colorFill;
 	}
@@ -34,6 +35,7 @@ public abstract class CellDisplay extends Rectangle2D.Double implements Cell {
 		return board;
 	}
 
+	@Override
 	public void draw(Graphics2D helperGraphics2D) {
 		helperGraphics2D.setColor(colorFill);
 		helperGraphics2D.fill(this);

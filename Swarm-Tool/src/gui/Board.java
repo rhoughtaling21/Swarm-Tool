@@ -14,6 +14,7 @@ import java.awt.Graphics2D;
 import java.awt.event.MouseEvent;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Point2D;
+import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -46,7 +47,7 @@ import strategies.DiagonalLines;
  */
 @SuppressWarnings("serial")
 public class Board extends JPanel implements MouseInputListener {
-	private static final Color COLOR_TRANSPARENT = new Color(0,1,0,0);
+	private static final Color COLOR_TRANSPARENT = new Color(0, 1, 0, 0);
 	
 	public int numCellsOnSide; //these are the numbers of cells in the board, NOT the graphical dimensions of the board
 	private boolean wrap; //whether the walls of the Board wrap or not; by default, they don't
@@ -76,15 +77,15 @@ public class Board extends JPanel implements MouseInputListener {
 	//String exportInfoString = "Less than 5,5-9,10-14,15-19,20-24,More than 25\n"; //MODIFICATION #8
 	//String exportInfoString = "Zero,One,Two,Three,Four,Five,Six+\n"; //MODIFICATION #8
 	String exportInfoString = "Red,Blue,Yellow\n"; 
-	public int stepCount = 0; //MODIFICATION #6
-	int firstCount = 0, secondCount = 0, thirdCount = 0; //MODIFICATION (7/17/18 by Morgan Might) Allow the start goal to be diagonal lines
+	public int countSteps = 0; //MODIFICATION #6
 	private GUI gui;
 	private CellDisplayBase[][] layer1;
 	private CellDisplayPolarity[][] layer2;
 	private CellDisplayPersistence[][] layer4;  //MODIFICATION #7: new layer of cells for persistency
 	private CellDisplay[][] layerDisplay; //layer to paint
 	private HashMap<Color, Integer> frequencyColorsInitial;
-	private HashMap<Color, Integer> frequencyColorsCurrent;
+	private HashMap<Color, Integer> frequencyColors;
+	private HashMap<Color, Integer> frequencyPolarities;
 	private HashMap<Integer, CellDisplay[][]> layers;
 
 	public Board(int width, int height, int numCellsOnSide, int countAgents, boolean wrap, CellDisplayBase[][] layer1GetNeighbor, GUI gui) {
@@ -92,7 +93,7 @@ public class Board extends JPanel implements MouseInputListener {
 		this.gui = gui;
 
 		frequencyColorsInitial = new HashMap<Color, Integer>();
-		frequencyColorsCurrent = new HashMap<Color, Integer>();
+		frequencyPolarities = new HashMap<Color, Integer>();
 		layers = new HashMap<Integer, CellDisplay[][]>(3);
 		
 		//MODIFICATION
@@ -120,7 +121,7 @@ public class Board extends JPanel implements MouseInputListener {
 
 		//layer 1
 		layer1 = new CellDisplayBase[numCellsOnSide][numCellsOnSide];
-		int randomPosition;
+		//int randomPosition;
 		Color colorInitial;
 
 		if (!gui.getSplitPolarity()) {
@@ -133,42 +134,13 @@ public class Board extends JPanel implements MouseInputListener {
 						colorInitial = Color.WHITE;
 					}
 					
-					incrementColorFrequencyInitial(colorInitial);
-					incrementColorFrequency(colorInitial);
-					
 					layer1[indexRow][indexColumn] = new CellDisplayBase(indexRow * cellSize, indexColumn * cellSize, cellSize, colorInitial, this);
-
-					//	//	//	//	//MODIFICATION// // // // // // // // // // // // //
-					//Added 7/17/18
-					//By Morgan Might
-					//Set up polarity counts
-					if(gui.getThreeColor()) {
-						if(colorInitial.equals(Color.BLACK) && (indexRow+indexColumn%3 == 0) || colorInitial.equals(Color.GRAY) && (indexRow+indexColumn%3 == 1) || colorInitial.equals(Color.WHITE) && (indexRow+indexColumn%3 == 2)) {
-							firstCount++;
-						}
-						else if(colorInitial.equals(Color.GRAY) && (indexRow+indexColumn%3 == 0) || colorInitial.equals(Color.WHITE) && (indexRow+indexColumn%3 == 1) || colorInitial.equals(Color.BLACK) && (indexRow+indexColumn%3 == 2)) {
-							secondCount++;
-						}
-						else if(colorInitial.equals(Color.WHITE) && (indexRow+indexColumn%3 == 0) || colorInitial.equals(Color.BLACK) && (indexRow+indexColumn%3 == 1) || colorInitial.equals(Color.GRAY) && (indexRow+indexColumn%3 == 2)) {
-							thirdCount++;
-						}
-					}
-
 				}
-			}
-			
-			if(gui.getThreeColor()) {
-				gui.setPolOneCount(firstCount);
-				gui.setPolTwoCount(secondCount);
-				gui.setPolThreeCount(thirdCount);
 			}
 		}
 
 		// MODIFICATION: This will test swarms when the polarity is split and the agents are no longer effective
 		else if(!gui.getThreeColor()){
-			Color printColor;
-			randomPosition = (int)(Math.random() * (numCellsOnSide - 5)) + 3;
-			System.out.print(randomPosition);
 			int pos;
 			for (int indexRow = 0; indexRow < layer1.length; indexRow++) {
 				for (int indexColumn = 0; indexColumn < layer1[indexRow].length; indexColumn++) {
@@ -179,29 +151,24 @@ public class Board extends JPanel implements MouseInputListener {
 						pos = indexColumn;
 					}
 						
-					if (pos < randomPosition) {
+					if (pos < (3 + (int)(Math.random() * (numCellsOnSide - 5)))) {
 						if (indexRow % 2 == indexColumn % 2) {
-							printColor = Color.BLACK;
+							colorInitial = Color.BLACK;
 						}
 						else {
-							printColor = Color.WHITE;
+							colorInitial = Color.WHITE;
 						}
-
 					} 
 					else {
 						if (indexRow % 2 == indexColumn % 2) {
-							printColor = Color.WHITE;
+							colorInitial = Color.WHITE;
 						}
 						else {
-							printColor = Color.BLACK;
+							colorInitial = Color.BLACK;
 						}
-
 					}
 					
-					incrementColorFrequencyInitial(printColor);
-					incrementColorFrequency(printColor);
-					
-					layer1[indexRow][indexColumn] = new CellDisplayBase(indexRow * cellSize, indexColumn * cellSize, cellSize, printColor, this);
+					layer1[indexRow][indexColumn] = new CellDisplayBase(indexRow * cellSize, indexColumn * cellSize, cellSize, colorInitial, this);
 				}
 			}
 		}
@@ -211,7 +178,7 @@ public class Board extends JPanel implements MouseInputListener {
 		layer2 = new CellDisplayPolarity[numCellsOnSide][numCellsOnSide];
 		for (int row = 0; row < layer2.length; row++) {
 			for (int col = 0; col < layer2[row].length; col++) {
-				layer2[row][col] = strategy.createPolarityCell(this, row, col);	
+				layer2[row][col] = strategy.createPolarityCell(this, row, col);
 			}
 		}
 		layers.put(2, layer2);
@@ -244,24 +211,35 @@ public class Board extends JPanel implements MouseInputListener {
 			specialAgent = false;
 		}
 
-
+		frequencyColors = (HashMap<Color, Integer>)frequencyColorsInitial.clone();
+		
 		this.addMouseListener(this);
 		this.addMouseMotionListener(this);
 
 		StartTimer();
 
-		if (gui.layer2Draw == 3)
-		{
+		if (gui.layer2Draw == 3) {
 			gui.layer2Draw = 1;
 		}
-
-		gui.setLblIntBlackCells(getColorFrequencyInitial(Color.BLACK));
-		gui.setLblIntGrayCells(getColorFrequencyInitial(Color.GRAY));
-		gui.setLblIntWhiteCells(getColorFrequencyInitial(Color.WHITE));
 	}
 
-	public void StartTimer()
-	{
+	public int getStepCount() {
+		return countSteps;
+	}
+	
+	public HashMap<Color, Integer> getColorFrequenciesInitial() {
+		return frequencyColorsInitial;
+	}
+	
+	public HashMap<Color, Integer> getColorFrequencies() {
+		return frequencyColors;
+	}
+	
+	public HashMap<Color, Integer> getPolarityFrequencies() {
+		return frequencyPolarities;
+	}
+	
+	public void StartTimer() {
 		t = new Timer();
 		TimerTask task = new TimerTask() {
 			@Override
@@ -315,7 +293,6 @@ public class Board extends JPanel implements MouseInputListener {
 					storeVisibleColor = agent.getColor();
 				}
 				agent.setColor(COLOR_TRANSPARENT);
-
 			}
 			agent.draw(helperGraphics2D);
 			//if you're sticking off the right or bottom of map, draw another ellipse there too
@@ -345,8 +322,6 @@ public class Board extends JPanel implements MouseInputListener {
 			//before leaving it--something we haven't gotten to yet.
 
 			//TESTING NEIGHBORS
-			int cornerCount = 0;
-			int edgeCount = 0;
 			neighbors = getNeighbors(layer1, (int)(agent.getCenterX() / cellSize), (int)(agent.getCenterY() / cellSize));
 			int rowMax = layer1.length-1;
 			int colMax = layer1[rowMax-1].length-1;
@@ -354,8 +329,7 @@ public class Board extends JPanel implements MouseInputListener {
 				strategy.logic(agent, layer1, layer2, neighbors, cellSize);
 				for (int row = 0; row < layer2.length; row++) {
 					for (int col = 0; col < layer2[row].length; col++) {
-						CellDisplay[] neighbors =  getNeighbors(layer1, row, col);
-						layer2[row][col] = strategy.createPolarityCell(this, row, col);
+						strategy.updatePolarityCell(this, row, col);
 					}
 				}
 			}
@@ -389,39 +363,10 @@ public class Board extends JPanel implements MouseInputListener {
 				}
 			}
 		}
-		gui.setLblCurrBlackCells(getColorFrequency(Color.BLACK));
-		gui.setLblCurrGrayCells(getColorFrequency(Color.GRAY));
-		gui.setLblCurrWhiteCells(getColorFrequency(Color.WHITE));
 
-		//MODIFICATION #10
-		//added back in 7/23
-		int redCount = gui.getPolOneCount();
-		int blueCount = gui.getPolTwoCount();
-		int yellowCount = gui.getPolThreeCount();
-
-		stepCount++; //keep track of how many steps
-		gui.updateStepCountLabel("" + stepCount + "");	//updates the Step label (added 7/23)
-
-		//MODIFICATION #10
-		//added back in 7/23
-		exportInfoString += "" + redCount + "," + blueCount + "," + yellowCount +"\n";
-		//System.out.println(exportInfoString + " " + stepCount);
-
-		//Now Export to the file		
-		//		try {				
-		//			outputFile = new File("\\\\kermit\\shome$\\mmight20\\Documents\\RESEARCH\\exportFile1.txt"); 
-		//			fileWriter = new FileWriter(outputFile);
-		//			writer = new BufferedWriter(fileWriter);
-		//			
-		//			writer.write(exportInfoString);
-		//			writer.close();
-		//		}
-		//		catch (IOException ex) {
-		//			System.out.println("Error: " + ex.getMessage());
-		//		}
-
-		System.out.println("Step: " + stepCount);
-
+		countSteps++; //keep track of how many steps
+		
+		gui.updateLabels(countSteps);
 	}
 
 	/**
@@ -441,35 +386,7 @@ public class Board extends JPanel implements MouseInputListener {
 		CellDisplay[] neighbors = new CellDisplay[8];
 		int rowMax = cells.length-1;
 		int colMax = cells[rowMax-1].length-1;
-		//This is an attempt to use nullCell singletons on the edge of the board to handle edge cases
-		//makes a new board with the null cells surrounding it on all sides
-		//this does top and bottom rows, then the left and right sides
-		//		GenericCell[][] cellsWithNull = new GenericCell[numCellsOnSide+2][numCellsOnSide+2];
-		//		for (int row = 0; row < cellsWithNull.length; row++) {
-		//			cellsWithNull[row][0] = NullCell.getNullCell();
-		//			cellsWithNull[row][colMax] = NullCell.getNullCell();
-		//		}
-		//		for (int col = 0; col < cellsWithNull[0].length; col++) {
-		//			cellsWithNull[0][col] = NullCell.getNullCell();
-		//			cellsWithNull[rowMax][col] = NullCell.getNullCell();
-		//		}
-
-		//this 10% chance thing is just because java gets mad if you have stuff
-		//after a return statement, it is super hardcore not a permanent feature
-		//of this class trust me guys.
-		//		if (Math.random() < 0.1) {
-		//			neighbors[0] = cellsWithNull[rowNum-1][colNum-1];
-		//			neighbors[1] = cellsWithNull[rowNum-1][colNum];
-		//			neighbors[2] = cellsWithNull[rowNum-1][colNum+1];
-		//			neighbors[3] = cellsWithNull[rowNum][colNum-1];
-		//			neighbors[4] = cellsWithNull[rowNum][colNum+1];
-		//			neighbors[5] = cellsWithNull[rowNum+1][colNum-1];
-		//			neighbors[6] = cellsWithNull[rowNum+1][colNum];
-		//			neighbors[7] = cellsWithNull[rowNum+1][colNum+1];
-		//			return neighbors;
-		//		}
-		//		
-		//		//obsolete approach
+		
 		//top left
 		if (rowNum == 0 && colNum == 0) {
 			neighbors[3] = cells[rowNum][colNum+1];
@@ -558,15 +475,13 @@ public class Board extends JPanel implements MouseInputListener {
 	 * @param layer
 	 * @return the cell occupied by a given agent in a given layer
 	 */
-	public static CellDisplayBase getOccupiedCell(SwarmAgent agent, CellDisplayBase[][] layer) {
+	public CellDisplay getOccupiedCell(SwarmAgent agent, CellDisplay[][] layer) {
 		return layer[(int)(agent.getCenterX()/layer[0][0].width)][(int)(agent.getCenterY()/layer[0][0].height)];
 	}
 
 	@Override
 	public void mouseClicked(MouseEvent arg0) {
-		System.out.println((int)(arg0.getX()/cellSize));
-		System.out.println((int)(arg0.getY()/cellSize));
-		System.out.println();
+		
 	}
 
 	@Override
@@ -665,7 +580,7 @@ public class Board extends JPanel implements MouseInputListener {
 		strategy = newStrategy;
 		for (int row = 0; row < layer2.length; row++) {
 			for (int col = 0; col < layer2[row].length; col++) {
-				layer2[row][col] = strategy.createPolarityCell(this, row, col);
+				strategy.updatePolarityCell(this, row, col);
 			}
 		}
 	}
@@ -706,7 +621,7 @@ public class Board extends JPanel implements MouseInputListener {
 			for (int col = 0; col < layer1[row].length; col++) {
 				if(flipCell[count]) {
 					layer1[row][col].flipColor();
-					layer2[row][col] = strategy.createPolarityCell(this, row, col);
+					strategy.updatePolarityCell(this, row, col);
 					System.out.println("FLIP: " + count);
 				}
 				count++;
@@ -775,7 +690,7 @@ public class Board extends JPanel implements MouseInputListener {
 		return gui;
 	}
 	
-	private int getColorFrequencyInitial(Color color) {
+	public int getColorFrequencyInitial(Color color) {
 		if(frequencyColorsInitial.containsKey(color)) {
 			return frequencyColorsInitial.get(color);
 		}
@@ -783,38 +698,38 @@ public class Board extends JPanel implements MouseInputListener {
 		return 0;
 	}
 	
-	private int getColorFrequency(Color color) {
-		if(frequencyColorsCurrent.containsKey(color)) {
-			return frequencyColorsCurrent.get(color);
+	public int getColorFrequency(Color color) {
+		if(frequencyColors.containsKey(color)) {
+			return frequencyColors.get(color);
 		}
 		
 		return 0;
 	}
 	
-	public void decrementColorFrequency(Color colorDecrement) {
-		if(frequencyColorsCurrent.containsKey(colorDecrement)) {
-			frequencyColorsCurrent.put(colorDecrement, frequencyColorsCurrent.get(colorDecrement) - 1);
+	public void adjustInitialColorFrequency(Color colorAdjust, int adjustment) {
+		if(frequencyColorsInitial.containsKey(colorAdjust)) {
+			frequencyColorsInitial.put(colorAdjust, frequencyColorsInitial.get(colorAdjust) + adjustment);
 		}
 		else {
-			frequencyColorsCurrent.put(colorDecrement, 1);
+			frequencyColorsInitial.put(colorAdjust, adjustment);
 		}
 	}
 	
-	private void incrementColorFrequencyInitial(Color colorIncrement) {
-		if(frequencyColorsInitial.containsKey(colorIncrement)) {
-			frequencyColorsInitial.put(colorIncrement, frequencyColorsInitial.get(colorIncrement) + 1);
+	public void adjustColorFrequency(Color colorAdjust, int adjustment) {
+		if(frequencyColors.containsKey(colorAdjust)) {
+			frequencyColors.put(colorAdjust, frequencyColors.get(colorAdjust) + adjustment);
 		}
 		else {
-			frequencyColorsInitial.put(colorIncrement, 1);
+			frequencyColors.put(colorAdjust, adjustment);
 		}
 	}
 	
-	public void incrementColorFrequency(Color colorIncrement) {
-		if(frequencyColorsCurrent.containsKey(colorIncrement)) {
-			frequencyColorsCurrent.put(colorIncrement, frequencyColorsCurrent.get(colorIncrement) + 1);
+	public void adjustPolarityFrequency(Color colorAdjust, int adjustment) {
+		if(frequencyPolarities.containsKey(colorAdjust)) {
+			frequencyPolarities.put(colorAdjust, frequencyPolarities.get(colorAdjust) + adjustment);
 		}
 		else {
-			frequencyColorsCurrent.put(colorIncrement, 1);
+			frequencyPolarities.put(colorAdjust, adjustment);
 		}
 	}
 	

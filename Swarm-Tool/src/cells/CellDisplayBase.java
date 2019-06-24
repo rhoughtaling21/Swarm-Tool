@@ -22,6 +22,7 @@ public class CellDisplayBase extends CellDisplay {
 	public CellDisplayBase(double x, double y, double size, Color colorFill, Board board) {
 		//a lot of these parameters actually belong to Rectangle2D.Double, so we call in the super class CellDisplay
 		super(x, y, size, colorFill, board);
+		board.adjustInitialColorFrequency(colorFill, 1);
 	}
 
 	//flip color of Cell
@@ -40,11 +41,11 @@ public class CellDisplayBase extends CellDisplay {
 	@Override
 	public void setColor(Color colorFill) {
 		//Subtract counter for the old color
-		board.decrementColorFrequency(this.colorFill);
+		board.adjustColorFrequency(this.colorFill, -1);
 		//Set new Color
 		this.colorFill = colorFill;
 		//Set Polarity and add counter for new color
-		board.incrementColorFrequency(colorFill);
+		board.adjustColorFrequency(colorFill, 1);
 	}
 }
 

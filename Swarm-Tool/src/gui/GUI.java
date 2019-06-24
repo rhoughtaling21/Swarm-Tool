@@ -6,7 +6,9 @@ import javax.swing.JTabbedPane;
 import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.Arrays;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
+import java.util.HashMap;
 
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
@@ -40,11 +42,14 @@ import strategies.Lines;
  * which to be most dominant (as the yellow has been in previous versions).
  *  */
 public class GUI {
-
 	public static final int HEIGHT = 864;
 	public static final int WIDTH = 1536;
 	public static final int MAXBOARDSIZE = 800;// pixel size of board
-
+	private static final int COUNT_POLARITIES_MAXIMUM = 4;
+	private static final String[] OPTIONS_COLORS_POLARITIES_NAMES = {"RED", "BLUE", "YELLOW", "GREEN", "CYAN", "WHITE", "BLACK"};
+	private static final Color[] COLORS_BASE = {Color.WHITE, Color.GRAY, Color.BLACK};
+	private static final Color[] OPTIONS_COLORS_POLARITIES = {Color.RED, Color.BLUE, Color.YELLOW, Color.GREEN, Color.CYAN, Color.WHITE, Color.BLACK};
+	
 	public JFrame frmProjectLegion;// main frame
 	private JTextField textField_NumAgents;
 	private JTextField textField_NumAgentChanges;
@@ -53,35 +58,24 @@ public class GUI {
 	private JTextField textField_BoardSize;
 	private JTextField textField_TriggerFlip;
 	private JTextField textField_TriggerFlipLayer2;
+	private JLabel lblBoardSizeInt; // updates BoardSize Label
+	private JLabel lblSwarmCountInt; // updates SwarmCount Label
+//	private JLabel lblBooleanCompare1; //  displays boolean (polarity1 < polarity3)  MODIFICATION #4
+//	private JLabel lblBooleanCompare2; //  displays boolean (polarity2 < polarity3)  MODIFICATION #4
+//	private JLabel lblBooleanCompare3; //  displays boolean (polarity1+polarity2 < polarity3)  MODIFICATION #4
+	private JLabel lblCompare1; // displays the current constraints MODIFICATION #10
+	private JLabel lblCompare2; // displays the current constraints MODIFICATION #10
+	private JLabel lblCompare3; // displays the current constraints MODIFICATION #10
+	private JLabel lblStepDisplay; //displays the number of steps that have occurred
+	private JLabel[] labelsFrequencyColorsInitial;
+	private JLabel[] labelsFrequencyColors;
+	private JLabel[] labelsPercentPolarities;
+	private JLabel[] labels;
+	private HashMap<Integer, Color> colorsPolarity;
 
-	public JLabel lblBoardSizeInt = new JLabel(); // updates BoardSize Label
-	public JLabel lblSwarmCountInt = new JLabel(); // updates SwarmCount Label
-	public JLabel lblIntWhiteCells = new JLabel(); // updates InitWhiteCells
-	public JLabel lblIntBlackCells = new JLabel(); // updates InitBlackCells
-	public JLabel lblIntGrayCells = new JLabel(); // updates InitGrayCells	MODIFICATION #3
-	public JLabel lblCurrWhiteCells = new JLabel(); // updates CurrentWhiteCells
-	public JLabel lblCurrBlackCells = new JLabel(); // updates CurrentBlackCells
-	public JLabel lblCurrGrayCells = new JLabel(); // updates CurrentGrayCells	MODIFICATION #3
-	public JLabel lblPolarityOnePercent = new JLabel(); //  updates number of cells with polarity 1  MODIFICATION #4
-	public JLabel lblPolarityTwoPercent = new JLabel(); //  updates number of cells with polarity 2  MODIFICATION #4
-	public JLabel lblPolarityThreePercent = new JLabel(); //  updates number of cells with polarity 3  MODIFICATION #4
-	public JLabel lblPolarityFourPercent = new JLabel(); //  updates number of cells with polarity 4  MODIFICATION #4
-	public JLabel lblBooleanCompare1 = new JLabel(); //  displays boolean (polarity1 < polarity3)  MODIFICATION #4
-	public JLabel lblBooleanCompare2 = new JLabel(); //  displays boolean (polarity2 < polarity3)  MODIFICATION #4
-	public JLabel lblBooleanCompare3 = new JLabel(); //  displays boolean (polarity1+polarity2 < polarity3)  MODIFICATION #4
-	public JLabel lblCompare1 = new JLabel(); // displays the current constraints MODIFICATION #10
-	public JLabel lblCompare2 = new JLabel(); // displays the current constraints MODIFICATION #10
-	public JLabel lblCompare3 = new JLabel(); // displays the current constraints MODIFICATION #10
-	public JLabel lblStepDisplay = new JLabel(); //displays the number of steps that have occured
-
-	
 	public int layer2Draw = 1;// which cell array in board to display
 	public Board board;// board to be drawn
 	private boolean timerStarted = true;// timer or agent step
-	public Color polarity1 = Color.RED;// color1 of board.cells2
-	public Color polarity2 = Color.BLUE;// color2 of board.cells2
-	public Color polarity3 = Color.YELLOW;
-	public Color polarity4 = Color.WHITE;
 	public int initBoardSize, initAgentCount;
 	public boolean attractOrRepel = true;
 	public Color agentColor = Color.GREEN;
@@ -97,16 +91,18 @@ public class GUI {
 	public int toggleCount = 0; //MODIFICATION:  used in implementing the View Agents Button
 	public int numSpecialAgents; //MODIFICATION: how many agents should be a separate color
 	public boolean splitPolarity; //MODIFICATION: if true set the board to be "stuck"
-	public boolean diagonalLineStart; //MODIFICATION #9 
-	
+	public boolean diagonalLineStart; //MODIFICATION #9
+	private int indexPolarityDominant;
+
 	public boolean threePol; //MODIFICATION #3   needs fixed
 	public int percentToFlip; //MODIFICATION #2 stores the number of random cells to flip
-	public int polOneCount = 0; //MODIFICATION #4  stores the number of cells that have polarity 1
-	public int polTwoCount = 0; //MODIFICATION #4  stores the number of cells that have polarity 2
-	public int polThreeCount = 0; //MODIFICATION #4  stores the number of cells that have polarity 3
-	public int polFourCount = 0; //MODIFICATION #4  stores the number of cells that have polarity 4
-	
+
 	public boolean togglePolarity = false; //MODIFICATION #5 determines if the agents goal is a single polarity or three balanced polarities
+	
+	private JComboBox<String>[] menusDropDownPolarity;
+	private HashMap<Color, Integer> frequencyColorsInitial;
+	private HashMap<Color, Integer> frequencyColors;
+	private HashMap<Color, Integer> frequencyPolarities;
 
 	/**
 	 * Launch the application.
@@ -125,22 +121,24 @@ public class GUI {
 		});
 	}
 
-	public Color getPolarity1() {
-		return polarity1;
+	public Color getPolarityColor(int polarity) {
+		return colorsPolarity.get(polarity);
 	}
 
-	public Color getPolarity2() {
-		return polarity2;
+	public void setBoard(Board board) {
+		this.board = board;
+		
+		this.frequencyColorsInitial = board.getColorFrequenciesInitial();
+		this.frequencyColors = board.getColorFrequencies();
+		this.frequencyPolarities = board.getPolarityFrequencies();
+		
+		for(int indexLabel = 0; indexLabel < labelsFrequencyColorsInitial.length; indexLabel++) {
+			labelsFrequencyColorsInitial[indexLabel].setText(Integer.toString(getMapValueInteger(frequencyColorsInitial, COLORS_BASE[indexLabel])));
+		}
+		
+		updateLabels(board.getStepCount());
 	}
-
-	public Color getPolarity3() {
-		return polarity3;
-	}
-
-	public Color getPolarity4() {
-		return polarity4;
-	}
-
+	
 	/**
 	 * Create the application.
 	 */
@@ -157,6 +155,11 @@ public class GUI {
 		frmProjectLegion.setBounds(100, 100, WIDTH, HEIGHT);
 		frmProjectLegion.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
+		colorsPolarity = new HashMap<Integer, Color>(COUNT_POLARITIES_MAXIMUM);
+		for(int indexPolarity = 0; indexPolarity < COUNT_POLARITIES_MAXIMUM; indexPolarity++) {
+			colorsPolarity.put(indexPolarity + 1, OPTIONS_COLORS_POLARITIES[indexPolarity]);
+		}
+		
 		// Makes the top menu bar that has file and edit
 		JMenuBar menuBar = new JMenuBar();
 		frmProjectLegion.setJMenuBar(menuBar);
@@ -175,6 +178,7 @@ public class GUI {
 
 		JMenuItem mntmNew = new JMenuItem("New");  //Does not work as a function
 		mnEdit.add(mntmNew);
+		
 		frmProjectLegion.getContentPane().setLayout(null);
 
 		// ************************************************************ This makes the
@@ -183,7 +187,6 @@ public class GUI {
 		JFrame frame = new JFrame();
 		boardInGUI.setBackground(Color.WHITE);
 		boardInGUI.setBounds(10, (HEIGHT - MAXBOARDSIZE) / 8, MAXBOARDSIZE, MAXBOARDSIZE);
-		// System.out.print((HEIGHT-BOARDSIZE)/8);
 		frame.getContentPane().add(boardInGUI);
 
 		// This is where the tabs for the layer options go.
@@ -192,6 +195,7 @@ public class GUI {
 		// used to change whether board.cells or board.cells2 is shown in board when the
 		// tab selected is changed
 		ChangeListener changeListener = new ChangeListener() {
+			@Override
 			public void stateChanged(ChangeEvent changeEvent) {
 				JTabbedPane sourceTabbedPane = (JTabbedPane) changeEvent.getSource();
 				int index = sourceTabbedPane.getSelectedIndex();
@@ -210,7 +214,7 @@ public class GUI {
 
 		// ************************************************************ Change Size of
 		// the Board Button
-		JButton btnChangeBoardSize = new JButton("Update Size");   //DEOS NOT WORK YET
+		JButton btnChangeBoardSize = new JButton("Update Size");   //DOES NOT WORK YET
 		btnChangeBoardSize.setForeground(Color.LIGHT_GRAY);
 		btnChangeBoardSize.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
@@ -228,10 +232,11 @@ public class GUI {
 		lblNumStartingWhite.setBounds(10, 11, 125, 35);
 		tabLayer1.add(lblNumStartingWhite);
 
+		JLabel lblIntWhiteCells = new JLabel();
 		lblIntWhiteCells.setHorizontalAlignment(SwingConstants.CENTER);
 		lblIntWhiteCells.setBounds(145, 11, 125, 35);
 		tabLayer1.add(lblIntWhiteCells);
-		
+
 		//MODIFICATION #3 Gray Cells
 		//
 		//Added 5/30 Morgan Might
@@ -241,6 +246,7 @@ public class GUI {
 		lblNumStartingGray.setBounds(10, 44, 125, 35);
 		tabLayer1.add(lblNumStartingGray);
 
+		JLabel lblIntGrayCells = new JLabel();
 		lblIntGrayCells.setHorizontalAlignment(SwingConstants.CENTER);
 		lblIntGrayCells.setBounds(145, 44, 125, 35);
 		tabLayer1.add(lblIntGrayCells);
@@ -250,16 +256,19 @@ public class GUI {
 		lblNumStartingBlack.setBounds(10, 79, 125, 35);
 		tabLayer1.add(lblNumStartingBlack);
 
+		JLabel lblIntBlackCells = new JLabel();
 		lblIntBlackCells.setHorizontalAlignment(SwingConstants.CENTER);
 		lblIntBlackCells.setBounds(145, 79, 125, 35);
 		tabLayer1.add(lblIntBlackCells);
 
+		labelsFrequencyColorsInitial = new JLabel[]{lblIntWhiteCells, lblIntGrayCells, lblIntBlackCells};
+		
 		JLabel lblBoardSizeLayer = new JLabel("Board Size:");
-		lblBoardSizeLayer.setForeground(Color.lightGray);
+		lblBoardSizeLayer.setForeground(Color.LIGHT_GRAY);
 		lblBoardSizeLayer.setHorizontalAlignment(SwingConstants.CENTER);
 		lblBoardSizeLayer.setBounds(10, 157, 125, 35);
 		tabLayer1.add(lblBoardSizeLayer);
-		
+
 		//MODIFICATION #2: Flip random cells that the user has specified the amount (Percent)
 		//
 		//Added 5/23 Morgan Might
@@ -267,14 +276,12 @@ public class GUI {
 		lblTriggerFlip.setHorizontalAlignment(SwingConstants.CENTER);
 		lblTriggerFlip.setBounds(10, 225, 125, 35);
 		tabLayer1.add(lblTriggerFlip);
-			
+
 		//MODIFICATION #2  stores the % of random cells to flip, the user may change the number
-		textField_TriggerFlip = new JTextField();
-		textField_TriggerFlip.setText("20");
+		textField_TriggerFlip = new JTextField("20", 10);
 		textField_TriggerFlip.setBounds(177, 225, 50, 20);
 		tabLayer1.add(textField_TriggerFlip);
-		textField_TriggerFlip.setColumns(10);
-		
+
 		//MODIFICATION #2  button will flip the percent of cells based on number in text field
 		JButton btnTriggerFlipCells = new JButton("Flip Cells");
 		btnTriggerFlipCells.addActionListener(new ActionListener() {
@@ -293,10 +300,11 @@ public class GUI {
 		lblNumCurrentWhite.setBounds(10, 300, 125, 35);
 		tabLayer1.add(lblNumCurrentWhite);
 
+		JLabel lblCurrWhiteCells = new JLabel();
 		lblCurrWhiteCells.setHorizontalAlignment(SwingConstants.CENTER);
 		lblCurrWhiteCells.setBounds(145, 300, 125, 35);
 		tabLayer1.add(lblCurrWhiteCells);
-		
+
 		//MODIFICATION #3 current Gray Cells
 		//
 		//Added 5/30 by Morgan Might
@@ -306,6 +314,7 @@ public class GUI {
 		lblNumCurrentGray.setBounds(10, 334, 125, 35);
 		tabLayer1.add(lblNumCurrentGray);
 
+		JLabel lblCurrGrayCells = new JLabel();
 		lblCurrGrayCells.setHorizontalAlignment(SwingConstants.CENTER);
 		lblCurrGrayCells.setBounds(145, 334, 125, 35);
 		tabLayer1.add(lblCurrGrayCells);
@@ -315,10 +324,13 @@ public class GUI {
 		lblNumCurrentBlack.setBounds(10, 368, 125, 35);
 		tabLayer1.add(lblNumCurrentBlack);
 
+		JLabel lblCurrBlackCells = new JLabel();
 		lblCurrBlackCells.setHorizontalAlignment(SwingConstants.CENTER);
 		lblCurrBlackCells.setBounds(145, 368, 125, 35);
 		tabLayer1.add(lblCurrBlackCells);
 
+		labelsFrequencyColors = new JLabel[]{lblCurrWhiteCells, lblCurrGrayCells, lblCurrBlackCells};
+		
 		// ************************************************************ Text field that
 		// will trigger when button pushed, this is the value that will be the new board
 		// size
@@ -335,66 +347,67 @@ public class GUI {
 		tabbedPane.addTab("Layer 2", null, tabLayer2, null);
 		tabLayer2.setLayout(null);
 
+		ItemListener listenerDropDownColorPolarity = new ItemListener() {
+			Object itemSelectedPrevious;
+			
+			@Override
+			public void itemStateChanged(ItemEvent event) {
+				int change = event.getStateChange();
+				
+				if(change == ItemEvent.DESELECTED) {
+					itemSelectedPrevious = event.getItem();
+					System.out.println("Deselected " + itemSelectedPrevious);
+				}
+				else if(change == ItemEvent.SELECTED) {
+					JComboBox<String> menuDropDownSource = (JComboBox<String>)event.getSource();
+					Color colorSelected = OPTIONS_COLORS_POLARITIES[menuDropDownSource.getSelectedIndex()];
+					
+					System.out.println("Selected " + menuDropDownSource.getSelectedItem());
+					
+					if(colorsPolarity.containsValue(colorSelected)) {
+						menuDropDownSource.removeItemListener(this);
+						menuDropDownSource.setSelectedItem(itemSelectedPrevious);
+						menuDropDownSource.addItemListener(this);
+					}
+					else {
+						int indexPolarity = 0;
+						for(int index = 0; index < menusDropDownPolarity.length; index++) {
+							if(menusDropDownPolarity[index].equals(menuDropDownSource)) {
+								indexPolarity = index;
+								break;
+							}
+						}
+						
+						int indexSelectedPrevious = 0;
+						for(int indexItem = 0; indexItem < menuDropDownSource.getModel().getSize(); indexItem++) {
+							if(menuDropDownSource.getItemAt(indexItem).equals(itemSelectedPrevious)) {
+								indexSelectedPrevious = indexItem;
+								break;
+							}
+						}
+						
+						board.updatePolarityColor(OPTIONS_COLORS_POLARITIES[indexSelectedPrevious], colorSelected);
+						colorsPolarity.put(indexPolarity + 1, colorSelected);
+						
+						if (!timerStarted) {
+							board.repaint();
+						}
+					}
+				}
+			}
+		};
+		
 		// ************************************************************ Primary color
 		// for polarity choice comboBox where you can change it
 		JLabel lblPrimaryPolarityColor = new JLabel("Primary Polarity Color");
 		lblPrimaryPolarityColor.setBounds(25, 25, 125, 14);
 		tabLayer2.add(lblPrimaryPolarityColor);
-		// update the first color of cells in board.cells2
-		JComboBox<String> comboPrimary = new JComboBox<String>();
-		comboPrimary.setModel(new DefaultComboBoxModel<String>(new String[] { "RED", "BLUE", "GREEN", "CYAN", "YELLOW" }));
-		Color[] primaryColorList = new Color[] {Color.RED, Color.BLUE, Color.GREEN, Color.CYAN, Color.YELLOW };
-		comboPrimary.setBounds(25, 50, 125, 22);
-		comboPrimary.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				Color colorSelected = primaryColorList[((JComboBox<String>)e.getSource()).getSelectedIndex()];
-				if (polarity2.equals(colorSelected)) {
-					int temp = Arrays.asList(primaryColorList).indexOf(polarity1);
-					comboPrimary.setSelectedIndex(temp);
-				}
-				else {
-					board.updatePolarityColor(polarity1, colorSelected);
-					polarity1 = colorSelected;
-				}
-				
-				if (!timerStarted) {
-					board.repaint();
-				}
-
-			}
-		});
-		tabLayer2.add(comboPrimary);
 
 		// ************************************************************ Secondary color
 		// for polarity choice comboBox where you can change it
 		JLabel lblSecondaryPolarityColor = new JLabel("Secondary Polarity Color");
 		lblSecondaryPolarityColor.setBounds(238, 25, 150, 14);
 		tabLayer2.add(lblSecondaryPolarityColor);
-		// update the second color of cells in board.cells2
-		JComboBox<String> comboSecondary = new JComboBox<String>();
-		comboSecondary.setModel(new DefaultComboBoxModel<String>(new String[] { "BLUE", "RED", "GREEN", "CYAN" }));
-		Color[] secondaryColorList = new Color[] { Color.BLUE, Color.RED, Color.GREEN, Color.CYAN };
-		comboSecondary.setBounds(238, 50, 125, 22);
-		comboSecondary.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				Color colorSelected = secondaryColorList[((JComboBox<String>)e.getSource()).getSelectedIndex()];
-				if (polarity1.equals(colorSelected)) {
-					int temp = Arrays.asList(secondaryColorList).indexOf(polarity2);
-					comboSecondary.setSelectedIndex(temp);
-				}
-				else {
-					board.updatePolarityColor(polarity2, colorSelected);
-					polarity2 = colorSelected;
-				}
-				
-				if (!timerStarted) {
-					board.repaint();
-				}
-			}
-		});
-		tabLayer2.add(comboSecondary);
 
 		// ************************************************************ Tertiary color
 		// comboBox if we want it.
@@ -402,76 +415,23 @@ public class GUI {
 		lblTertiaryPolarityColor.setBounds(25, 100, 125, 14);
 		tabLayer2.add(lblTertiaryPolarityColor);
 
-		JComboBox<String> comboTertiary = new JComboBox<String>();
-		comboTertiary.setModel(new DefaultComboBoxModel<String>(new String[] { "YELLOW", "BLUE", "RED", "GREEN", "CYAN", "BLACK", "WHITE" }));
-		Color[] tertiaryColorList = new Color[] { Color.YELLOW, Color.BLUE, Color.RED, Color.GREEN, Color.CYAN,
-				Color.BLACK, Color.WHITE };
-		comboTertiary.setBounds(25, 125, 125, 22);
-		comboTertiary.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				Color colorSelected = tertiaryColorList[((JComboBox)e.getSource()).getSelectedIndex()];
-				if (polarity1.equals(colorSelected)) {
-					int temp = Arrays.asList(tertiaryColorList).indexOf(polarity3);
-					comboTertiary.setSelectedIndex(temp);
-				}
-				else if (polarity2.equals(colorSelected)) {
-					int temp = Arrays.asList(tertiaryColorList).indexOf(polarity3);
-					comboTertiary.setSelectedIndex(temp);
-				}
-				else if (polarity4.equals(colorSelected)) {
-					int temp = Arrays.asList(tertiaryColorList).indexOf(polarity3);
-					comboTertiary.setSelectedIndex(temp);
-				} 
-				else {
-					board.updatePolarityColor(polarity3, colorSelected);
-					polarity3 = colorSelected;
-				}
-				
-				if (!timerStarted) {
-					board.repaint();
-				}
-			}
-		});
-		tabLayer2.add(comboTertiary);
-
 		JLabel lblQuaternaryPolarityColor = new JLabel("Quaternary Polarity Color");
 		lblQuaternaryPolarityColor.setBounds(238, 100, 150, 22);
 		tabLayer2.add(lblQuaternaryPolarityColor);
 
-		JComboBox<String> comboQuaternary = new JComboBox<String>();
-		comboQuaternary.setModel(new DefaultComboBoxModel<String>(new String[] {"WHITE", "BLUE", "RED", "GREEN", "CYAN", "BLACK", "YELLOW" }));
-		Color[] quaternaryColorList = new Color[] { Color.WHITE, Color.BLUE, Color.RED, Color.GREEN, Color.CYAN, Color.BLACK, Color.YELLOW };
-		comboQuaternary.setBounds(238, 125, 125, 22);
-		comboQuaternary.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				Color colorSelected = quaternaryColorList[((JComboBox<String>)e.getSource()).getSelectedIndex()];
-				if (polarity1.equals(colorSelected)) {
-					int temp = Arrays.asList(tertiaryColorList).indexOf(polarity4);
-					comboQuaternary.setSelectedIndex(temp);
-				}
-				else if (polarity2.equals(colorSelected)) {
-					int temp = Arrays.asList(tertiaryColorList).indexOf(polarity4);
-					comboQuaternary.setSelectedIndex(temp);
-				}
-				else if (polarity3.equals(colorSelected)) {
-					int temp = Arrays.asList(tertiaryColorList).indexOf(polarity4);
-					comboQuaternary.setSelectedIndex(temp);
-				}
-				else {
-					board.updatePolarityColor(polarity4, colorSelected);
-					polarity4 = colorSelected;
-				}
-				
-				if (!timerStarted) {
-					board.repaint();
-				}
-
-			}
-		});
-		tabLayer2.add(comboQuaternary);
-
+		
+		menusDropDownPolarity = new JComboBox[4];
+		for(int indexMenu = 0; indexMenu < menusDropDownPolarity.length; indexMenu++) {
+			menusDropDownPolarity[indexMenu] = new JComboBox<String>(new DefaultComboBoxModel<String>(OPTIONS_COLORS_POLARITIES_NAMES));
+			menusDropDownPolarity[indexMenu].setSelectedIndex(indexMenu);
+			menusDropDownPolarity[indexMenu].addItemListener(listenerDropDownColorPolarity);
+			tabLayer2.add(menusDropDownPolarity[indexMenu]);
+		}
+		menusDropDownPolarity[0].setBounds(25, 50, 125, 22);
+		menusDropDownPolarity[1].setBounds(238, 50, 125, 22);
+		menusDropDownPolarity[2].setBounds(25, 125, 125, 22);
+		menusDropDownPolarity[3].setBounds(238, 125, 125, 22);
+		
 		// ************************************************************ Sets what the
 		// polarity ratios should be for the two colors.
 		JLabel lblReginalStability = new JLabel("Regional Stability");  //Does not work
@@ -500,7 +460,7 @@ public class GUI {
 		AbstractStrategy[] goalStrategyList = new AbstractStrategy[] { checkerBoard, lines, allBlack, diagonalLines };
 		//MODIFICATION: start with Diagonal Lines as the Goal
 		//Added 7/17 by Morgan Might
-		if(diagonalLineStart == true) {
+		if(diagonalLineStart) {
 			goalStrategy = goalStrategyList[3]; //Still DOES NOT work
 		}
 		comboGoalStrategy.setBounds(238, 200, 150, 22);
@@ -514,7 +474,7 @@ public class GUI {
 			}
 		});
 		tabLayer2.add(comboGoalStrategy);
-		
+
 		//MODIFICATION #5:
 		//Added 6/12 by Morgan Might
 		//
@@ -523,7 +483,7 @@ public class GUI {
 		lblRulesApply.setHorizontalAlignment(SwingConstants.CENTER);
 		lblRulesApply.setBounds(450, 175, 150, 14);
 		tabLayer2.add(lblRulesApply);
-				
+
 		//MODIFICATION #5:
 		//Added 6/12 by Morgan Might
 		//
@@ -539,37 +499,37 @@ public class GUI {
 			}
 		});
 		tabLayer2.add(tglbtnRulesApply);
-		
-		
-//		//MODIFICATION #2 (Layer 2) label
-//		//
-//		//Added 5/23 by Morgan Might
-//		//Same as above, this button will allow the use to flip cells randomly (with a view of the polarity layer)
-//		JLabel lblTriggerFlipLayer2= new JLabel("Percent to Flip:");
-//		lblTriggerFlipLayer2.setHorizontalAlignment(SwingConstants.CENTER);
-//		lblTriggerFlipLayer2.setBounds(10, 270, 125, 35);
-//		tabLayer2.add(lblTriggerFlipLayer2);
-//							
-//		//MODIFICATION #2 (Layer 2) stores the % of random cells to flip
-//		textField_TriggerFlipLayer2 = new JTextField();
-//		textField_TriggerFlipLayer2.setText("20");
-//		textField_TriggerFlipLayer2.setBounds(177, 277, 50, 20);
-//		tabLayer2.add(textField_TriggerFlipLayer2);
-//		textField_TriggerFlipLayer2.setColumns(10);
-//			
-//		//MODIFICATION #2 (Layer 2) button triggers the flip
-//		JButton btnTriggerFlipCellsLayer2 = new JButton("Flip Cells");
-//		btnTriggerFlipCellsLayer2.addActionListener(new ActionListener() {
-//			public void actionPerformed(ActionEvent arg0) {
-//				//set number in the text field to an int variable
-//				percentToFlip = Integer.parseInt(textField_TriggerFlipLayer2.getText());
-//				//Call method that will cause some cells to flip
-//				board.flipCells(percentToFlip);
-//			}
-//		});
-//		btnTriggerFlipCellsLayer2.setBounds(286, 270, 125, 35);
-//		tabLayer2.add(btnTriggerFlipCellsLayer2);
-		
+
+
+		//		//MODIFICATION #2 (Layer 2) label
+		//		//
+		//		//Added 5/23 by Morgan Might
+		//		//Same as above, this button will allow the use to flip cells randomly (with a view of the polarity layer)
+		//		JLabel lblTriggerFlipLayer2= new JLabel("Percent to Flip:");
+		//		lblTriggerFlipLayer2.setHorizontalAlignment(SwingConstants.CENTER);
+		//		lblTriggerFlipLayer2.setBounds(10, 270, 125, 35);
+		//		tabLayer2.add(lblTriggerFlipLayer2);
+		//							
+		//		//MODIFICATION #2 (Layer 2) stores the % of random cells to flip
+		//		textField_TriggerFlipLayer2 = new JTextField();
+		//		textField_TriggerFlipLayer2.setText("20");
+		//		textField_TriggerFlipLayer2.setBounds(177, 277, 50, 20);
+		//		tabLayer2.add(textField_TriggerFlipLayer2);
+		//		textField_TriggerFlipLayer2.setColumns(10);
+		//			
+		//		//MODIFICATION #2 (Layer 2) button triggers the flip
+		//		JButton btnTriggerFlipCellsLayer2 = new JButton("Flip Cells");
+		//		btnTriggerFlipCellsLayer2.addActionListener(new ActionListener() {
+		//			public void actionPerformed(ActionEvent arg0) {
+		//				//set number in the text field to an int variable
+		//				percentToFlip = Integer.parseInt(textField_TriggerFlipLayer2.getText());
+		//				//Call method that will cause some cells to flip
+		//				board.flipCells(percentToFlip);
+		//			}
+		//		});
+		//		btnTriggerFlipCellsLayer2.setBounds(286, 270, 125, 35);
+		//		tabLayer2.add(btnTriggerFlipCellsLayer2);
+
 		//MODIFICATION #10
 		//Added 7/17 by Morgan Might
 		//Dominant Polarity Label: Choose which polarity should be the majority
@@ -587,29 +547,27 @@ public class GUI {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				JComboBox<String> src = (JComboBox<String>) e.getSource();
-				newDominantPolarity = dominantPolarityList[src.getSelectedIndex()];
+				indexPolarityDominant = src.getSelectedIndex();
+				newDominantPolarity = dominantPolarityList[indexPolarityDominant++];
 				updateDominantPolarity(newDominantPolarity);
-				
 			}
 		});
 		tabLayer2.add(dominantPolarity);
-		
+
 		//MODIFICATION #10:
 		//Added 7/23 by Morgan Might
 		//Display how many steps have occured
-		JLabel lblStepCount = new JLabel("Step :");
+		JLabel lblStepCount = new JLabel("Step:");
 		lblStepCount.setHorizontalAlignment(SwingConstants.CENTER);
 		lblStepCount.setBounds(300, 300, 125, 35);
 		tabLayer2.add(lblStepCount);
-		
+
 		lblStepDisplay = new JLabel();
 		lblStepDisplay.setHorizontalAlignment(SwingConstants.CENTER);
 		lblStepDisplay.setText("0");
 		lblStepDisplay.setBounds(400, 310, 50, 20);
 		tabLayer2.add(lblStepDisplay);
-		
-				
-		
+
 		//MODIFICATION #4:
 		//Added 6/4 by Morgan Might
 		//These JLabels will display the percentage of each polarity
@@ -619,44 +577,46 @@ public class GUI {
 		lblPolarityOne.setHorizontalAlignment(SwingConstants.CENTER);
 		lblPolarityOne.setBounds(10, 400, 125, 35);
 		tabLayer2.add(lblPolarityOne);
-		
-		lblPolarityOnePercent = new JLabel();
-		lblPolarityOnePercent.setText(getPolOneCount() + "%");
+
+		JLabel lblPolarityOnePercent = new JLabel();
+		//lblPolarityOnePercent.setText(getPolOneCount() + "%");
 		lblPolarityOnePercent.setBounds(137, 405, 50, 20);
 		tabLayer2.add(lblPolarityOnePercent);
-		
+
 		//Polarity 2 label
 		JLabel lblPolarityTwo = new JLabel("Blue :");
 		lblPolarityTwo.setHorizontalAlignment(SwingConstants.CENTER);
 		lblPolarityTwo.setBounds(10, 420, 125, 35);
 		tabLayer2.add(lblPolarityTwo);
-				
-		lblPolarityTwoPercent = new JLabel();
-		lblPolarityTwoPercent.setText(getPolOneCount() + "%");
+
+		JLabel lblPolarityTwoPercent = new JLabel();
+		//lblPolarityTwoPercent.setText(getPolOneCount() + "%");
 		lblPolarityTwoPercent.setBounds(137, 425, 50, 20);
 		tabLayer2.add(lblPolarityTwoPercent);
-		
+
 		//Polarity 3 label
 		JLabel lblPolarityThree = new JLabel("Yellow :");
 		lblPolarityThree.setHorizontalAlignment(SwingConstants.CENTER);
 		lblPolarityThree.setBounds(10, 440, 125, 35);
 		tabLayer2.add(lblPolarityThree);
-				
-		lblPolarityThreePercent = new JLabel();
-		lblPolarityThreePercent.setText(getPolOneCount() + "%");
+
+		JLabel lblPolarityThreePercent = new JLabel();
+		//lblPolarityThreePercent.setText(getPolOneCount() + "%");
 		lblPolarityThreePercent.setBounds(137, 445, 50, 20);
 		tabLayer2.add(lblPolarityThreePercent);
-		
+
 		//Polarity 4 label
-//		JLabel lblPolarityFour = new JLabel("Polarity 4 :");
-//		lblPolarityFour.setHorizontalAlignment(SwingConstants.CENTER);
-//		lblPolarityFour.setBounds(10, 460, 125, 35);
-//		tabLayer2.add(lblPolarityFour);
-//				
-//		lblPolarityFourPercent = new JLabel();
-//		lblPolarityFourPercent.setText(getPolOneCount() + "%");
-//		lblPolarityFourPercent.setBounds(137, 460, 50, 20);
-//		tabLayer2.add(lblPolarityFourPercent);
+		//		JLabel lblPolarityFour = new JLabel("Polarity 4 :");
+		//		lblPolarityFour.setHorizontalAlignment(SwingConstants.CENTER);
+		//		lblPolarityFour.setBounds(10, 460, 125, 35);
+		//		tabLayer2.add(lblPolarityFour);
+		//				
+		//		JLabel lblPolarityFourPercent = new JLabel();
+		//		lblPolarityFourPercent.setText(getPolOneCount() + "%");
+		//		lblPolarityFourPercent.setBounds(137, 460, 50, 20);
+		//		tabLayer2.add(lblPolarityFourPercent);
+
+		labelsPercentPolarities = new JLabel[]{lblPolarityOnePercent, lblPolarityTwoPercent, lblPolarityThreePercent};
 		
 		//MODIFICATION #4:
 		//Added 6/4 by Morgan Might
@@ -668,38 +628,29 @@ public class GUI {
 		lblCompare1.setHorizontalAlignment(SwingConstants.CENTER);
 		lblCompare1.setBounds(300, 400, 125, 35);
 		tabLayer2.add(lblCompare1);
-				
-		lblBooleanCompare1 = new JLabel();
-		lblBooleanCompare1.setText(getBooleanCompareOne());
-		lblBooleanCompare1.setBounds(420, 405, 50, 20);
-		tabLayer2.add(lblBooleanCompare1);
-		
+
+		labels = new JLabel[COUNT_POLARITIES_MAXIMUM];
+		for(int indexLabel = 0; indexLabel < labels.length; indexLabel++) {
+			labels[indexLabel] = new JLabel();
+			labels[indexLabel].setVerticalAlignment(SwingConstants.CENTER);
+			labels[indexLabel].setBounds(420, (405 + (20 * indexLabel)), 50, 20);
+			tabLayer2.add(labels[indexLabel]);
+		}
+
 		//MODIFICATION #4: Display boolean statements (comparing polarity 2 and 3)
 		lblCompare2 = new JLabel();
 		lblCompare2.setText(statementTwo);
 		lblCompare2.setHorizontalAlignment(SwingConstants.CENTER);
 		lblCompare2.setBounds(300, 420, 125, 35);
 		tabLayer2.add(lblCompare2);
-						
-		lblBooleanCompare2 = new JLabel();
-		lblBooleanCompare2.setText(getBooleanCompareTwo());
-		lblBooleanCompare2.setBounds(420, 425, 50, 20);
-		tabLayer2.add(lblBooleanCompare2);
-		
+
 		//MODIFICATION #4: Display boolean statements (comparing polarity 1+2 to 3)
 		lblCompare3 = new JLabel();
 		lblCompare3.setText(statementThree);
 		lblCompare3.setHorizontalAlignment(SwingConstants.CENTER);
 		lblCompare3.setBounds(300, 440, 125, 35);
 		tabLayer2.add(lblCompare3);
-						
-		lblBooleanCompare3 = new JLabel();
-		lblBooleanCompare3.setText(getBooleanCompareThree());
-		lblBooleanCompare3.setBounds(420, 445, 50, 20);
-		tabLayer2.add(lblBooleanCompare3);
-		
-			
-		
+
 		// ************************************************************ TAB 3 *************************************************************
 		// ************************************************************ TAB 3 *************************************************************
 		JPanel tabLayer3 = new JPanel();
@@ -738,7 +689,6 @@ public class GUI {
 		comboBox_AgentColor.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-
 				JComboBox<String> src = (JComboBox<String>) e.getSource();
 				agentColor = agentColorList[src.getSelectedIndex()];
 				board.updateAgentColor(agentColor);
@@ -751,7 +701,7 @@ public class GUI {
 			}
 		});
 		tabLayer3.add(comboBox_AgentColor);
-		
+
 		//MODIFICATION: Special Agent Color
 		//
 		//Added 5/21 by Morgan Might
@@ -781,7 +731,7 @@ public class GUI {
 			}
 		});
 		tabLayer3.add(comboBox_SpecialAgentColor);
-		
+
 		// ************************************************************ User can select
 		// how many changes the agent can make
 		JLabel lblNumberOfChanges = new JLabel("Number of Changes:");
@@ -925,21 +875,21 @@ public class GUI {
 			}
 		});
 		tabLayer3.add(tglbtnWrapAgents);
-		
+
 		//MODIFICATION #7: New layer, Layer 4, is concerned with the persistence of the cells
 		//on Layer 1
 		//
 		//by Morgan Might
 		//July 5, 2018
-		
+
 		// ************************************************************ TAB 4 *************************************************************
 		// ************************************************************ TAB 4 *************************************************************
 		JPanel tabLayer4 = new JPanel();
 		tabLayer4.setBackground(new Color(211, 211, 211));
 		tabbedPane.addTab("Layer 4", null, tabLayer4, null);
 		tabLayer4.setLayout(null);
-		
-		
+
+
 
 		// ************************************************************ Global Zone
 		// Buttons + Slider ************************************************************
@@ -949,6 +899,7 @@ public class GUI {
 		lblBoardSizeGlobal.setBounds(820, 621, 74, 14);
 		frmProjectLegion.getContentPane().add(lblBoardSizeGlobal);
 
+		lblBoardSizeInt = new JLabel();
 		lblBoardSizeInt.setBounds(910, 621, 46, 14);
 		frmProjectLegion.getContentPane().add(lblBoardSizeInt);
 
@@ -956,6 +907,7 @@ public class GUI {
 		lblSwarmCount.setBounds(1014, 621, 100, 14);
 		frmProjectLegion.getContentPane().add(lblSwarmCount);
 
+		lblSwarmCountInt = new JLabel();
 		lblSwarmCountInt.setBounds(1109, 621, 46, 14);
 		frmProjectLegion.getContentPane().add(lblSwarmCountInt);
 
@@ -1016,7 +968,7 @@ public class GUI {
 			}
 		});
 		frmProjectLegion.getContentPane().add(btnStartSwarm);
-		
+
 		//THESE BUTTONS DO NOT WORK
 
 		JButton btnRecord = new JButton("Record");
@@ -1052,7 +1004,7 @@ public class GUI {
 		btnNewScreenSave.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				
+
 			}
 		});
 		btnNewScreenSave.setBounds(1338, 767, 125, 23);
@@ -1067,101 +1019,101 @@ public class GUI {
 		frmProjectLegion.getContentPane().add(lblFastCycless);
 		// create new NewBoardWindow to make new board
 		JButton btnNewBoard = new JButton("New Board");
-		
+
 		btnNewBoard.addActionListener(
-			new ActionListener() {
-				private GUI gui;
-				
-				public ActionListener setGUI (GUI gui) {
-					this.gui = gui;
-					return this;
-				}
-		
-				@Override
-				public void actionPerformed(ActionEvent e) {
-					// Object obj = new NewBoardWindow();
-					NewBoardWindow newBoardWindow = new NewBoardWindow(frmProjectLegion, gui);
-					newBoardWindow.setVisible(true);
-					tglbtnWrapAgents.setSelected(true);
-					comboGoalStrategy.setSelectedItem(goalStrategy);
-					// lblBoardSizeInt.setText(String.valueOf(board.labelHandler.getInitBoardSize()));
-				}
-			}.setGUI(this)
-		);
+				new ActionListener() {
+					private GUI gui;
+
+					public ActionListener setGUI (GUI gui) {
+						this.gui = gui;
+						return this;
+					}
+
+					@Override
+					public void actionPerformed(ActionEvent e) {
+						// Object obj = new NewBoardWindow();
+						NewBoardWindow newBoardWindow = new NewBoardWindow(frmProjectLegion, gui);
+						newBoardWindow.setVisible(true);
+						tglbtnWrapAgents.setSelected(true);
+						comboGoalStrategy.setSelectedItem(goalStrategy);
+						// lblBoardSizeInt.setText(String.valueOf(board.labelHandler.getInitBoardSize()));
+					}
+				}.setGUI(this)
+				);
 		btnNewBoard.setBackground(new Color(51, 102, 255));
 		btnNewBoard.setBounds(1338, 726, 125, 23);
 		frmProjectLegion.getContentPane().add(btnNewBoard);
 	}
-	
+
 	// ************************************************************ OTHER *************************************************************
 	// ************************************************************ OTHER *************************************************************	
 
-	public void setLblBoardSizeInt(int boardSize) {
-		lblBoardSizeInt.setText(String.valueOf(boardSize));
-	}
+//	public void setLblBoardSizeInt(int boardSize) {
+//		lblBoardSizeInt.setText(String.valueOf(boardSize));
+//	}
+//
+//	public void setLblSwarmSizeInt(int swarmSize) {
+//		lblSwarmCountInt.setText(String.valueOf(swarmSize));
+//	}
+//
+//	public void setLblIntWhiteCells(int whiteCellSize) {
+//		lblIntWhiteCells.setText(String.valueOf(whiteCellSize));
+//	}
+//
+//	//MODIFICATION #3
+//	//Added 5/24 by Morgan Might
+//	public void setLblIntGrayCells(int grayCellSize) {
+//		lblIntGrayCells.setText(String.valueOf(grayCellSize));
+//	}
+//
+//	public void setLblIntBlackCells(int blackCellSize) {
+//		lblIntBlackCells.setText(String.valueOf(blackCellSize));
+//	}
+//
+//	public void setLblCurrWhiteCells(int currWhiteCells) {
+//		lblCurrWhiteCells.setText(String.valueOf(currWhiteCells));
+//	}
+//
+//	//MODIFICATION #3
+//	//Added 5/24 by Morgan Might
+//	public void setLblCurrGrayCells(int currGrayCells) {
+//		lblCurrGrayCells.setText(String.valueOf(currGrayCells));
+//	}
+//
+//	public void setLblCurrBlackCells(int currBlackCells) {
+//		lblCurrBlackCells.setText(String.valueOf(currBlackCells));
+//	}
 
-	public void setLblSwarmSizeInt(int swarmSize) {
-		lblSwarmCountInt.setText(String.valueOf(swarmSize));
-	}
-
-	public void setLblIntWhiteCells(int whiteCellSize) {
-		lblIntWhiteCells.setText(String.valueOf(whiteCellSize));
-	}
-	
-	//MODIFICATION #3
-	//Added 5/24 by Morgan Might
-	public void setLblIntGrayCells(int grayCellSize) {
-		lblIntGrayCells.setText(String.valueOf(grayCellSize));
-	}
-
-	public void setLblIntBlackCells(int blackCellSize) {
-		lblIntBlackCells.setText(String.valueOf(blackCellSize));
-	}
-
-	public void setLblCurrWhiteCells(int currWhiteCells) {
-		lblCurrWhiteCells.setText(String.valueOf(currWhiteCells));
-	}
-	
-	//MODIFICATION #3
-	//Added 5/24 by Morgan Might
-	public void setLblCurrGrayCells(int currGrayCells) {
-		lblCurrGrayCells.setText(String.valueOf(currGrayCells));
-	}
-
-	public void setLblCurrBlackCells(int currBlackCells) {
-		lblCurrBlackCells.setText(String.valueOf(currBlackCells));
-	}
-	
 	//MODIFICATION
 	//Added 5/18 by Morgan Might
 	public void setNumOfSpecialAgents(int numAgents) {
 		numSpecialAgents = numAgents;
 	}
-	
+
 	//MODIFICATION
 	//Added 5/18 by Morgan Might
 	public int getNumOfSpecialAgents() {
 		return numSpecialAgents;
 	}
-	
+
 	//MODIFICATION
 	//Added 5/22 by Morgan Might
 	public void setSplitPolarity(boolean selected) {
 		splitPolarity = selected;
 	}
-	
+
 	//MODIFICATION
 	//Added 5/22 by Morgan Might
 	public boolean getSplitPolarity() {
 		return splitPolarity;
 	}
-	
+
 	//MODIFICATION #3  does not work yet
 	//Added 5/30 by Morgan Might
 	public void setDiagonalLineStart(boolean selected){
 		diagonalLineStart = selected;
 	}
-	
+
 	//MODIFICATION #3  does not work yet
 	//Added 5/30 by Morgan Might
 	public boolean getThreeColor() {
@@ -1173,7 +1125,7 @@ public class GUI {
 	public int getTotalNumOfCells() {
 		return board.getTotalNumCells();
 	}
-	
+
 	//MODIFICATION #4:
 	//
 	//Added 6/4 by Morgan Might
@@ -1181,152 +1133,152 @@ public class GUI {
 	//
 	//
 	//MODIFICATION #4: polarity 1
-	public int getPolOneCount() {
-		return polOneCount;
-	}
-	
-	public void setPolOneCount(int num) {
-		polOneCount = num;
-		double fraction = (double) num/getTotalNumOfCells();
-		lblPolarityOnePercent.setText(String.valueOf(fraction*100) + "%");
-	}
-		
-	//MODIFICATION #4: polarity 2
-	public int getPolTwoCount() {
-		return polTwoCount;
-	}
-	
-	public void setPolTwoCount(int num) {
-		polTwoCount = num;
-		double fraction = (double) num/getTotalNumOfCells();
-		lblPolarityTwoPercent.setText(String.valueOf(fraction*100) + "%");
-	}
-		
-	//MODIFICATION #4: polarity 3
-	public int getPolThreeCount() {
-		return polThreeCount;
-	}
-	
-	public void setPolThreeCount(int num) {
-		polThreeCount = num;
-		double fraction = (double) num/getTotalNumOfCells();
-		lblPolarityThreePercent.setText(String.valueOf(fraction*100) + "%");
-	}
-		
-	//MODIFICATION #4: polarity 4
-	public int getPolFourCount() {
-		return polFourCount;
-	}
-	
-	public void setPolFourCount(int num) {
-		polFourCount = num;
-		double fraction = (double) num/getTotalNumOfCells();
-		lblPolarityFourPercent.setText(String.valueOf(fraction*100) + "%");
-	}
-	
-	//MODIFICATION #4:
-	//
-	//Added 6/4 by Morgan Might
-	//Comparison methods will compare the number of cells with different polarities and
-	//return "True" or "False" to be displayed in GUI
-	//
-	//MODIFICATION #4: compares Red < Yellow
-	//MODIFICATION #10 
-	//updated 7/19 bby Morgan Might
-	//Consider which polarity is the current dominant one
-	public String getBooleanCompareOne() {
-		if(newDominantPolarity.equalsIgnoreCase("YELLOW")) {
-			if(getPolOneCount() < getPolThreeCount()) { //Red < Yellow
-				return "True";
-			}
-			
-			return "False";
-		}
-		else if(newDominantPolarity.equalsIgnoreCase("BLUE")) {
-			if(getPolOneCount() < getPolTwoCount()) { //Red < Blue
-				return "True";
-			}
-			
-			return "False";
-		}
-		else if(newDominantPolarity.equalsIgnoreCase("RED")) {
-			if(getPolTwoCount() < getPolOneCount()) { //Blue < Red
-				return "True";
-			}
-			
-			return "False";
-		}
-		
-		return "Error";
-	}
-	
-	//MODIFICATION #4: compares Blue < Yellow
-	//MODIFICATION #10 
-	//updated 7/19 bby Morgan Might
-	//Consider which polarity is the current dominant one
-	public String getBooleanCompareTwo() {
-		if(newDominantPolarity.equalsIgnoreCase("YELLOW")) {
-			if(getPolTwoCount() < getPolThreeCount()) { //Blue < Yellow
-				return "True";
-			}
-			
-			return "False";
-		}
-		else if(newDominantPolarity.equalsIgnoreCase("BLUE")) {
-			if(getPolThreeCount() < getPolTwoCount()) { //Yellow < Blue
-				return "True";
-			}
-			
-			return "False";
-		}
-		else if(newDominantPolarity.equalsIgnoreCase("RED")) {
-			if(getPolThreeCount() < getPolOneCount()) { //Yellow < Red
-				return "True";
-			}
-			
-			return "False";
-		}
-		
-		return "Error";
-	}
-	
-	//MODIFICATION #4: compares Red+Blue > Yellow
-	//MODIFICATION #10 
-	//updated 7/19 bby Morgan Might
-	//Consider which polarity is the current dominant one
-	public String getBooleanCompareThree() {
-		if(newDominantPolarity.equalsIgnoreCase("YELLOW")) {
-			if(getPolOneCount() + getPolTwoCount() > getPolThreeCount()) { //R + B > Yellow
-				return "True";
-			}
-			
-			return "False";
-		}
-		else if(newDominantPolarity.equalsIgnoreCase("BLUE")) {
-			if(getPolOneCount() + getPolThreeCount() > getPolTwoCount()) { //R + Y < Blue
-				return "True";
-			}
-			
-			return "False";
-		}
-		else if(newDominantPolarity.equalsIgnoreCase("RED")) {
-			if(getPolTwoCount() + getPolThreeCount() > getPolOneCount()) { //B + Y < Red
-				return "True";
-			}
-			
-			return "False";
-		}
+	//	public int getPolOneCount() {
+	//		return polOneCount;
+	//	}
+	//	
+	//	public void setPolOneCount(int num) {
+	//		polOneCount = num;
+	//		double fraction = (double) num/getTotalNumOfCells();
+	//		lblPolarityOnePercent.setText(String.valueOf(fraction*100) + "%");
+	//	}
+	//		
+	//	//MODIFICATION #4: polarity 2
+	//	public int getPolTwoCount() {
+	//		return polTwoCount;
+	//	}
+	//	
+	//	public void setPolTwoCount(int num) {
+	//		polTwoCount = num;
+	//		double fraction = (double) num/getTotalNumOfCells();
+	//		lblPolarityTwoPercent.setText(String.valueOf(fraction*100) + "%");
+	//	}
+	//		
+	//	//MODIFICATION #4: polarity 3
+	//	public int getPolThreeCount() {
+	//		return polThreeCount;
+	//	}
+	//	
+	//	public void setPolThreeCount(int num) {
+	//		polThreeCount = num;
+	//		double fraction = (double) num/getTotalNumOfCells();
+	//		lblPolarityThreePercent.setText(String.valueOf(fraction*100) + "%");
+	//	}
+	//		
+	//	//MODIFICATION #4: polarity 4
+	//	public int getPolFourCount() {
+	//		return polFourCount;
+	//	}
+	//	
+	//	public void setPolFourCount(int num) {
+	//		polFourCount = num;
+	//		double fraction = (double) num/getTotalNumOfCells();
+	//		lblPolarityFourPercent.setText(String.valueOf(fraction*100) + "%");
+	//	}
 
-		return "Error";
-	}
-	
-	//MODIFICATION #4: displays in the labels where the statements are "True" or "False"
-	public void setLblComparisons() {
-		lblBooleanCompare1.setText(getBooleanCompareOne());
-		lblBooleanCompare2.setText(getBooleanCompareTwo());
-		lblBooleanCompare3.setText(getBooleanCompareThree());
-	}
-	
+//	//MODIFICATION #4:
+//	//
+//	//Added 6/4 by Morgan Might
+//	//Comparison methods will compare the number of cells with different polarities and
+//	//return "True" or "False" to be displayed in GUI
+//	//
+//	//MODIFICATION #4: compares Red < Yellow
+//	//MODIFICATION #10 
+//	//updated 7/19 bby Morgan Might
+//	//Consider which polarity is the current dominant one
+//	public String getBooleanCompareOne() {
+//		if(newDominantPolarity.equalsIgnoreCase("YELLOW")) {
+//			if(getPolOneCount() < getPolThreeCount()) { //Red < Yellow
+//				return "True";
+//			}
+//
+//			return "False";
+//		}
+//		else if(newDominantPolarity.equalsIgnoreCase("BLUE")) {
+//			if(getPolOneCount() < getPolTwoCount()) { //Red < Blue
+//				return "True";
+//			}
+//
+//			return "False";
+//		}
+//		else if(newDominantPolarity.equalsIgnoreCase("RED")) {
+//			if(getPolTwoCount() < getPolOneCount()) { //Blue < Red
+//				return "True";
+//			}
+//
+//			return "False";
+//		}
+//
+//		return "Error";
+//	}
+//
+//	//MODIFICATION #4: compares Blue < Yellow
+//	//MODIFICATION #10 
+//	//updated 7/19 bby Morgan Might
+//	//Consider which polarity is the current dominant one
+//	public String getBooleanCompareTwo() {
+//		if(newDominantPolarity.equalsIgnoreCase("YELLOW")) {
+//			if(getPolTwoCount() < getPolThreeCount()) { //Blue < Yellow
+//				return "True";
+//			}
+//
+//			return "False";
+//		}
+//		else if(newDominantPolarity.equalsIgnoreCase("BLUE")) {
+//			if(getPolThreeCount() < getPolTwoCount()) { //Yellow < Blue
+//				return "True";
+//			}
+//
+//			return "False";
+//		}
+//		else if(newDominantPolarity.equalsIgnoreCase("RED")) {
+//			if(getPolThreeCount() < getPolOneCount()) { //Yellow < Red
+//				return "True";
+//			}
+//
+//			return "False";
+//		}
+//
+//		return "Error";
+//	}
+//
+//	//MODIFICATION #4: compares Red+Blue > Yellow
+//	//MODIFICATION #10 
+//	//updated 7/19 bby Morgan Might
+//	//Consider which polarity is the current dominant one
+//	public String getBooleanCompareThree() {
+//		if(newDominantPolarity.equalsIgnoreCase("YELLOW")) {
+//			if(getPolOneCount() + getPolTwoCount() > getPolThreeCount()) { //R + B > Yellow
+//				return "True";
+//			}
+//
+//			return "False";
+//		}
+//		else if(newDominantPolarity.equalsIgnoreCase("BLUE")) {
+//			if(getPolOneCount() + getPolThreeCount() > getPolTwoCount()) { //R + Y < Blue
+//				return "True";
+//			}
+//
+//			return "False";
+//		}
+//		else if(newDominantPolarity.equalsIgnoreCase("RED")) {
+//			if(getPolTwoCount() + getPolThreeCount() > getPolOneCount()) { //B + Y < Red
+//				return "True";
+//			}
+//
+//			return "False";
+//		}
+//
+//		return "Error";
+//	}
+
+//	//MODIFICATION #4: displays in the labels where the statements are "True" or "False"
+//	public void setLblComparisons() {
+//		lblBooleanCompare1.setText(getBooleanCompareOne());
+//		lblBooleanCompare2.setText(getBooleanCompareTwo());
+//		lblBooleanCompare3.setText(getBooleanCompareThree());
+//	}
+
 	//MODIFICATION #5:
 	//Added 6/12 by Morgan Might
 	//
@@ -1335,52 +1287,98 @@ public class GUI {
 	public boolean getTogglePolarity() {
 		return togglePolarity;
 	}
-	
+
 	//MODIFICATION #10
-		//Added 7/18/2018
-		//By Morgan Might
-		//This method updates the label and goal of the constraints
-		public void updateDominantPolarity(String polarity) {
-			newDominantPolarity = polarity;
-			if(newDominantPolarity.equals("YELLOW")) {
-				//Change Label
-				statementOne = "Red < Yellow :";
-				statementTwo = "Blue < Yellow :";
-				statementThree = "R + B > Yellow :";
-				//Change constraint
-			}
-			else if(newDominantPolarity.equals("BLUE")) {
-				//Change Label
-				statementOne = "Red < Blue :";
-				statementTwo = "Yellow < Blue :";
-				statementThree = "R + Y > Blue :";
-			}
-			else if(newDominantPolarity.equals("RED")) {
-				//Change Label
-				statementOne = "Blue < Red :";
-				statementTwo = "Yellow < Red :";
-				statementThree = "B + Y > Red :";
+	//Added 7/18/2018
+	//By Morgan Might
+	//This method updates the label and goal of the constraints
+	public void updateDominantPolarity(String polarity) {
+		newDominantPolarity = polarity;
+		if(newDominantPolarity.equals("YELLOW")) {
+			//Change Label
+			statementOne = "Red < Yellow :";
+			statementTwo = "Blue < Yellow :";
+			statementThree = "R + B > Yellow :";
+			//Change constraint
+		}
+		else if(newDominantPolarity.equals("BLUE")) {
+			//Change Label
+			statementOne = "Red < Blue :";
+			statementTwo = "Yellow < Blue :";
+			statementThree = "R + Y > Blue :";
+		}
+		else if(newDominantPolarity.equals("RED")) {
+			//Change Label
+			statementOne = "Blue < Red :";
+			statementTwo = "Yellow < Red :";
+			statementThree = "B + Y > Red :";
+		}
+
+		updateComparisonLabels(statementOne, statementTwo, statementThree);
+	}
+
+	//MODIFICATION #10
+	//Added 7/18 
+	//By Morgan Might
+	//Updates the text in the JLables to display the new constraints		
+	public void updateComparisonLabels(String one, String two, String three) {
+		lblCompare1.setText(one);
+		lblCompare2.setText(two);
+		lblCompare3.setText(three);
+	}
+
+	public void updateStepCountLabel(String count) {
+		lblStepDisplay.setText(count);
+	}
+
+	public Board getBoard() {
+		return board;
+	}
+
+	public void updateLabels(int step) {
+		lblStepDisplay.setText(Integer.toString(step));
+		
+		for(int indexLabel = 0; indexLabel < labelsFrequencyColors.length; indexLabel++) {
+			labelsFrequencyColors[indexLabel].setText(Integer.toString(getMapValueInteger(frequencyColors, COLORS_BASE[indexLabel])));
+		}
+		
+		System.out.println("Polarity 1: " + getMapValueInteger(frequencyPolarities, colorsPolarity.get(1)));
+		System.out.println("Cell Count: " + board.getTotalNumCells());
+		
+		for(int indexLabel = 0; indexLabel < labelsPercentPolarities.length; indexLabel++) {
+			labelsPercentPolarities[indexLabel].setText((getMapValueInteger(frequencyPolarities, colorsPolarity.get(indexLabel + 1)) / (board.getTotalNumCells() / 100d)) + "%");
+		}
+		
+		int indexLabelComparisonSum = goalStrategy.getCountPolarities() - 1;
+		int indexPolarity = 1;
+		int frequencyPolarity;
+		int frequencyPolarityDominant = getMapValueInteger(frequencyPolarities, colorsPolarity.get(indexPolarityDominant));
+		int frequencyPolaritiesSum = 0;
+		for(int indexLabel = 0; indexLabel < indexLabelComparisonSum; indexLabel++) {
+			if(indexPolarity == indexPolarityDominant) {
+				indexPolarity++;
 			}
 			
-			updateComparisonLabels(statementOne, statementTwo, statementThree);
+			frequencyPolarity = getMapValueInteger(frequencyPolarities, colorsPolarity.get(indexPolarity));
+			labels[indexLabel].setText(Boolean.toString(frequencyPolarity < frequencyPolarityDominant));
+			frequencyPolaritiesSum += frequencyPolarity;
 		}
-
-	//MODIFICATION #10
-		//Added 7/18 
-		//By Morgan Might
-		//Updates the text in the JLables to display the new constraints		
-		public void updateComparisonLabels(String one, String two, String three) {
-			lblCompare1.setText(one);
-			lblCompare2.setText(two);
-			lblCompare3.setText(three);
+		
+		JLabel labelComparisonSum = labels[indexLabelComparisonSum];
+		if(labelComparisonSum.isVisible()) {
+			labels[indexLabelComparisonSum].setText(Boolean.toString(frequencyPolarityDominant < frequencyPolaritiesSum));
 		}
-
-		public void updateStepCountLabel(String count) {
-			lblStepDisplay.setText(count);
+		
+	}
+	
+	private static int getMapValueInteger(HashMap<?, Integer> map, Object key) {
+		if(map != null) {
+			if(map.containsKey(key)) {
+				return map.get(key);
+			}
 		}
-
-		public Board getBoard() {
-			return board;
-		}
+		
+		return 0;
+	}
 }
 

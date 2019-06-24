@@ -12,49 +12,35 @@ import gui.GUI;
 import other.SwarmAgent;
 
 public class CheckerBoard extends AbstractStrategy {
+	public static final int COUNT_POLARITIES = 2;
 	//MODIFICATION #7: boolean keeps track of whether or not the cell needed flipped or changed
 	//by Morgan Might
 	//July 5, 2018
 	boolean adjustCellColor = false;
 
 	@Override
+	public int getCountPolarities() {
+		return COUNT_POLARITIES;
+	}
+	
+	@Override
 	public Color determinePolarity(Board board, int row, int col) {
 		GUI gui = board.getGui();
 		CellDisplay[][] layer1 = board.getLayer(1);
-//		if(layer1[row][col].getColor() == Color.BLACK) { //if the layer 1 cell is black
-//			if(col%2 == row%2) { //if its in a spot that should be black
-//				//then you are the same polarity as cell[0][0]	
-//				return gui.getPolarity1();
-//			}
-//			else { //if its in a spot that SHOULDN'T be black
-//				return gui.getPolarity2();
-//				//then you are in the opposite polarity than cells[0][0]
-//			}
-//		}
-//		else { //if the layer 1 cell is white
-//			if(col%2 == row%2) { //if its in a spot that SHOULDN'T be white 
-//				return gui.getPolarity2();
-//				// then its in the opposite polarity than cells[0]
-//			}
-//			else { //if its in a spot that should be white
-//				return gui.getPolarity1();
-//				//then its in the same polarity as cells[0][0]
-//			}
-//		}
 	
 		if(layer1[row][col].getColor().equals(Color.WHITE)) {
 			if(col%2 == row%2) {
-				return gui.getPolarity1();
+				return gui.getPolarityColor(1);
 			}
 			
-			return gui.getPolarity2();
+			return gui.getPolarityColor(2);
 		}
 		
 		if(col%2 == row%2) {
-			return gui.getPolarity2();
+			return gui.getPolarityColor(2);
 		}
 		
-		return gui.getPolarity1();
+		return gui.getPolarityColor(1);
 	}
 
 	@Override
