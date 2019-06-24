@@ -653,7 +653,7 @@ public class Board extends JPanel implements MouseInputListener {
 
 	public void addPurple(SwarmAgent agent, double cellSize) {
 		int persistenceNum = layer4[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getPersistenceValue();
-		System.out.println("Persistence Num: " + persistenceNum);
+//		System.out.println("Persistence Num: " + persistenceNum);
 		if(layer4[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getColor().equals(Color.WHITE)) {
 			layer4[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].setColor(new Color(195,125,195));
 			layer4[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].setPersistenceValue(1);
@@ -739,6 +739,12 @@ public class Board extends JPanel implements MouseInputListener {
 	
 	public double getCellSize() {
 		return cellSize;
+	}
+	
+	public BufferedImage capture() {
+		BufferedImage image = new BufferedImage(getWidth(), getHeight(), BufferedImage.TYPE_INT_RGB);
+		paint(image.createGraphics());
+		return image;
 	}
 }
 

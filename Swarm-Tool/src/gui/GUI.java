@@ -8,11 +8,18 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 
+import javax.imageio.ImageIO;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
+import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
@@ -46,6 +53,7 @@ public class GUI {
 	public static final int WIDTH = 1536;
 	public static final int MAXBOARDSIZE = 800;// pixel size of board
 	private static final int COUNT_POLARITIES_MAXIMUM = 4;
+	private static final JFileChooser SELECTOR_FILEPATH = new JFileChooser();
 	private static final String[] OPTIONS_COLORS_POLARITIES_NAMES = {"RED", "BLUE", "YELLOW", "GREEN", "CYAN", "WHITE", "BLACK"};
 	private static final Color[] COLORS_BASE = {Color.WHITE, Color.GRAY, Color.BLACK};
 	private static final Color[] OPTIONS_COLORS_POLARITIES = {Color.RED, Color.BLUE, Color.YELLOW, Color.GREEN, Color.CYAN, Color.WHITE, Color.BLACK};
@@ -358,7 +366,7 @@ public class GUI {
 					itemSelectedPrevious = event.getItem();
 					System.out.println("Deselected " + itemSelectedPrevious);
 				}
-				else if(change == ItemEvent.SELECTED) {
+				else {
 					JComboBox<String> menuDropDownSource = (JComboBox<String>)event.getSource();
 					Color colorSelected = OPTIONS_COLORS_POLARITIES[menuDropDownSource.getSelectedIndex()];
 					
@@ -457,7 +465,7 @@ public class GUI {
 		CheckerBoard checkerBoard = new CheckerBoard();
 		Lines lines = new Lines();
 		DiagonalLines diagonalLines = new DiagonalLines();
-		AbstractStrategy[] goalStrategyList = new AbstractStrategy[] { checkerBoard, lines, allBlack, diagonalLines };
+		AbstractStrategy[] goalStrategyList = new AbstractStrategy[] {checkerBoard, lines, allBlack, diagonalLines};
 		//MODIFICATION: start with Diagonal Lines as the Goal
 		//Added 7/17 by Morgan Might
 		if(diagonalLineStart) {
@@ -1004,7 +1012,21 @@ public class GUI {
 		btnNewScreenSave.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-
+				//TODO SCREEENSHOT
+				if(board != null) {
+					BufferedImage capture = board.capture();
+					
+					SELECTOR_FILEPATH.setSelectedFile(new File("Simulation_" + DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss-SSS").format(LocalDateTime.now()) + ".jpg"));
+					int outcomeSave = SELECTOR_FILEPATH.showSaveDialog(btnNewScreenSave);
+					if(outcomeSave == JFileChooser.APPROVE_OPTION) {
+						try {
+							ImageIO.write(capture, "JPG", SELECTOR_FILEPATH.getSelectedFile());
+						}
+						catch (IOException e) {
+							e.printStackTrace();
+						}
+					}
+				}
 			}
 		});
 		btnNewScreenSave.setBounds(1338, 767, 125, 23);

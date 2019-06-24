@@ -6,7 +6,6 @@ package cells;
  */
 
 import java.awt.Color;
-import java.awt.Graphics2D;
 
 public class CellNull implements Cell {
 	private static CellNull nullCell;
@@ -34,11 +33,5 @@ public class CellNull implements Cell {
 	public void setColor(Color colorFill) {
 		
 	}
-
-	@Override
-	public void draw(Graphics2D helperGraphics2D) {
-		
-	}
-	
 }
 
