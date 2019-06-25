@@ -83,7 +83,7 @@ public class GUI {
 
 	public int layer2Draw = 1;// which cell array in board to display
 	public Board board;// board to be drawn
-	private boolean timerStarted = true;// timer or agent step
+	private boolean timerStarted;// timer or agent step
 	public int initBoardSize, initAgentCount;
 	public boolean attractOrRepel = true;
 	public Color agentColor = Color.GREEN;
@@ -140,6 +140,9 @@ public class GUI {
 		this.frequencyColors = board.getColorFrequencies();
 		this.frequencyPolarities = board.getPolarityFrequencies();
 		
+		board.setAgentRate(agentSliderRate);
+		board.repaint();
+		
 		for(int indexLabel = 0; indexLabel < labelsFrequencyColorsInitial.length; indexLabel++) {
 			labelsFrequencyColorsInitial[indexLabel].setText(Integer.toString(getMapValueInteger(frequencyColorsInitial, COLORS_BASE[indexLabel])));
 		}
@@ -163,6 +166,8 @@ public class GUI {
 		frmProjectLegion.setBounds(100, 100, WIDTH, HEIGHT);
 		frmProjectLegion.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
+		timerStarted = false;
+		
 		colorsPolarity = new HashMap<Integer, Color>(COUNT_POLARITIES_MAXIMUM);
 		for(int indexPolarity = 0; indexPolarity < COUNT_POLARITIES_MAXIMUM; indexPolarity++) {
 			colorsPolarity.put(indexPolarity + 1, OPTIONS_COLORS_POLARITIES[indexPolarity]);
@@ -364,13 +369,10 @@ public class GUI {
 				
 				if(change == ItemEvent.DESELECTED) {
 					itemSelectedPrevious = event.getItem();
-					System.out.println("Deselected " + itemSelectedPrevious);
 				}
 				else {
 					JComboBox<String> menuDropDownSource = (JComboBox<String>)event.getSource();
 					Color colorSelected = OPTIONS_COLORS_POLARITIES[menuDropDownSource.getSelectedIndex()];
-					
-					System.out.println("Selected " + menuDropDownSource.getSelectedItem());
 					
 					if(colorsPolarity.containsValue(colorSelected)) {
 						menuDropDownSource.removeItemListener(this);
@@ -477,8 +479,10 @@ public class GUI {
 			public void actionPerformed(ActionEvent e) {
 				JComboBox<String> src = (JComboBox<String>)e.getSource();
 				goalStrategy = goalStrategyList[src.getSelectedIndex()];
+				System.out.println("----- STRATEGY CHANGE IN PROGRESS -----");
 				board.updateGoalStrategy(goalStrategy);
 				whetherAgentsVisible = true;
+				System.out.println("----- STRATEGY CHANGE COMPLETE -----");
 			}
 		});
 		tabLayer2.add(comboGoalStrategy);
@@ -873,7 +877,7 @@ public class GUI {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				wrap = !wrap;
-				board.setWrap(wrap);
+				board.setWraparound(wrap);
 				if (wrap) {
 					tglbtnWrapAgents.setText("Wrap Agents");
 				}
@@ -927,19 +931,25 @@ public class GUI {
 		// user to change how fast the board will step
 		JSlider sliderSwarmSpeed = new JSlider(0, 100, 50);
 		sliderSwarmSpeed.setBounds(953, 646, 450, 30);
-		sliderSwarmSpeed.setMajorTickSpacing(5);
+		sliderSwarmSpeed.setMinimum(1);
+		sliderSwarmSpeed.setMaximum(Board.RATE_STEPS_MAXIMUM);
+		sliderSwarmSpeed.setValue((sliderSwarmSpeed.getMaximum() - sliderSwarmSpeed.getMinimum()) / 2);
+		sliderSwarmSpeed.setMajorTickSpacing(sliderSwarmSpeed.getMaximum() / 10);
 		sliderSwarmSpeed.setPaintLabels(true);
+		
 		// slider to change the speed of the agents in board.agents[]
 		sliderSwarmSpeed.addChangeListener(new ChangeListener() {
 			@Override
 			public void stateChanged(ChangeEvent e) {
 				JSlider src = (JSlider)e.getSource();
 				agentSliderRate = src.getValue();
-				board.setAgentRate((int) agentSliderRate * 5);
+				board.setAgentRate(agentSliderRate);
 			}
 		});
 		frmProjectLegion.getContentPane().add(sliderSwarmSpeed);
 
+		agentSliderRate = sliderSwarmSpeed.getValue();
+		
 		JLabel lblSlow = new JLabel("Slow");
 		lblSlow.setBounds(910, 646, 46, 14);
 		frmProjectLegion.getContentPane().add(lblSlow);
@@ -957,7 +967,7 @@ public class GUI {
 		btnStopSwarm.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				board.t.cancel();
+				board.stopTimer();
 				timerStarted = false;
 			}
 		});
@@ -969,33 +979,17 @@ public class GUI {
 		btnStartSwarm.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				if (!timerStarted) {
-					board.StartTimer();
-					timerStarted = true;
+				if(board != null) {
+					if (!timerStarted) {
+						board.startTimer();
+						timerStarted = true;
+					}
 				}
 			}
 		});
 		frmProjectLegion.getContentPane().add(btnStartSwarm);
 
 		//THESE BUTTONS DO NOT WORK
-
-		JButton btnRecord = new JButton("Record");
-		btnRecord.setForeground(Color.LIGHT_GRAY);
-		btnRecord.setBackground(new Color(102, 255, 153));
-		btnRecord.setBounds(895, 767, 125, 23);
-		frmProjectLegion.getContentPane().add(btnRecord);
-
-		JButton btnStopRecord = new JButton("Stop Record");
-		btnStopRecord.setForeground(Color.LIGHT_GRAY);
-		btnStopRecord.setBackground(new Color(255, 102, 102));
-		btnStopRecord.setBounds(1030, 767, 125, 23);
-		frmProjectLegion.getContentPane().add(btnStopRecord);
-
-		JButton btnSaveRec = new JButton("Save Rec.");
-		btnSaveRec.setForeground(Color.LIGHT_GRAY);
-		btnSaveRec.setBackground(new Color(204, 51, 255));
-		btnSaveRec.setBounds(1203, 767, 125, 23);
-		frmProjectLegion.getContentPane().add(btnSaveRec);
 
 		JButton btnRestart = new JButton("Restart");
 		btnRestart.setForeground(Color.LIGHT_GRAY);
@@ -1073,37 +1067,9 @@ public class GUI {
 //	public void setLblBoardSizeInt(int boardSize) {
 //		lblBoardSizeInt.setText(String.valueOf(boardSize));
 //	}
-//
+
 //	public void setLblSwarmSizeInt(int swarmSize) {
 //		lblSwarmCountInt.setText(String.valueOf(swarmSize));
-//	}
-//
-//	public void setLblIntWhiteCells(int whiteCellSize) {
-//		lblIntWhiteCells.setText(String.valueOf(whiteCellSize));
-//	}
-//
-//	//MODIFICATION #3
-//	//Added 5/24 by Morgan Might
-//	public void setLblIntGrayCells(int grayCellSize) {
-//		lblIntGrayCells.setText(String.valueOf(grayCellSize));
-//	}
-//
-//	public void setLblIntBlackCells(int blackCellSize) {
-//		lblIntBlackCells.setText(String.valueOf(blackCellSize));
-//	}
-//
-//	public void setLblCurrWhiteCells(int currWhiteCells) {
-//		lblCurrWhiteCells.setText(String.valueOf(currWhiteCells));
-//	}
-//
-//	//MODIFICATION #3
-//	//Added 5/24 by Morgan Might
-//	public void setLblCurrGrayCells(int currGrayCells) {
-//		lblCurrGrayCells.setText(String.valueOf(currGrayCells));
-//	}
-//
-//	public void setLblCurrBlackCells(int currBlackCells) {
-//		lblCurrBlackCells.setText(String.valueOf(currBlackCells));
 //	}
 
 	//MODIFICATION
@@ -1147,56 +1113,6 @@ public class GUI {
 	public int getTotalNumOfCells() {
 		return board.getTotalNumCells();
 	}
-
-	//MODIFICATION #4:
-	//
-	//Added 6/4 by Morgan Might
-	//Polarity Counters getters and setters to keep track of how many cells have each type of polarity
-	//
-	//
-	//MODIFICATION #4: polarity 1
-	//	public int getPolOneCount() {
-	//		return polOneCount;
-	//	}
-	//	
-	//	public void setPolOneCount(int num) {
-	//		polOneCount = num;
-	//		double fraction = (double) num/getTotalNumOfCells();
-	//		lblPolarityOnePercent.setText(String.valueOf(fraction*100) + "%");
-	//	}
-	//		
-	//	//MODIFICATION #4: polarity 2
-	//	public int getPolTwoCount() {
-	//		return polTwoCount;
-	//	}
-	//	
-	//	public void setPolTwoCount(int num) {
-	//		polTwoCount = num;
-	//		double fraction = (double) num/getTotalNumOfCells();
-	//		lblPolarityTwoPercent.setText(String.valueOf(fraction*100) + "%");
-	//	}
-	//		
-	//	//MODIFICATION #4: polarity 3
-	//	public int getPolThreeCount() {
-	//		return polThreeCount;
-	//	}
-	//	
-	//	public void setPolThreeCount(int num) {
-	//		polThreeCount = num;
-	//		double fraction = (double) num/getTotalNumOfCells();
-	//		lblPolarityThreePercent.setText(String.valueOf(fraction*100) + "%");
-	//	}
-	//		
-	//	//MODIFICATION #4: polarity 4
-	//	public int getPolFourCount() {
-	//		return polFourCount;
-	//	}
-	//	
-	//	public void setPolFourCount(int num) {
-	//		polFourCount = num;
-	//		double fraction = (double) num/getTotalNumOfCells();
-	//		lblPolarityFourPercent.setText(String.valueOf(fraction*100) + "%");
-	//	}
 
 //	//MODIFICATION #4:
 //	//
@@ -1365,7 +1281,10 @@ public class GUI {
 		}
 		
 		System.out.println("Polarity 1: " + getMapValueInteger(frequencyPolarities, colorsPolarity.get(1)));
-		System.out.println("Cell Count: " + board.getTotalNumCells());
+		System.out.println("Polarity 2: " + getMapValueInteger(frequencyPolarities, colorsPolarity.get(2)));
+		System.out.println("Polarity 3: " + getMapValueInteger(frequencyPolarities, colorsPolarity.get(3)));
+		System.out.println("Polarity 4: " + getMapValueInteger(frequencyPolarities, colorsPolarity.get(4)));
+		System.out.println("Cell Count: " + board.getTotalNumCells() + '\n');
 		
 		for(int indexLabel = 0; indexLabel < labelsPercentPolarities.length; indexLabel++) {
 			labelsPercentPolarities[indexLabel].setText((getMapValueInteger(frequencyPolarities, colorsPolarity.get(indexLabel + 1)) / (board.getTotalNumCells() / 100d)) + "%");

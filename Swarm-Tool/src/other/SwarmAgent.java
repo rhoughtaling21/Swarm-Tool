@@ -79,7 +79,6 @@ public class SwarmAgent extends Ellipse2D.Double {
 			this.colorFill = Color.GREEN;
 		}
 		this.specialAgent = specialAgent;
-		
 	}
 
 	/**

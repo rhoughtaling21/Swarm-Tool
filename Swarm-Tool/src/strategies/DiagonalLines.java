@@ -251,8 +251,6 @@ public class DiagonalLines extends AbstractStrategy {
 				else if(index == 5) { cellBelow = true; }
 				else if(index == 7) { cellLeft = true; }
 			}
-			
-			System.out.println("******Red: " + redPolCount + ", Blue: " + bluePolCount + ", Yellow: " + yellowPolCount);
 		}
 	//
 	//DETERMINE NEW POLARITY	

@@ -22,6 +22,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -47,19 +48,21 @@ import strategies.DiagonalLines;
  */
 @SuppressWarnings("serial")
 public class Board extends JPanel implements MouseInputListener {
+	public static final int RATE_STEPS_MAXIMUM = 900;
 	private static final Color COLOR_TRANSPARENT = new Color(0, 1, 0, 0);
 	
 	public int numCellsOnSide; //these are the numbers of cells in the board, NOT the graphical dimensions of the board
-	private boolean wrap; //whether the walls of the Board wrap or not; by default, they don't
+	private boolean wraparound; //whether the walls of the Board wrap or not; by default, they don't
 	private double cellSize; //pixel dimensions of each cell
 	private SwarmAgent[] agents;
 	private double attractorStrength = 1;
 	private double attractorMaxDistance; //distance in cells, not pixels
 	private int attractOrRepel = 1; //1 if attract, -1 if repel
 	private int indexDisplay;
-	private int agentRate = 50;//delay between timer firing
-	public int period = 100000;
-	public Timer t;//main timer
+	private int agentRate; //delay between timer firing
+	private boolean timerActive;
+	private Timer timer;//main timer
+	private TimerTask task;
 	public Color storeVisibleColor;	//MODIFICATION: used to store color so the "View Agents" button toggles properly
 	public Color storeSpecialColor; //MODIFICATION: store color of the special agent
 	public boolean viewAgentsToggle; //MODIFICATION: tracks if the button has just been clicked
@@ -78,6 +81,7 @@ public class Board extends JPanel implements MouseInputListener {
 	//String exportInfoString = "Zero,One,Two,Three,Four,Five,Six+\n"; //MODIFICATION #8
 	String exportInfoString = "Red,Blue,Yellow\n"; 
 	public int countSteps = 0; //MODIFICATION #6
+	private long rateExecute;
 	private GUI gui;
 	private CellDisplayBase[][] layer1;
 	private CellDisplayPolarity[][] layer2;
@@ -92,6 +96,8 @@ public class Board extends JPanel implements MouseInputListener {
 		this.countAgents = countAgents;
 		this.gui = gui;
 
+		timer = new Timer();
+		
 		frequencyColorsInitial = new HashMap<Color, Integer>();
 		frequencyPolarities = new HashMap<Color, Integer>();
 		layers = new HashMap<Integer, CellDisplay[][]>(3);
@@ -110,7 +116,7 @@ public class Board extends JPanel implements MouseInputListener {
 		//set preferred graphical dimensions of the board
 		setPreferredSize(new Dimension(width, height));
 		this.numCellsOnSide = numCellsOnSide;
-		this.wrap = wrap;
+		this.wraparound = wrap;
 		
 		//set the graphical dimensions of the cells themselves. the cells are always square, but the
 		//space they take up is constrained by the width and height of the board and by the number of cells.
@@ -216,8 +222,6 @@ public class Board extends JPanel implements MouseInputListener {
 		this.addMouseListener(this);
 		this.addMouseMotionListener(this);
 
-		StartTimer();
-
 		if (gui.layer2Draw == 3) {
 			gui.layer2Draw = 1;
 		}
@@ -239,19 +243,27 @@ public class Board extends JPanel implements MouseInputListener {
 		return frequencyPolarities;
 	}
 	
-	public void StartTimer() {
-		t = new Timer();
-		TimerTask task = new TimerTask() {
-			@Override
-			public void run() {
-				step();
-				repaint();
-				//System.out.println("tick");
-				t.cancel(); // cancel time
-				StartTimer();
-			}
-		};
-		t.scheduleAtFixedRate(task, 500 - agentRate, period);
+	public void startTimer() {
+		if(!timerActive) {
+			task = new TimerTask() {
+				@Override
+				public void run() {
+					step();
+					repaint();
+				}
+			};
+			
+			timer.scheduleAtFixedRate(task, rateExecute, rateExecute);
+			timerActive = true;
+		}
+	}
+	
+	public void stopTimer() {
+		if(timerActive) {
+			task.cancel();
+			timer.purge();
+			timerActive = false;
+		}
 	}
 
 	@Override
@@ -297,10 +309,10 @@ public class Board extends JPanel implements MouseInputListener {
 			agent.draw(helperGraphics2D);
 			//if you're sticking off the right or bottom of map, draw another ellipse there too
 			//this is a hack; really, i think this should be a job for the agent's draw method.
-			if (wrap && agent.getMaxX() > getWidth()) {
+			if (wraparound && agent.getMaxX() > getWidth()) {
 				helperGraphics2D.fill(new Ellipse2D.Double(agent.getX() - this.getWidth(), agent.getY(), agent.getWidth(), agent.getHeight()));
 			}
-			if (wrap && agent.getMaxY() > getHeight()) {
+			if (wraparound && agent.getMaxY() > getHeight()) {
 				helperGraphics2D.fill(new Ellipse2D.Double(agent.getX(), agent.getY() - this.getHeight(), agent.getWidth(), agent.getHeight()));
 			}
 		}
@@ -335,7 +347,7 @@ public class Board extends JPanel implements MouseInputListener {
 			}
 
 			agent.step(cellSize);
-			if (wrap) {
+			if (wraparound) {
 				//since there's no walls, this lets the agents "wrap" to the other side of the screen. this is awesome.
 				agent.setX((agent.getX()+getWidth())%getWidth());
 				agent.setY((agent.getY()+getHeight())%getHeight());
@@ -543,6 +555,12 @@ public class Board extends JPanel implements MouseInputListener {
 	 */
 	public void setAgentRate(int rate) {
 		agentRate = rate;
+		rateExecute = Math.max(1000 / agentRate, 1000 / RATE_STEPS_MAXIMUM);
+		
+		if(timerActive) {
+			stopTimer();
+			startTimer();
+		}
 	}
 
 	public void updatePolarityColor(Color colorPolarityOld, Color colorPolarityNew) {
@@ -576,17 +594,24 @@ public class Board extends JPanel implements MouseInputListener {
 		}
 	}
 
-	public void updateGoalStrategy(AbstractStrategy newStrategy) {
-		strategy = newStrategy;
-		for (int row = 0; row < layer2.length; row++) {
-			for (int col = 0; col < layer2[row].length; col++) {
-				strategy.updatePolarityCell(this, row, col);
+	public void updateGoalStrategy(AbstractStrategy strategy) {
+		if(!strategy.equals(this.strategy)) {
+			this.strategy = strategy;
+			
+			updatePolarityCells();
+		}
+	}
+	
+	private void updatePolarityCells() {
+		for (int indexRow = 0; indexRow < layer2.length; indexRow++) {
+			for (int indexColumn = 0; indexColumn < layer2[indexRow].length; indexColumn++) {
+				strategy.updatePolarityCell(this, indexRow, indexColumn);
 			}
 		}
 	}
 
-	public void setWrap(boolean guiWrap) {
-		this.wrap = guiWrap;
+	public void setWraparound(boolean wraparound) {
+		this.wraparound = wraparound;
 	}
 
 	//MODIFICATION: set the color for each agent using the stored color (this will be the color it was before it went invisible)
@@ -730,6 +755,11 @@ public class Board extends JPanel implements MouseInputListener {
 		}
 		else {
 			frequencyPolarities.put(colorAdjust, adjustment);
+		}
+		
+		if(Math.abs(adjustment) > 1) {
+			System.out.println("WOAH");
+			stopTimer();
 		}
 	}
 	
