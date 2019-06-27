@@ -9,11 +9,16 @@ import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.awt.image.BufferedImage;
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
+import java.util.Properties;
 
 import javax.imageio.ImageIO;
 import javax.swing.DefaultComboBoxModel;
@@ -53,8 +58,29 @@ public class GUI {
 	public static final int WIDTH = 1536;
 	public static final int MAXBOARDSIZE = 800;// pixel size of board
 	private static final int COUNT_POLARITIES_MAXIMUM = 4;
+	private static final String HEADER_PROPERTIES = "#--- Swarm Simulation Properties ---#";
+	private static final String FILETYPE_SCREENSHOT = ".jpg";
+	private static final String FILETYPE_PROPERTIES = ".properties";
+	private static final String PROPERTY_BOARD_SIZE = "board.size";
+	private static final String PROPERTY_AGENTS_COUNT = "agents.count";
+	private static final String PROPERTY_AGENTS_COUNT_SPECIAL = "agents.special.count";
+	private static final String PROPERTY_AGENTS_RATE = "agents.rate";
+	private static final String PROPERTY_AGENTS_ACTIVE = "agents.active";
+	private static final String PROPERTY_AGENTS_VISIBLE = "agents.visible";
+	private static final String PROPERTY_RULE_GOAL = "rule.goal";
+	private static final String PROPERTY_RULE_POLARITY_DOMINANT = "rule.polarity.dominant";
+	private static final String PROPERTY_RULE_REPETITIONS = "rule.repetitions";
+	private static final String PROPERTY_COLOR_AGENT = "color.agents";
+	private static final String PROPERTY_COLOR_AGENT_SPECIAL = "color.agents.special";
+	private static final String PROPERTY_COLOR_POLARITY = "color.polarity.";
 	private static final JFileChooser SELECTOR_FILEPATH = new JFileChooser();
+	private static final DateTimeFormatter FORMATTER_TIMESTAMP = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss-SSS");
 	private static final String[] OPTIONS_COLORS_POLARITIES_NAMES = {"RED", "BLUE", "YELLOW", "GREEN", "CYAN", "WHITE", "BLACK"};
+	private static final String[] PROPERTIES_BOARD = {PROPERTY_BOARD_SIZE};
+	private static final String[] PROPERTIES_AGENTS = {PROPERTY_AGENTS_COUNT, PROPERTY_AGENTS_COUNT_SPECIAL, PROPERTY_AGENTS_RATE, PROPERTY_AGENTS_ACTIVE, PROPERTY_AGENTS_VISIBLE};
+	private static final String[] PROPERTIES_RULES = {PROPERTY_RULE_GOAL, PROPERTY_RULE_POLARITY_DOMINANT, PROPERTY_RULE_REPETITIONS};
+	private static final String[] PROPERTIES_COLORS = generateColorProperties();
+	private static final String[][] PROPERTIES = {PROPERTIES_BOARD, PROPERTIES_AGENTS, PROPERTIES_RULES, PROPERTIES_COLORS};
 	private static final Color[] COLORS_BASE = {Color.WHITE, Color.GRAY, Color.BLACK};
 	private static final Color[] OPTIONS_COLORS_POLARITIES = {Color.RED, Color.BLUE, Color.YELLOW, Color.GREEN, Color.CYAN, Color.WHITE, Color.BLACK};
 	
@@ -81,30 +107,31 @@ public class GUI {
 	private JLabel[] labels;
 	private HashMap<Integer, Color> colorsPolarity;
 
-	public int layer2Draw = 1;// which cell array in board to display
-	public Board board;// board to be drawn
+	public boolean splitPolarity; //MODIFICATION: if true set the board to be "stuck"
+	public boolean diagonalLineStart; //MODIFICATION #9
 	private boolean timerStarted;// timer or agent step
-	public int initBoardSize, initAgentCount;
 	public boolean attractOrRepel = true;
+	public boolean wrap = false;
+	public boolean whetherAgentsVisible = true;
+	public int layer2Draw = 1;// which cell array in board to display
+	public int initBoardSize, initAgentCount;
+	public int agentSliderRate;
+	public int toggleCount = 0; //MODIFICATION:  used in implementing the View Agents Button
+	public int numSpecialAgents; //MODIFICATION: how many agents should be a separate color
+	private int indexPolarityDominant;
 	public Color agentColor = Color.GREEN;
 	public Color specialAgentColor = Color.CYAN; //MODIFICATION color for the "special agent"
-	public boolean whetherAgentsVisible = true;
 	public AbstractStrategy goalStrategy = new CheckerBoard();
 	public String newDominantPolarity = "YELLOW";	//MODIFICATION #10 added 7/18 by Morgan Might 	//Keep track of polarity that should be most dominant
 	public String statementOne = "Red < Yellow :"; //MODIFICATION #10  //These variables will be used to display the constraints
 	public String statementTwo = "Blue < Yellow :"; //MODIFICATION #10 
-	public String statementThree = "R + B > Yellow :"; //MODIFICATION #10 
-	public int agentSliderRate;
-	public boolean wrap = false;
-	public int toggleCount = 0; //MODIFICATION:  used in implementing the View Agents Button
-	public int numSpecialAgents; //MODIFICATION: how many agents should be a separate color
-	public boolean splitPolarity; //MODIFICATION: if true set the board to be "stuck"
-	public boolean diagonalLineStart; //MODIFICATION #9
-	private int indexPolarityDominant;
+	public String statementThree = "R + B > Yellow :"; //MODIFICATION #10
+	private Properties settings;
+	private BufferedWriter writer;
+	public Board board;// board to be drawn
 
 	public boolean threePol; //MODIFICATION #3   needs fixed
 	public int percentToFlip; //MODIFICATION #2 stores the number of random cells to flip
-
 	public boolean togglePolarity = false; //MODIFICATION #5 determines if the agents goal is a single polarity or three balanced polarities
 	
 	private JComboBox<String>[] menusDropDownPolarity;
@@ -140,6 +167,9 @@ public class GUI {
 		this.frequencyColors = board.getColorFrequencies();
 		this.frequencyPolarities = board.getPolarityFrequencies();
 		
+		settings.setProperty(PROPERTY_BOARD_SIZE, Integer.toString(board.numCellsOnSide));
+		settings.setProperty(PROPERTY_AGENTS_COUNT, Integer.toString(board.countAgents));
+		
 		board.setAgentRate(agentSliderRate);
 		board.repaint();
 		
@@ -168,6 +198,19 @@ public class GUI {
 
 		timerStarted = false;
 		
+		Properties settingsDefault = new Properties();
+		
+		try {
+			InputStream streamInput = getClass().getResourceAsStream("/settings/simulation.properties");
+			settingsDefault.load(streamInput);
+			streamInput.close();
+		}
+		catch (IOException exceptionInput) {
+			exceptionInput.printStackTrace();
+		}
+		
+		settings = new Properties(settingsDefault);
+		
 		colorsPolarity = new HashMap<Integer, Color>(COUNT_POLARITIES_MAXIMUM);
 		for(int indexPolarity = 0; indexPolarity < COUNT_POLARITIES_MAXIMUM; indexPolarity++) {
 			colorsPolarity.put(indexPolarity + 1, OPTIONS_COLORS_POLARITIES[indexPolarity]);
@@ -177,20 +220,39 @@ public class GUI {
 		JMenuBar menuBar = new JMenuBar();
 		frmProjectLegion.setJMenuBar(menuBar);
 
-		JMenu mnFile = new JMenu("File");  //Does not work as a function
+		JMenu mnFile = new JMenu("File");
 		menuBar.add(mnFile);
 
-		JMenuItem mntmOpen = new JMenuItem("Open");  //Does not work as a function
+		JMenuItem mntmOpen = new JMenuItem("Import Preferences");
+		mntmOpen.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				if(SELECTOR_FILEPATH.showOpenDialog(frmProjectLegion) == JFileChooser.APPROVE_OPTION) {
+					try {
+						FileInputStream streamInput = new FileInputStream(SELECTOR_FILEPATH.getSelectedFile());
+						settings.load(streamInput);
+						streamInput.close();
+					}
+					catch (IOException exceptionInput) {
+						exceptionInput.printStackTrace();
+					}
+				}
+			}
+		});
 		mnFile.add(mntmOpen);
 
-		JMenuItem mntmClose = new JMenuItem("Close");  //Does not work as a function
+		JMenuItem mntmClose = new JMenuItem("Export Preferences");
+		mntmClose.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				String timestamp = FORMATTER_TIMESTAMP.format(LocalDateTime.now());
+				SELECTOR_FILEPATH.setSelectedFile(new File("Simulation_" + timestamp + FILETYPE_PROPERTIES));
+				if(SELECTOR_FILEPATH.showSaveDialog(frmProjectLegion) == JFileChooser.APPROVE_OPTION) {
+					storeProperties(SELECTOR_FILEPATH.getSelectedFile());
+				}
+			}
+		});
 		mnFile.add(mntmClose);
-
-		JMenu mnEdit = new JMenu("Edit");  //Does not work as a function
-		menuBar.add(mnEdit);
-
-		JMenuItem mntmNew = new JMenuItem("New");  //Does not work as a function
-		mnEdit.add(mntmNew);
 		
 		frmProjectLegion.getContentPane().setLayout(null);
 
@@ -372,7 +434,8 @@ public class GUI {
 				}
 				else {
 					JComboBox<String> menuDropDownSource = (JComboBox<String>)event.getSource();
-					Color colorSelected = OPTIONS_COLORS_POLARITIES[menuDropDownSource.getSelectedIndex()];
+					int indexSelected = menuDropDownSource.getSelectedIndex();
+					Color colorSelected = OPTIONS_COLORS_POLARITIES[indexSelected];
 					
 					if(colorsPolarity.containsValue(colorSelected)) {
 						menuDropDownSource.removeItemListener(this);
@@ -396,11 +459,12 @@ public class GUI {
 							}
 						}
 						
-						board.updatePolarityColor(OPTIONS_COLORS_POLARITIES[indexSelectedPrevious], colorSelected);
 						colorsPolarity.put(indexPolarity + 1, colorSelected);
 						
-						if (!timerStarted) {
-							board.repaint();
+						settings.setProperty(PROPERTY_COLOR_POLARITY + (indexPolarity + 1), OPTIONS_COLORS_POLARITIES_NAMES[indexSelected]);
+						
+						if(board != null) {
+							board.updatePolarityColor(OPTIONS_COLORS_POLARITIES[indexSelectedPrevious], colorSelected);
 						}
 					}
 				}
@@ -483,6 +547,7 @@ public class GUI {
 				board.updateGoalStrategy(goalStrategy);
 				whetherAgentsVisible = true;
 				System.out.println("----- STRATEGY CHANGE COMPLETE -----");
+				settings.setProperty(PROPERTY_RULE_GOAL, (String)src.getSelectedItem());
 			}
 		});
 		tabLayer2.add(comboGoalStrategy);
@@ -558,10 +623,12 @@ public class GUI {
 		dominantPolarity.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				JComboBox<String> src = (JComboBox<String>) e.getSource();
+				JComboBox<String> src = (JComboBox<String>)e.getSource();
 				indexPolarityDominant = src.getSelectedIndex();
 				newDominantPolarity = dominantPolarityList[indexPolarityDominant++];
 				updateDominantPolarity(newDominantPolarity);
+				
+				settings.setProperty(PROPERTY_RULE_POLARITY_DOMINANT, newDominantPolarity);
 			}
 		});
 		tabLayer2.add(dominantPolarity);
@@ -710,6 +777,8 @@ public class GUI {
 				if (!timerStarted) {
 					board.repaint();
 				}
+				
+				settings.setProperty(PROPERTY_COLOR_AGENT, (String)src.getSelectedItem());
 			}
 		});
 		tabLayer3.add(comboBox_AgentColor);
@@ -740,6 +809,8 @@ public class GUI {
 				if (!timerStarted) {
 					board.repaint();
 				}
+				
+				settings.setProperty(PROPERTY_COLOR_AGENT_SPECIAL, (String)src.getSelectedItem());
 			}
 		});
 		tabLayer3.add(comboBox_SpecialAgentColor);
@@ -830,6 +901,8 @@ public class GUI {
 				if (!timerStarted) {
 					board.repaint();
 				}
+				
+				settings.setProperty(PROPERTY_AGENTS_VISIBLE, Boolean.toString(whetherAgentsVisible));
 			}
 		});
 		tabLayer3.add(tglbtnViewAgents);
@@ -863,7 +936,8 @@ public class GUI {
 				attractOrRepel = !attractOrRepel;
 				if (attractOrRepel) {
 					tglbtnAttractOrRepel.setText("Attract");
-				} else {
+				}
+				else {
 					tglbtnAttractOrRepel.setText("Repel");
 				}
 			}
@@ -933,7 +1007,7 @@ public class GUI {
 		sliderSwarmSpeed.setBounds(953, 646, 450, 30);
 		sliderSwarmSpeed.setMinimum(1);
 		sliderSwarmSpeed.setMaximum(Board.RATE_STEPS_MAXIMUM);
-		sliderSwarmSpeed.setValue((sliderSwarmSpeed.getMaximum() - sliderSwarmSpeed.getMinimum()) / 2);
+		sliderSwarmSpeed.setValue(agentSliderRate = ((sliderSwarmSpeed.getMaximum() - sliderSwarmSpeed.getMinimum()) / 2));
 		sliderSwarmSpeed.setMajorTickSpacing(sliderSwarmSpeed.getMaximum() / 10);
 		sliderSwarmSpeed.setPaintLabels(true);
 		
@@ -943,12 +1017,14 @@ public class GUI {
 			public void stateChanged(ChangeEvent e) {
 				JSlider src = (JSlider)e.getSource();
 				agentSliderRate = src.getValue();
-				board.setAgentRate(agentSliderRate);
+				if(board != null) {
+					board.setAgentRate(agentSliderRate);
+				}
+				
+				settings.setProperty(PROPERTY_AGENTS_RATE, Integer.toString(agentSliderRate));
 			}
 		});
 		frmProjectLegion.getContentPane().add(sliderSwarmSpeed);
-
-		agentSliderRate = sliderSwarmSpeed.getValue();
 		
 		JLabel lblSlow = new JLabel("Slow");
 		lblSlow.setBounds(910, 646, 46, 14);
@@ -967,8 +1043,10 @@ public class GUI {
 		btnStopSwarm.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				board.stopTimer();
-				timerStarted = false;
+				if(board != null) {
+					board.stopTimer();
+				}
+				settings.setProperty(PROPERTY_AGENTS_ACTIVE, Boolean.toString(timerStarted = false));
 			}
 		});
 		frmProjectLegion.getContentPane().add(btnStopSwarm);
@@ -982,7 +1060,7 @@ public class GUI {
 				if(board != null) {
 					if (!timerStarted) {
 						board.startTimer();
-						timerStarted = true;
+						settings.setProperty(PROPERTY_AGENTS_ACTIVE, Boolean.toString(timerStarted = true));
 					}
 				}
 			}
@@ -1010,7 +1088,7 @@ public class GUI {
 				if(board != null) {
 					BufferedImage capture = board.capture();
 					
-					SELECTOR_FILEPATH.setSelectedFile(new File("Simulation_" + DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss-SSS").format(LocalDateTime.now()) + ".jpg"));
+					SELECTOR_FILEPATH.setSelectedFile(new File("Simulation_" + FORMATTER_TIMESTAMP.format(LocalDateTime.now()) + FILETYPE_SCREENSHOT));
 					int outcomeSave = SELECTOR_FILEPATH.showSaveDialog(btnNewScreenSave);
 					if(outcomeSave == JFileChooser.APPROVE_OPTION) {
 						try {
@@ -1309,7 +1387,26 @@ public class GUI {
 		if(labelComparisonSum.isVisible()) {
 			labels[indexLabelComparisonSum].setText(Boolean.toString(frequencyPolarityDominant < frequencyPolaritiesSum));
 		}
-		
+	}
+	
+	private void storeProperties(File fileOutput) {
+		try {
+			BufferedWriter writer = new BufferedWriter(new FileWriter(fileOutput));
+			
+			writer.write(HEADER_PROPERTIES);
+			writer.newLine();
+			
+			for(String[] properties : PROPERTIES) {
+				for(String property : properties) {
+					writer.write(property + '=' + settings.getProperty(property));
+					writer.newLine();
+				}
+			}
+			writer.close();
+		}
+		catch (IOException exceptionOutput) {
+			exceptionOutput.printStackTrace();
+		}
 	}
 	
 	private static int getMapValueInteger(HashMap<?, Integer> map, Object key) {
@@ -1320,6 +1417,18 @@ public class GUI {
 		}
 		
 		return 0;
+	}
+	
+	private static String[] generateColorProperties() {
+		String[] propertiesColors = new String[2 + COUNT_POLARITIES_MAXIMUM];
+		
+		propertiesColors[0] = PROPERTY_COLOR_AGENT;
+		propertiesColors[1] = PROPERTY_COLOR_AGENT_SPECIAL;
+		for(int indexProperty = 2; indexProperty < propertiesColors.length; indexProperty++) {
+			propertiesColors[indexProperty] = PROPERTY_COLOR_POLARITY + (indexProperty - 1);
+		}
+		
+		return propertiesColors;
 	}
 }
 
