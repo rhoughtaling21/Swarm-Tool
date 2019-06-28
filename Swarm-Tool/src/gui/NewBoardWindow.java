@@ -134,9 +134,9 @@ public class NewBoardWindow extends JFrame {
 		//		GUI.board.getGraphics().drawRect(-5, -5, 810, 810);
 		//I factored out the borderForCentering so that the border is around the Board JPanel itself.
 		//This math is the same math that used to be done at the beginning of the Board constructor.
-		int spareSpace = GUI.MAXBOARDSIZE%numCellsOnSide;
+		int spareSpace = GUI.SIZE_BOARD_MAXIMUM%numCellsOnSide;
 		int borderForCentering = spareSpace/2;
-		int boardSize = GUI.MAXBOARDSIZE-borderForCentering*2;
+		int boardSize = GUI.SIZE_BOARD_MAXIMUM-borderForCentering*2;
 
 		boolean whetherBoardWraps = gui.wrap;
 		Board board = new Board(boardSize,boardSize,numCellsOnSide,numAgents, whetherBoardWraps, null, gui);

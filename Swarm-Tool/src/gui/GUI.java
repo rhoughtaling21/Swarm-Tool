@@ -19,7 +19,6 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Properties;
-
 import javax.imageio.ImageIO;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
@@ -54,9 +53,9 @@ import strategies.Lines;
  * which to be most dominant (as the yellow has been in previous versions).
  *  */
 public class GUI {
-	public static final int HEIGHT = 864;
-	public static final int WIDTH = 1536;
-	public static final int MAXBOARDSIZE = 800;// pixel size of board
+	private static final int DIMENSION_HEIGHT_INITIAL = 864;
+	private static final int DIMENSION_WIDTH_INITIAL = 1536;
+	public static final int SIZE_BOARD_MAXIMUM = 800;// pixel size of board
 	private static final int COUNT_POLARITIES_MAXIMUM = 4;
 	private static final String HEADER_PROPERTIES = "#--- Swarm Simulation Properties ---#";
 	private static final String FILETYPE_SCREENSHOT = ".jpg";
@@ -75,15 +74,41 @@ public class GUI {
 	private static final String PROPERTY_COLOR_POLARITY = "color.polarity.";
 	private static final JFileChooser SELECTOR_FILEPATH = new JFileChooser();
 	private static final DateTimeFormatter FORMATTER_TIMESTAMP = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss-SSS");
+	private static final Color[] COLORS_BASE = {Color.WHITE, Color.GRAY, Color.BLACK};
+	private static final Color[] OPTIONS_COLORS_POLARITIES = {Color.RED, Color.BLUE, Color.YELLOW, Color.GREEN, Color.CYAN, Color.WHITE, Color.BLACK};
 	private static final String[] OPTIONS_COLORS_POLARITIES_NAMES = {"RED", "BLUE", "YELLOW", "GREEN", "CYAN", "WHITE", "BLACK"};
 	private static final String[] PROPERTIES_BOARD = {PROPERTY_BOARD_SIZE};
 	private static final String[] PROPERTIES_AGENTS = {PROPERTY_AGENTS_COUNT, PROPERTY_AGENTS_COUNT_SPECIAL, PROPERTY_AGENTS_RATE, PROPERTY_AGENTS_ACTIVE, PROPERTY_AGENTS_VISIBLE};
 	private static final String[] PROPERTIES_RULES = {PROPERTY_RULE_GOAL, PROPERTY_RULE_POLARITY_DOMINANT, PROPERTY_RULE_REPETITIONS};
 	private static final String[] PROPERTIES_COLORS = generateColorProperties();
 	private static final String[][] PROPERTIES = {PROPERTIES_BOARD, PROPERTIES_AGENTS, PROPERTIES_RULES, PROPERTIES_COLORS};
-	private static final Color[] COLORS_BASE = {Color.WHITE, Color.GRAY, Color.BLACK};
-	private static final Color[] OPTIONS_COLORS_POLARITIES = {Color.RED, Color.BLUE, Color.YELLOW, Color.GREEN, Color.CYAN, Color.WHITE, Color.BLACK};
-	
+	private static final HashMap<String, Color> MAP_COLORS = generateMapColors();
+	private static final HashMap<String, AbstractStrategy> MAP_STRATEGIES = generateMapStrategies();
+
+	public boolean splitPolarity; //MODIFICATION: if true set the board to be "stuck"
+	public boolean diagonalLineStart; //MODIFICATION #9
+	private boolean timerStarted;// timer or agent step
+	public boolean attractOrRepel = true;
+	public boolean wrap = false;
+	public boolean whetherAgentsVisible = true;
+	public boolean threePol; //MODIFICATION #3   needs fixed
+	public boolean togglePolarity = false; //MODIFICATION #5 determines if the agents goal is a single polarity or three balanced polarities
+	public int layer2Draw = 1;// which cell array in board to display
+	public int initBoardSize, initAgentCount;
+	public int agentSliderRate;
+	public int toggleCount = 0; //MODIFICATION:  used in implementing the View Agents Button
+	public int numSpecialAgents; //MODIFICATION: how many agents should be a separate color
+	public int percentToFlip; //MODIFICATION #2 stores the number of random cells to flip
+	private int indexPolarityDominant;
+	public Color agentColor = Color.GREEN;
+	public Color specialAgentColor = Color.CYAN; //MODIFICATION color for the "special agent"
+	public String newDominantPolarity = "YELLOW";	//MODIFICATION #10 added 7/18 by Morgan Might 	//Keep track of polarity that should be most dominant
+	public String statementOne = "Red < Yellow :"; //MODIFICATION #10  //These variables will be used to display the constraints
+	public String statementTwo = "Blue < Yellow :"; //MODIFICATION #10 
+	public String statementThree = "R + B > Yellow :"; //MODIFICATION #10
+	private Properties settings;
+	public AbstractStrategy goalStrategy = new CheckerBoard();
+	public Board board;// board to be drawn
 	public JFrame frmProjectLegion;// main frame
 	private JTextField textField_NumAgents;
 	private JTextField textField_NumAgentChanges;
@@ -101,43 +126,19 @@ public class GUI {
 	private JLabel lblCompare2; // displays the current constraints MODIFICATION #10
 	private JLabel lblCompare3; // displays the current constraints MODIFICATION #10
 	private JLabel lblStepDisplay; //displays the number of steps that have occurred
+	private JLabel[] labelsFrequencyColorsInitialText;
+	private JLabel[] labelsFrequencyColorsText;
+	private JLabel[] labelsPercentPolaritiesText;
 	private JLabel[] labelsFrequencyColorsInitial;
 	private JLabel[] labelsFrequencyColors;
 	private JLabel[] labelsPercentPolarities;
 	private JLabel[] labels;
-	private HashMap<Integer, Color> colorsPolarity;
-
-	public boolean splitPolarity; //MODIFICATION: if true set the board to be "stuck"
-	public boolean diagonalLineStart; //MODIFICATION #9
-	private boolean timerStarted;// timer or agent step
-	public boolean attractOrRepel = true;
-	public boolean wrap = false;
-	public boolean whetherAgentsVisible = true;
-	public int layer2Draw = 1;// which cell array in board to display
-	public int initBoardSize, initAgentCount;
-	public int agentSliderRate;
-	public int toggleCount = 0; //MODIFICATION:  used in implementing the View Agents Button
-	public int numSpecialAgents; //MODIFICATION: how many agents should be a separate color
-	private int indexPolarityDominant;
-	public Color agentColor = Color.GREEN;
-	public Color specialAgentColor = Color.CYAN; //MODIFICATION color for the "special agent"
-	public AbstractStrategy goalStrategy = new CheckerBoard();
-	public String newDominantPolarity = "YELLOW";	//MODIFICATION #10 added 7/18 by Morgan Might 	//Keep track of polarity that should be most dominant
-	public String statementOne = "Red < Yellow :"; //MODIFICATION #10  //These variables will be used to display the constraints
-	public String statementTwo = "Blue < Yellow :"; //MODIFICATION #10 
-	public String statementThree = "R + B > Yellow :"; //MODIFICATION #10
-	private Properties settings;
-	private BufferedWriter writer;
-	public Board board;// board to be drawn
-
-	public boolean threePol; //MODIFICATION #3   needs fixed
-	public int percentToFlip; //MODIFICATION #2 stores the number of random cells to flip
-	public boolean togglePolarity = false; //MODIFICATION #5 determines if the agents goal is a single polarity or three balanced polarities
-	
 	private JComboBox<String>[] menusDropDownPolarity;
+	private HashMap<Integer, Color> colorsPolarity;
 	private HashMap<Color, Integer> frequencyColorsInitial;
 	private HashMap<Color, Integer> frequencyColors;
 	private HashMap<Color, Integer> frequencyPolarities;
+	private HashMap<Object, Command> propertyCommands;
 
 	/**
 	 * Launch the application.
@@ -155,67 +156,48 @@ public class GUI {
 			}
 		});
 	}
-
-	public Color getPolarityColor(int polarity) {
-		return colorsPolarity.get(polarity);
-	}
-
-	public void setBoard(Board board) {
-		this.board = board;
-		
-		this.frequencyColorsInitial = board.getColorFrequenciesInitial();
-		this.frequencyColors = board.getColorFrequencies();
-		this.frequencyPolarities = board.getPolarityFrequencies();
-		
-		settings.setProperty(PROPERTY_BOARD_SIZE, Integer.toString(board.numCellsOnSide));
-		settings.setProperty(PROPERTY_AGENTS_COUNT, Integer.toString(board.countAgents));
-		
-		board.setAgentRate(agentSliderRate);
-		board.repaint();
-		
-		for(int indexLabel = 0; indexLabel < labelsFrequencyColorsInitial.length; indexLabel++) {
-			labelsFrequencyColorsInitial[indexLabel].setText(Integer.toString(getMapValueInteger(frequencyColorsInitial, COLORS_BASE[indexLabel])));
-		}
-		
-		updateLabels(board.getStepCount());
-	}
 	
 	/**
 	 * Create the application.
 	 */
 	public GUI() {
-		initialize();
-	}
-
-	/**
-	 * Initialize the contents of the frame.
-	 */
-	private void initialize() {
 		frmProjectLegion = new JFrame();
 		frmProjectLegion.setTitle("Project Legion");
-		frmProjectLegion.setBounds(100, 100, WIDTH, HEIGHT);
+		frmProjectLegion.setBounds(100, 100, DIMENSION_WIDTH_INITIAL, DIMENSION_HEIGHT_INITIAL);
 		frmProjectLegion.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frmProjectLegion.setLayout(null);
 
 		timerStarted = false;
 		
-		Properties settingsDefault = new Properties();
+		propertyCommands = new HashMap<Object, Command>();
+		propertyCommands.put(PROPERTY_BOARD_SIZE, new CommandBoardSize());
+		propertyCommands.put(PROPERTY_AGENTS_COUNT, new CommandAgentCount());
+		propertyCommands.put(PROPERTY_AGENTS_COUNT_SPECIAL, new CommandAgentCountSpecial());
+		propertyCommands.put(PROPERTY_AGENTS_RATE, new CommandAgentRate());
+		propertyCommands.put(PROPERTY_AGENTS_ACTIVE, new CommandAgentActive());
+		propertyCommands.put(PROPERTY_AGENTS_VISIBLE, new CommandAgentVisible());
+		propertyCommands.put(PROPERTY_RULE_GOAL, new CommandRuleGoal());
+		propertyCommands.put(PROPERTY_RULE_POLARITY_DOMINANT, new CommandRulePolarityDominant());
+		propertyCommands.put(PROPERTY_RULE_REPETITIONS, new CommandRuleRepetitions());
+		propertyCommands.put(PROPERTY_COLOR_AGENT, new CommandColorAgents());
+		propertyCommands.put(PROPERTY_COLOR_AGENT_SPECIAL, new CommandColorAgentsSpecial());
+		for(int indexPolarity = 1; indexPolarity <= COUNT_POLARITIES_MAXIMUM; indexPolarity++) {
+			propertyCommands.put(PROPERTY_COLOR_POLARITY + indexPolarity, new CommandColorPolarity(indexPolarity));
+		}
+		
+		settings = new Properties();
 		
 		try {
 			InputStream streamInput = getClass().getResourceAsStream("/settings/simulation.properties");
-			settingsDefault.load(streamInput);
+			settings.load(streamInput);
 			streamInput.close();
 		}
 		catch (IOException exceptionInput) {
 			exceptionInput.printStackTrace();
 		}
 		
-		settings = new Properties(settingsDefault);
-		
 		colorsPolarity = new HashMap<Integer, Color>(COUNT_POLARITIES_MAXIMUM);
-		for(int indexPolarity = 0; indexPolarity < COUNT_POLARITIES_MAXIMUM; indexPolarity++) {
-			colorsPolarity.put(indexPolarity + 1, OPTIONS_COLORS_POLARITIES[indexPolarity]);
-		}
-		
+
 		// Makes the top menu bar that has file and edit
 		JMenuBar menuBar = new JMenuBar();
 		frmProjectLegion.setJMenuBar(menuBar);
@@ -232,6 +214,8 @@ public class GUI {
 						FileInputStream streamInput = new FileInputStream(SELECTOR_FILEPATH.getSelectedFile());
 						settings.load(streamInput);
 						streamInput.close();
+						
+						applyProperties();
 					}
 					catch (IOException exceptionInput) {
 						exceptionInput.printStackTrace();
@@ -253,15 +237,13 @@ public class GUI {
 			}
 		});
 		mnFile.add(mntmClose);
-		
-		frmProjectLegion.getContentPane().setLayout(null);
 
 		// ************************************************************ This makes the
 		// 800 by 800 JPanel that will be where the board goes every time it is painted.
 		JPanel boardInGUI = new JPanel();
 		JFrame frame = new JFrame();
 		boardInGUI.setBackground(Color.WHITE);
-		boardInGUI.setBounds(10, (HEIGHT - MAXBOARDSIZE) / 8, MAXBOARDSIZE, MAXBOARDSIZE);
+		boardInGUI.setBounds(10, (DIMENSION_HEIGHT_INITIAL - SIZE_BOARD_MAXIMUM) / 8, SIZE_BOARD_MAXIMUM, SIZE_BOARD_MAXIMUM);
 		frame.getContentPane().add(boardInGUI);
 
 		// This is where the tabs for the layer options go.
@@ -302,41 +284,36 @@ public class GUI {
 
 		// ************************************************************ Labels
 		// displaying information
-		JLabel lblNumStartingWhite = new JLabel("Initial White Cells:");
-		lblNumStartingWhite.setHorizontalAlignment(SwingConstants.CENTER);
-		lblNumStartingWhite.setBounds(10, 11, 125, 35);
-		tabLayer1.add(lblNumStartingWhite);
-
-		JLabel lblIntWhiteCells = new JLabel();
-		lblIntWhiteCells.setHorizontalAlignment(SwingConstants.CENTER);
-		lblIntWhiteCells.setBounds(145, 11, 125, 35);
-		tabLayer1.add(lblIntWhiteCells);
-
-		//MODIFICATION #3 Gray Cells
-		//
-		//Added 5/30 Morgan Might
-		//Displays the original amount of gray cells
-		JLabel lblNumStartingGray = new JLabel("Initial Gray Cells:");
-		lblNumStartingGray.setHorizontalAlignment(SwingConstants.CENTER);
-		lblNumStartingGray.setBounds(10, 44, 125, 35);
-		tabLayer1.add(lblNumStartingGray);
-
-		JLabel lblIntGrayCells = new JLabel();
-		lblIntGrayCells.setHorizontalAlignment(SwingConstants.CENTER);
-		lblIntGrayCells.setBounds(145, 44, 125, 35);
-		tabLayer1.add(lblIntGrayCells);
-
-		JLabel lblNumStartingBlack = new JLabel("Initial Black Cells:");
-		lblNumStartingBlack.setHorizontalAlignment(SwingConstants.CENTER);
-		lblNumStartingBlack.setBounds(10, 79, 125, 35);
-		tabLayer1.add(lblNumStartingBlack);
-
-		JLabel lblIntBlackCells = new JLabel();
-		lblIntBlackCells.setHorizontalAlignment(SwingConstants.CENTER);
-		lblIntBlackCells.setBounds(145, 79, 125, 35);
-		tabLayer1.add(lblIntBlackCells);
-
-		labelsFrequencyColorsInitial = new JLabel[]{lblIntWhiteCells, lblIntGrayCells, lblIntBlackCells};
+		
+		labelsFrequencyColorsInitialText = new JLabel[COLORS_BASE.length];
+		labelsFrequencyColorsInitial = new JLabel[COLORS_BASE.length];
+		labelsFrequencyColorsText = new JLabel[COLORS_BASE.length];
+		labelsFrequencyColors = new JLabel[COLORS_BASE.length];
+		for(int indexLabel = 0; indexLabel < COLORS_BASE.length; indexLabel++) {
+			labelsFrequencyColorsInitialText[indexLabel] = new JLabel("Initial Cells:");	
+			labelsFrequencyColorsInitialText[indexLabel].setBounds(10, 11 + (indexLabel * 34), 125, 35);
+			labelsFrequencyColorsInitialText[indexLabel].setHorizontalAlignment(SwingConstants.CENTER);
+			labelsFrequencyColorsInitialText[indexLabel].setVerticalAlignment(SwingConstants.CENTER);
+			tabLayer1.add(labelsFrequencyColorsInitialText[indexLabel]);
+			
+			labelsFrequencyColorsInitial[indexLabel] = new JLabel();
+			labelsFrequencyColorsInitial[indexLabel].setBounds(145, 11 + (indexLabel * 34), 125, 35);
+			labelsFrequencyColorsInitial[indexLabel].setHorizontalAlignment(SwingConstants.CENTER);
+			labelsFrequencyColorsInitial[indexLabel].setVerticalAlignment(SwingConstants.CENTER);
+			tabLayer1.add(labelsFrequencyColorsInitial[indexLabel]);
+			
+			labelsFrequencyColorsText[indexLabel] = new JLabel("Current Cells:");	
+			labelsFrequencyColorsText[indexLabel].setBounds(10, 300 + (indexLabel * 34), 125, 35);
+			labelsFrequencyColorsText[indexLabel].setHorizontalAlignment(SwingConstants.CENTER);
+			labelsFrequencyColorsText[indexLabel].setVerticalAlignment(SwingConstants.CENTER);
+			tabLayer1.add(labelsFrequencyColorsText[indexLabel]);
+			
+			labelsFrequencyColors[indexLabel] = new JLabel();
+			labelsFrequencyColors[indexLabel].setBounds(145, 300 + (indexLabel * 34), 125, 35);	
+			labelsFrequencyColors[indexLabel].setHorizontalAlignment(SwingConstants.CENTER);
+			labelsFrequencyColors[indexLabel].setVerticalAlignment(SwingConstants.CENTER);
+			tabLayer1.add(labelsFrequencyColors[indexLabel]);
+		}
 		
 		JLabel lblBoardSizeLayer = new JLabel("Board Size:");
 		lblBoardSizeLayer.setForeground(Color.LIGHT_GRAY);
@@ -369,42 +346,6 @@ public class GUI {
 		});
 		btnTriggerFlipCells.setBounds(286, 225, 125, 35);
 		tabLayer1.add(btnTriggerFlipCells);
-
-		JLabel lblNumCurrentWhite = new JLabel("Current White Cells:");
-		lblNumCurrentWhite.setHorizontalAlignment(SwingConstants.CENTER);
-		lblNumCurrentWhite.setBounds(10, 300, 125, 35);
-		tabLayer1.add(lblNumCurrentWhite);
-
-		JLabel lblCurrWhiteCells = new JLabel();
-		lblCurrWhiteCells.setHorizontalAlignment(SwingConstants.CENTER);
-		lblCurrWhiteCells.setBounds(145, 300, 125, 35);
-		tabLayer1.add(lblCurrWhiteCells);
-
-		//MODIFICATION #3 current Gray Cells
-		//
-		//Added 5/30 by Morgan Might
-		//Label to display the updated amount of cells that are currently gray
-		JLabel lblNumCurrentGray = new JLabel("Current Gray Cells:");
-		lblNumCurrentGray.setHorizontalAlignment(SwingConstants.CENTER);
-		lblNumCurrentGray.setBounds(10, 334, 125, 35);
-		tabLayer1.add(lblNumCurrentGray);
-
-		JLabel lblCurrGrayCells = new JLabel();
-		lblCurrGrayCells.setHorizontalAlignment(SwingConstants.CENTER);
-		lblCurrGrayCells.setBounds(145, 334, 125, 35);
-		tabLayer1.add(lblCurrGrayCells);
-
-		JLabel lblNumCurrentBlack = new JLabel("Current Black Cells:");
-		lblNumCurrentBlack.setHorizontalAlignment(SwingConstants.CENTER);
-		lblNumCurrentBlack.setBounds(10, 368, 125, 35);
-		tabLayer1.add(lblNumCurrentBlack);
-
-		JLabel lblCurrBlackCells = new JLabel();
-		lblCurrBlackCells.setHorizontalAlignment(SwingConstants.CENTER);
-		lblCurrBlackCells.setBounds(145, 368, 125, 35);
-		tabLayer1.add(lblCurrBlackCells);
-
-		labelsFrequencyColors = new JLabel[]{lblCurrWhiteCells, lblCurrGrayCells, lblCurrBlackCells};
 		
 		// ************************************************************ Text field that
 		// will trigger when button pushed, this is the value that will be the new board
@@ -1137,6 +1078,42 @@ public class GUI {
 		btnNewBoard.setBackground(new Color(51, 102, 255));
 		btnNewBoard.setBounds(1338, 726, 125, 23);
 		frmProjectLegion.getContentPane().add(btnNewBoard);
+		
+		applyProperties();
+		
+		settings = new Properties(settings);
+	}
+	
+	public Color getPolarityColor(int polarity) {
+		return colorsPolarity.get(polarity);
+	}
+	
+	public void setPolarityColor(int indexPolarity, Color colorPolarity) {
+		if(colorsPolarity.containsKey(indexPolarity) && indexPolarity <= goalStrategy.getCountPolarities() && board != null) {
+			board.updatePolarityColor(colorsPolarity.get(indexPolarity), colorPolarity);
+		}
+		
+		colorsPolarity.put(indexPolarity, colorPolarity);
+	}
+
+	public void setBoard(Board board) {
+		this.board = board;
+		
+		this.frequencyColorsInitial = board.getColorFrequenciesInitial();
+		this.frequencyColors = board.getColorFrequencies();
+		this.frequencyPolarities = board.getPolarityFrequencies();
+		
+		settings.setProperty(PROPERTY_BOARD_SIZE, Integer.toString(board.numCellsOnSide));
+		settings.setProperty(PROPERTY_AGENTS_COUNT, Integer.toString(board.countAgents));
+		
+		board.setAgentRate(agentSliderRate);
+		board.repaint();
+		
+		for(int indexLabel = 0; indexLabel < labelsFrequencyColorsInitial.length; indexLabel++) {
+			labelsFrequencyColorsInitial[indexLabel].setText(Integer.toString(getMapValueInteger(frequencyColorsInitial, COLORS_BASE[indexLabel])));
+		}
+		
+		updateLabels(board.getStepCount());
 	}
 
 	// ************************************************************ OTHER *************************************************************
@@ -1409,6 +1386,18 @@ public class GUI {
 		}
 	}
 	
+	private void applyProperties() {
+		for(Object property : settings.keySet()) {
+			if(propertyCommands.containsKey(property)) {
+				propertyCommands.get(property).execute((String)settings.get(property));
+			}
+			else {
+				System.out.println("'" + property + "' is not a valid property.");
+			}
+			
+		}
+	}
+	
 	private static int getMapValueInteger(HashMap<?, Integer> map, Object key) {
 		if(map != null) {
 			if(map.containsKey(key)) {
@@ -1417,6 +1406,25 @@ public class GUI {
 		}
 		
 		return 0;
+	}
+	
+	private static Color getColor(String colorName) {
+		if(MAP_COLORS.containsKey(colorName)) {
+			return MAP_COLORS.get(colorName);
+		}
+		
+		StringBuilder messageError = new StringBuilder("Error: Invalid Color");
+		messageError.append('"');
+		messageError.append(colorName);
+		messageError.append('"');
+		for(String colorNameKey : MAP_COLORS.keySet()) {
+			messageError.append(colorNameKey);
+			messageError.append(" ");
+		}
+		messageError.append('"');
+		System.out.println(messageError.toString());
+		
+		return Color.LIGHT_GRAY;
 	}
 	
 	private static String[] generateColorProperties() {
@@ -1430,5 +1438,126 @@ public class GUI {
 		
 		return propertiesColors;
 	}
-}
+	
+	private static HashMap<String, Color> generateMapColors() {
+		HashMap<String, Color> colors = new HashMap<String, Color>();
+		
+		colors.put("BLACK", Color.BLACK);
+		colors.put("BLUE", Color.BLUE);
+		colors.put("CYAN", Color.CYAN);
+		colors.put("GRAY", Color.GRAY);
+		colors.put("GREEN", Color.GREEN);
+		colors.put("MAGENTA", Color.MAGENTA);
+		colors.put("ORANGE", Color.ORANGE);
+		colors.put("PINK", Color.PINK);
+		colors.put("RED", Color.RED);
+		colors.put("WHITE", Color.WHITE);
+		colors.put("YELLOW", Color.YELLOW);
+		
+		return colors;
+	}
+	
+	private static HashMap<String, AbstractStrategy> generateMapStrategies() {
+		HashMap<String, AbstractStrategy> strategies = new HashMap<String, AbstractStrategy>();
+		
+		strategies.put("BLACKOUT", new AllBlack());
+		strategies.put("CHECKERBOARD", new CheckerBoard());
+		strategies.put("DIAGONALS", new DiagonalLines());
+		strategies.put("LINES", new Lines());
+		
+		return strategies;
+	}
+	
+	private abstract class Command {
+		public abstract void execute(String value);
+	}
 
+	private class CommandBoardSize extends Command {
+		@Override
+		public void execute(String value) {
+			
+		}
+	}
+
+	private class CommandAgentCount extends Command {
+		@Override
+		public void execute(String value) {
+			
+		}
+	}
+
+	private class CommandAgentCountSpecial extends Command {
+		@Override
+		public void execute(String value) {
+			
+		}
+	}
+
+	private class CommandAgentRate extends Command {
+		@Override
+		public void execute(String value) {
+			
+		}
+	}
+
+	private class CommandAgentActive extends Command {
+		@Override
+		public void execute(String value) {
+			
+		}
+	}
+
+	private class CommandAgentVisible extends Command {
+		@Override
+		public void execute(String value) {
+			
+		}
+	}
+
+	private class CommandRuleGoal extends Command {
+		@Override
+		public void execute(String value) {
+			
+		}
+	}
+	
+	private class CommandRulePolarityDominant extends Command {
+		@Override
+		public void execute(String value) {
+			
+		}
+	}
+	
+	private class CommandRuleRepetitions extends Command {
+		@Override
+		public void execute(String value) {
+			
+		}
+	}
+	
+	private class CommandColorAgents extends Command {
+		@Override
+		public void execute(String value) {
+		}
+	}
+	
+	private class CommandColorAgentsSpecial extends Command {
+		@Override
+		public void execute(String value) {
+			
+		}
+	}
+	
+	private class CommandColorPolarity extends Command {
+		private int indexPolarity;
+		
+		public CommandColorPolarity(int indexPolarity) {
+			this.indexPolarity = indexPolarity;
+		}
+		
+		@Override
+		public void execute(String value) {
+			setPolarityColor(indexPolarity, getColor(value));
+		}
+	}
+}
