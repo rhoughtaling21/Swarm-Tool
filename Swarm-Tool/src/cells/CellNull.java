@@ -5,8 +5,6 @@ package cells;
  * 					 This border will be populated with Null cells. If the cells go beyond the normal board, then they will disappear and be have null coordinates.
  */
 
-import java.awt.Color;
-
 public class CellNull implements Cell {
 	private static CellNull nullCell;
 	
@@ -25,13 +23,12 @@ public class CellNull implements Cell {
 	//everything that a Cell would do, does nothing following this
 	
 	@Override
-	public Color getColor() {
-		return null;
+	public int getState() {
+		return -1;
 	}
-	
+
 	@Override
-	public void setColor(Color colorFill) {
+	public void setState(int indexState) {
 		
 	}
 }
-

@@ -13,33 +13,37 @@ import other.SwarmAgent;
  * Description: Agent logic and layer 2 logic for an end goal of all layer 1 cells being black
  */
 public class AllBlack extends AbstractStrategy {
+	public static final int COUNT_STATES = 2;
 	public static final int COUNT_POLARITIES = 2;
 	private boolean adjustCellColor = false; //MODIFICATION #7
 
 	@Override
-	public int getCountPolarities() {
+	public int getStateCount() {
+		return COUNT_STATES;
+	}
+	
+	@Override
+	public int getPolarityCount() {
 		return COUNT_POLARITIES;
 	}
 
 	@Override
-	public Color determinePolarity(Board board, int row, int col) {
-		GUI gui = board.getGui();
-
-		if(board.getLayer(1)[row][col].getColor().equals(Color.BLACK)) { //if the layer 1 cell is black
-			return gui.getPolarityColor(1);
+	public int determinePolarity(Board board, int row, int col) {
+		if(board.getLayer(1)[row][col].getState() == 0) { //if the layer 1 cell is black
+			return 0;
 		}
 
 		//if the layer 1 cell is white
-		return gui.getPolarityColor(2);
+		return 1;
 	}
 
 	@Override
 	public void logic(SwarmAgent agent, CellDisplayBase[][] layer1, CellDisplayPolarity[][] layer2, Cell[] neighbors, double cellSize) {
-		if(layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getColor().equals(Color.BLACK)) {
+		if(layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getState() == 0) {
 			adjustCellColor = false; //Leave the cell Black
 		}
 		else {
-			layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].flipColor();
+			layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].shiftState();
 			updatePolarityCell(layer2[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getBoard(), agent);
 			adjustCellColor = true; //Change cell from white to black
 		}

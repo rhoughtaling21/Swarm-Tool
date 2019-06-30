@@ -11,7 +11,6 @@ package cells;
 import java.awt.Color;
 
 import gui.Board;
-import gui.GUI;
 
 /**
  * @authors Zak, Nick, Gabriel, Tim
@@ -20,36 +19,18 @@ import gui.GUI;
  */
 @SuppressWarnings("serial")
 public class CellDisplayPolarity extends CellDisplay {
-	public CellDisplayPolarity(double x, double y, double size, Color colorFill, Board board) {
+	private Color[] colorsPolarity;
+	
+	public CellDisplayPolarity(double x, double y, double size, int indexState, Board board) {
 		//a lot of these parameters actually belong to Rectangle2D.Double, so we call in the super class CellDisplay
-		super(x, y, size, colorFill, board);
-		board.adjustPolarityFrequency(colorFill, 1);
-	}
-
-	//flip color of Cell
-	public void flipColor()	{
-		//as cells2 can be different colors chosen by the user, the color is set in the GUI
-		GUI gui = board.getGui();
-		
-		if (colorFill.equals(gui.getPolarityColor(1))) {
-			setColor(gui.getPolarityColor(2));
-		}
-		else {
-			setColor(gui.getPolarityColor(1));
-		}
+		super(x, y, size, board);
+		colorsPolarity = board.getGui().getPolarityColors();
+		setState(indexState);
 	}
 	
-	//MODIFICATION #3
-	//change color of Cell
 	@Override
-	public void setColor(Color colorFill) {
-		//Subtract counter for the old color
-		board.adjustPolarityFrequency(this.colorFill, -1);
-		//Set new Color
-		this.colorFill = colorFill;
-		//Set Polarity and add counter for new color
-		board.adjustPolarityFrequency(colorFill, 1);
+	public void setState(int indexState) {
+		this.indexState = indexState;
+		colorFill = colorsPolarity[indexState];
 	}
 }
-
-

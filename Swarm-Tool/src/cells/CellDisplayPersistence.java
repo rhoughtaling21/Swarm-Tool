@@ -12,23 +12,26 @@ import gui.Board;
 
 @SuppressWarnings("serial")
 public class CellDisplayPersistence extends CellDisplay {
-	private int persistenceValue;
+	private static final int COUNT_STATES_PERSISTENCE = 50;
 	
-	public CellDisplayPersistence(double x, double y, double size, Color colorFill, Board board, int persistenceValue) {
-		super(x, y, size, colorFill, board);
-		this.persistenceValue = persistenceValue;
+	public CellDisplayPersistence(double x, double y, double size, Board board) {
+		super(x, y, size, board);
+		setState(indexState);
 	}
-	
-	public int getPersistenceValue() {
-		return persistenceValue;
-	}
-	
+
 	@Override
-	public void setColor(Color colorFill) {
-		this.colorFill = colorFill;
+	public void setState(int indexState) {
+		indexState = Math.min(indexState, COUNT_STATES_PERSISTENCE);
+		
+		if(this.indexState != indexState) {
+			this.indexState = indexState;
+			
+			int valueHue = 255 - (((255 - 60) / COUNT_STATES_PERSISTENCE) * indexState);
+			colorFill = new Color(valueHue, 255 - (((255) / COUNT_STATES_PERSISTENCE) * indexState), valueHue);
+		}
 	}
 	
-	public void setPersistenceValue(int persistenceValue) {
-		this.persistenceValue = persistenceValue;
+	public void shiftState() {
+		setState(indexState + 1);
 	}
 }

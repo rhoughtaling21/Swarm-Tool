@@ -19,33 +19,28 @@ import gui.Board;
  */
 @SuppressWarnings("serial")
 public class CellDisplayBase extends CellDisplay {
-	public CellDisplayBase(double x, double y, double size, Color colorFill, Board board) {
-		//a lot of these parameters actually belong to Rectangle2D.Double, so we call in the super class CellDisplay
-		super(x, y, size, colorFill, board);
-		board.adjustInitialColorFrequency(colorFill, 1);
-	}
-
-	//flip color of Cell
-	public void flipColor() {
-		//these first two cases apply to cells as they only are ever black or white
-		if (colorFill.equals(Color.BLACK)) {
-			setColor(Color.WHITE);
-		}
-		else {
-			setColor(Color.BLACK);
-		}
+	private static final Color[] COLORS_BASE = {Color.BLACK, Color.WHITE, Color.GRAY};
+	
+	public static int getMaximumStateCount() {
+		return COLORS_BASE.length;
 	}
 	
+	public CellDisplayBase(double x, double y, double size, int indexState, Board board) {
+		//a lot of these parameters actually belong to Rectangle2D.Double, so we call in the super class CellDisplay
+		super(x, y, size, board);
+		setState(indexState);
+	}
+
 	//MODIFICATION #3
 	//change color of Cell
-	@Override
-	public void setColor(Color colorFill) {
-		//Subtract counter for the old color
-		board.adjustColorFrequency(this.colorFill, -1);
-		//Set new Color
-		this.colorFill = colorFill;
-		//Set Polarity and add counter for new color
-		board.adjustColorFrequency(colorFill, 1);
+	public void setState(int indexState) {
+		this.indexState = indexState;
+		colorFill = COLORS_BASE[indexState];
+	}
+	
+	//flip color of Cell
+	public void shiftState() {
+		setState((indexState + 1) % board.getActiveStrategy().getStateCount());
 	}
 }
 

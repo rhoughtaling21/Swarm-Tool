@@ -17,18 +17,17 @@ import gui.Board;
 
 @SuppressWarnings("serial")
 public abstract class CellDisplay extends Rectangle2D.Double implements Cell {
+	protected int indexState;
 	protected Color colorFill;
 	protected Board board;
 	
-	public CellDisplay(double x, double y, double size, Color colorFill, Board board) {
+	public CellDisplay(double x, double y, double size, Board board) {
 		super(x, y, size, size);
-		this.colorFill = colorFill;
 		this.board = board;
 	}
-
-	@Override
-	public Color getColor() {
-		return colorFill;
+	
+	public int getState() {
+		return indexState;
 	}
 	
 	public Board getBoard() {
@@ -40,5 +39,3 @@ public abstract class CellDisplay extends Rectangle2D.Double implements Cell {
 		helperGraphics2D.fill(this);
 	}
 }
-
-

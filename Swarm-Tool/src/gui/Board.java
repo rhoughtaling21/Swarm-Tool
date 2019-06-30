@@ -15,14 +15,7 @@ import java.awt.event.MouseEvent;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -69,38 +62,28 @@ public class Board extends JPanel implements MouseInputListener {
 	private CellDisplay[] neighbors = new CellDisplay[8];//the 8 cells that neighbor a given cell in layer 1 are stored here
 	private AbstractStrategy strategy;//strategy that the agents and layer 2 use for their calculations given the current goal
 	public int countAgents; //MODIFICATION
-	public boolean[] flipCell; //MODIFICATION #2
-	//MODIFICATION #6: File, FileReader, FileWriter, BufferedReader, and BufferedWriter used to export info to excel file
-	private File inputFile, outputFile;
-	private FileReader fileReader;
-	private FileWriter fileWriter;
-	private BufferedReader reader;
-	private BufferedWriter writer;
-	//String exportInfoString = "Less than 25,25-50,51-75,76-100,More than 100\n"; //MODIFICATION #8
-	//String exportInfoString = "Less than 5,5-9,10-14,15-19,20-24,More than 25\n"; //MODIFICATION #8
-	//String exportInfoString = "Zero,One,Two,Three,Four,Five,Six+\n"; //MODIFICATION #8
 	String exportInfoString = "Red,Blue,Yellow\n"; 
 	public int countSteps = 0; //MODIFICATION #6
 	private long rateExecute;
 	private GUI gui;
+	private int[] frequencyColorsInitial;
+	private int[] frequencyColors;
+	private int[] frequencyPolarities;
 	private CellDisplayBase[][] layer1;
 	private CellDisplayPolarity[][] layer2;
 	private CellDisplayPersistence[][] layer4;  //MODIFICATION #7: new layer of cells for persistency
 	private CellDisplay[][] layerDisplay; //layer to paint
-	private HashMap<Color, Integer> frequencyColorsInitial;
-	private HashMap<Color, Integer> frequencyColors;
-	private HashMap<Color, Integer> frequencyPolarities;
 	private HashMap<Integer, CellDisplay[][]> layers;
 
-	public Board(int width, int height, int numCellsOnSide, int countAgents, boolean wrap, CellDisplayBase[][] layer1GetNeighbor, GUI gui) {
+	public Board(int width, int height, int numCellsOnSide, int countAgents, boolean wrap, GUI gui) {
 		this.countAgents = countAgents;
 		this.gui = gui;
 
 		timer = new Timer();
 		
-		frequencyColorsInitial = new HashMap<Color, Integer>();
-		frequencyPolarities = new HashMap<Color, Integer>();
-		layers = new HashMap<Integer, CellDisplay[][]>(3);
+		frequencyColorsInitial = new int[CellDisplayBase.getMaximumStateCount()];
+		frequencyPolarities = new int[GUI.COUNT_POLARITIES_MAXIMUM];
+		layers = new HashMap<Integer, CellDisplay[][]>(4);
 		
 		//MODIFICATION
 		//Added 7/17/18
@@ -127,27 +110,18 @@ public class Board extends JPanel implements MouseInputListener {
 
 		//layer 1
 		layer1 = new CellDisplayBase[numCellsOnSide][numCellsOnSide];
-		//int randomPosition;
-		Color colorInitial;
 
 		if (!gui.getSplitPolarity()) {
 			for (int indexRow = 0; indexRow < layer1.length; indexRow++) {
 				for (int indexColumn = 0; indexColumn < layer1[indexRow].length; indexColumn++) {
-					if (Math.random() < 0.5) {
-						colorInitial = Color.BLACK;
-					} 
-					else {
-						colorInitial = Color.WHITE;
-					}
-					
-					layer1[indexRow][indexColumn] = new CellDisplayBase(indexRow * cellSize, indexColumn * cellSize, cellSize, colorInitial, this);
+					layer1[indexRow][indexColumn] = new CellDisplayBase(indexRow * cellSize, indexColumn * cellSize, cellSize, (int)(strategy.getStateCount() * Math.random()), this);
 				}
 			}
 		}
-
 		// MODIFICATION: This will test swarms when the polarity is split and the agents are no longer effective
 		else if(!gui.getThreeColor()){
 			int pos;
+			int stateInitial;
 			for (int indexRow = 0; indexRow < layer1.length; indexRow++) {
 				for (int indexColumn = 0; indexColumn < layer1[indexRow].length; indexColumn++) {
 					if(Math.random() < 0.5) {  
@@ -159,27 +133,26 @@ public class Board extends JPanel implements MouseInputListener {
 						
 					if (pos < (3 + (int)(Math.random() * (numCellsOnSide - 5)))) {
 						if (indexRow % 2 == indexColumn % 2) {
-							colorInitial = Color.BLACK;
+							stateInitial = 0;
 						}
 						else {
-							colorInitial = Color.WHITE;
+							stateInitial = 1;
 						}
 					} 
 					else {
 						if (indexRow % 2 == indexColumn % 2) {
-							colorInitial = Color.WHITE;
+							stateInitial = 1;
 						}
 						else {
-							colorInitial = Color.BLACK;
+							stateInitial = 0;
 						}
 					}
 					
-					layer1[indexRow][indexColumn] = new CellDisplayBase(indexRow * cellSize, indexColumn * cellSize, cellSize, colorInitial, this);
+					layer1[indexRow][indexColumn] = new CellDisplayBase(indexRow * cellSize, indexColumn * cellSize, cellSize, stateInitial, this);
 				}
 			}
 		}
 		layers.put(1, layer1);
-
 
 		layer2 = new CellDisplayPolarity[numCellsOnSide][numCellsOnSide];
 		for (int row = 0; row < layer2.length; row++) {
@@ -197,7 +170,7 @@ public class Board extends JPanel implements MouseInputListener {
 		layer4 = new CellDisplayPersistence[numCellsOnSide][numCellsOnSide];
 		for (int row = 0; row < layer4.length; row++) {
 			for (int col = 0; col < layer4[row].length; col++) {
-				layer4[row][col] = new CellDisplayPersistence(row * cellSize, col * cellSize, cellSize, Color.WHITE, this, 0);
+				layer4[row][col] = new CellDisplayPersistence(row * cellSize, col * cellSize, cellSize, this);
 			}
 		}
 		layers.put(4, layer4);
@@ -217,7 +190,7 @@ public class Board extends JPanel implements MouseInputListener {
 			specialAgent = false;
 		}
 
-		frequencyColors = (HashMap<Color, Integer>)frequencyColorsInitial.clone();
+		frequencyColors = frequencyColorsInitial.clone();
 		
 		this.addMouseListener(this);
 		this.addMouseMotionListener(this);
@@ -231,15 +204,19 @@ public class Board extends JPanel implements MouseInputListener {
 		return countSteps;
 	}
 	
-	public HashMap<Color, Integer> getColorFrequenciesInitial() {
+	public AbstractStrategy getActiveStrategy() {
+		return strategy;
+	}
+	
+	public int[] getInitialColorFrequencies() {
 		return frequencyColorsInitial;
 	}
 	
-	public HashMap<Color, Integer> getColorFrequencies() {
+	public int[] getColorFrequencies() {
 		return frequencyColors;
 	}
 	
-	public HashMap<Color, Integer> getPolarityFrequencies() {
+	public int[] getPolarityFrequencies() {
 		return frequencyPolarities;
 	}
 	
@@ -563,16 +540,6 @@ public class Board extends JPanel implements MouseInputListener {
 		}
 	}
 
-	public void updatePolarityColor(Color colorPolarityOld, Color colorPolarityNew) {
-		for(int indexRow = 0; indexRow < layer2.length; indexRow++) {
-			for(int indexColumn = 0; indexColumn < layer2[indexRow].length; indexColumn++) {
-				if(layer2[indexRow][indexColumn].getColor().equals(colorPolarityOld)) {
-					layer2[indexRow][indexColumn].setColor(colorPolarityNew);
-				}
-			}
-		}
-	}
-
 	/**
 	 * @author zgray17
 	 * This method updates the color of the agents. Blah blah blah.
@@ -631,7 +598,7 @@ public class Board extends JPanel implements MouseInputListener {
 	public void flipCells(int percentFlipCells) {
 		double percent = percentFlipCells/100.0;
 		int numCells = (int) ((numCellsOnSide*numCellsOnSide) * percent);
-		flipCell = new boolean[(numCellsOnSide*numCellsOnSide)];
+		boolean[] flipCell = new boolean[(numCellsOnSide*numCellsOnSide)];
 		int count = 0;
 		Random rand = new Random();
 		while(count < numCells) {
@@ -645,7 +612,7 @@ public class Board extends JPanel implements MouseInputListener {
 		for (int row = 0; row < layer1.length; row++) {
 			for (int col = 0; col < layer1[row].length; col++) {
 				if(flipCell[count]) {
-					layer1[row][col].flipColor();
+					layer1[row][col].shiftState();
 					strategy.updatePolarityCell(this, row, col);
 					System.out.println("FLIP: " + count);
 				}
@@ -672,95 +639,43 @@ public class Board extends JPanel implements MouseInputListener {
 	//Morgan Might on July 5, 2018
 	//This method will reset the layer 4 cell to white
 	public void resetToWhite(SwarmAgent agent, double cellSize){
-		layer4[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].setColor(Color.WHITE);
-		layer4[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].setPersistenceValue(0);
+		layer4[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].setState(0);
 	}
 
 	public void addPurple(SwarmAgent agent, double cellSize) {
-		int persistenceNum = layer4[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getPersistenceValue();
-//		System.out.println("Persistence Num: " + persistenceNum);
-		if(layer4[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getColor().equals(Color.WHITE)) {
-			layer4[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].setColor(new Color(195,125,195));
-			layer4[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].setPersistenceValue(1);
-		}
-		else {
-			if(persistenceNum <= 3){ //(195, 125, 195) down to (180, 110, 180)
-				int index = 5 * persistenceNum;
-				layer4[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].setColor(new Color(195-index, 125-index, 195-index));
-			}
-			else if(persistenceNum <= 15){ //down to (180, 50, 180)
-				int index = 5 * persistenceNum;
-				layer4[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].setColor(new Color(180, 125-index, 180));
-			}
-			else if(persistenceNum <= 29) { //down to (110, 50, 110)
-				int index = (persistenceNum - 15)*5;
-				layer4[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].setColor(new Color(180- index, 50, 180- index));
-			}
-			else if(persistenceNum <= 39) { //down to (110, 0, 110)
-				int index = (persistenceNum - 29)*5;
-				layer4[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].setColor(new Color(110, 50-index, 110));
-			}
-			else if(persistenceNum <= 49) { //down to (60, 0, 60)
-				int index = (persistenceNum - 39)*5;
-				layer4[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].setColor(new Color(110-index, 0, 110-index));
-			}
-
-			//Update Persistence Number
-			layer4[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].setPersistenceValue(persistenceNum + 1);
-		}
-
+		layer4[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].shiftState();
 	}
 
 	public GUI getGui() {
 		return gui;
 	}
 	
-	public int getColorFrequencyInitial(Color color) {
-		if(frequencyColorsInitial.containsKey(color)) {
-			return frequencyColorsInitial.get(color);
-		}
-		
-		return 0;
+//	public int getColorFrequencyInitial(Color color) {
+//		if(frequencyColorsInitial.containsKey(color)) {
+//			return frequencyColorsInitial.get(color);
+//		}
+//		
+//		return 0;
+//	}
+//	
+//	public int getColorFrequency(Color color) {
+//		if(frequencyColors.containsKey(color)) {
+//			return frequencyColors.get(color);
+//		}
+//		
+//		return 0;
+//	}
+	
+	public void adjustInitialColorFrequency(int stateAdjust, int adjustment) {
+		frequencyColorsInitial[stateAdjust] += adjustment;
 	}
 	
-	public int getColorFrequency(Color color) {
-		if(frequencyColors.containsKey(color)) {
-			return frequencyColors.get(color);
-		}
-		
-		return 0;
+	public void adjustColorFrequency(int colorAdjust, int adjustment) {
+		frequencyColors[colorAdjust] += adjustment;
 	}
 	
-	public void adjustInitialColorFrequency(Color colorAdjust, int adjustment) {
-		if(frequencyColorsInitial.containsKey(colorAdjust)) {
-			frequencyColorsInitial.put(colorAdjust, frequencyColorsInitial.get(colorAdjust) + adjustment);
-		}
-		else {
-			frequencyColorsInitial.put(colorAdjust, adjustment);
-		}
-	}
-	
-	public void adjustColorFrequency(Color colorAdjust, int adjustment) {
-		if(frequencyColors.containsKey(colorAdjust)) {
-			frequencyColors.put(colorAdjust, frequencyColors.get(colorAdjust) + adjustment);
-		}
-		else {
-			frequencyColors.put(colorAdjust, adjustment);
-		}
-	}
-	
-	public void adjustPolarityFrequency(Color colorAdjust, int adjustment) {
-		if(frequencyPolarities.containsKey(colorAdjust)) {
-			frequencyPolarities.put(colorAdjust, frequencyPolarities.get(colorAdjust) + adjustment);
-		}
-		else {
-			frequencyPolarities.put(colorAdjust, adjustment);
-		}
-		
-		if(Math.abs(adjustment) > 1) {
-			System.out.println("WOAH");
-			stopTimer();
-		}
+	public void adjustPolarityFrequency(int colorAdjust, int adjustment) {
+		frequencyPolarities[colorAdjust] += adjustment;
 	}
 	
 	public CellDisplay[][] getLayer(int indexLayer) {

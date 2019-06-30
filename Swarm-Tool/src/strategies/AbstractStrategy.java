@@ -1,7 +1,5 @@
 package strategies;
 
-import java.awt.Color;
-
 import cells.Cell;
 import cells.CellDisplayBase;
 import cells.CellDisplayPolarity;
@@ -10,7 +8,8 @@ import other.SwarmAgent;
 
 //Goal strategies are children of AbstractStrategy
 public abstract class AbstractStrategy {
-	public abstract int getCountPolarities();
+	public abstract int getStateCount();
+	public abstract int getPolarityCount();
 	
 	public CellDisplayPolarity createPolarityCell(Board board, SwarmAgent agent) {
 		double sizeCell = board.getCellSize();
@@ -28,11 +27,10 @@ public abstract class AbstractStrategy {
 	}
 	
 	public final void updatePolarityCell(Board board, int row, int col) {
-		board.getLayer(2)[row][col].setColor(determinePolarity(board, row, col));
+		board.getLayer(2)[row][col].setState(determinePolarity(board, row, col));
 	}
 	
-	public abstract Color determinePolarity(Board board, int row, int col);
+	public abstract int determinePolarity(Board board, int row, int col);
 	
 	public abstract void logic (SwarmAgent agent, CellDisplayBase[][] layer1, CellDisplayPolarity[][] layer2, Cell[] neighbors, double cellSize);
 }
-

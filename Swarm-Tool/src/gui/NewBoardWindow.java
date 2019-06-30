@@ -139,7 +139,7 @@ public class NewBoardWindow extends JFrame {
 		int boardSize = GUI.SIZE_BOARD_MAXIMUM-borderForCentering*2;
 
 		boolean whetherBoardWraps = gui.wrap;
-		Board board = new Board(boardSize,boardSize,numCellsOnSide,numAgents, whetherBoardWraps, null, gui);
+		Board board = new Board(boardSize,boardSize,numCellsOnSide,numAgents, whetherBoardWraps, gui);
 		board.setBackground(Color.WHITE);
 		board.setBounds(10+borderForCentering, 10+borderForCentering, boardSize, boardSize);
 		//displayPanel.add();
