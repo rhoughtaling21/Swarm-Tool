@@ -11,37 +11,41 @@ import gui.GUI;
 import other.SwarmAgent;
 
 public class Lines extends AbstractStrategy {
+	public static final int COUNT_STATES = 2;
 	public static final int COUNT_POLARITIES = 4;
 	/*
 	 * Author: Zakary Gray
 	 * Description: Agent logic and layer 2 logic for an end goal of all layer 1 cells forming straight lines of black and white. The stable state for this goal is a pyramid.
 	 */
-	//MODIFICATION #7
-	boolean adjustCellColor = false;
 
 	@Override
-	public int getCountPolarities() {
+	public int getStateCount() {
+		return COUNT_STATES;
+	}
+	
+	@Override
+	public int getPolarityCount() {
 		return COUNT_POLARITIES;
 	}
 	
 	@Override
-	public Color determinePolarity(Board board, int row, int col) {
+	public int determinePolarity(Board board, int row, int col) {
 		//Layer 2 in this sense shows 4 colors. one for each variation of straight lines. In the final, solved state,
 		//the 4 colors indicate the 4 faces of the pyramid.
 		GUI gui = board.getGui();
-		CellDisplay[][] layer1 = board.getLayer(1);
+		CellDisplay[][] layer1 = board.getBaseLayer();
 
 		Cell[] neighbors = Board.getNeighbors((CellDisplayBase[][])layer1, row, col);
 		int chosenPolarity = 0, cornerCount = 0, edgeCount = 0, vertical = 0, horizontal = 0;
 		for(int index = 0; index < neighbors.length; index++){
 			if(neighbors[index] != null) {
 				if(index%2==0) {
-					if (neighbors[index].getColor().equals(Color.BLACK)){
+					if (neighbors[index].getState() == 0) {
 						cornerCount++;
 					}
 				}
 				else {
-					if (neighbors[index].getColor().equals(Color.BLACK)){
+					if (neighbors[index].getState() == 0){
 						edgeCount++;
 						if(index==1||index==5) {
 							vertical++;
@@ -54,7 +58,7 @@ public class Lines extends AbstractStrategy {
 			}
 		}
 
-		if(layer1[row][col].getColor().equals(Color.BLACK)) {
+		if(layer1[row][col].getState() == 0) {
 			edgeCount+=2;
 		}
 		if (edgeCount>cornerCount) {
@@ -75,105 +79,115 @@ public class Lines extends AbstractStrategy {
 		}
 		//This section is necessary to allow for the alternating colors of layer 1 to be classified as the same polarity. 
 		//For example, a black row then a white row then a black row are the same polarity, but appear opposite on a case-by-case basis
-		if(layer1[row][col].getColor().equals(Color.BLACK))	{
+		if(layer1[row][col].getState() == 0)	{
 			if(chosenPolarity == 0) {
 				if(row%2==0) {
-					return gui.getPolarityColor(1);
+					return 0;
 				}
 
-				return gui.getPolarityColor(2);
+				return 1;
 			}
 			else if(chosenPolarity == 1) {
 				if(row%2==0) {
-					return gui.getPolarityColor(1);
+					return 0;
 				}
 
-				return gui.getPolarityColor(2);
+				return 1;
 			}
 			else if(chosenPolarity == 2) {
 				if(col%2==0) {
-					return gui.getPolarityColor(4);
+					return 3;
 				}
 
-				return gui.getPolarityColor(3);
+				return 2;
 			}
 
 			if(col%2==0) {
-				return gui.getPolarityColor(4);
+				return 3;
 			}
 
-			return gui.getPolarityColor(3);
+			return 2;
 		}
 		if(chosenPolarity == 0)	{
 			if(row%2==0) {
-				return gui.getPolarityColor(2);
+				return 1;
 			}
 
-			return gui.getPolarityColor(1);
+			return 0;
 		}
 		else if(chosenPolarity == 1) {
 			if(row%2==0) {
-				return gui.getPolarityColor(2);
+				return 1;
 			}
 
-			return gui.getPolarityColor(1);
+			return 0;
 		}
 		else if(chosenPolarity == 2) {
 			if(col%2==0) {
-				return gui.getPolarityColor(3);
+				return 2;
 			}
 
-			return gui.getPolarityColor(4);
+			return 3;
 		}
 		if(col%2==0) {
-			return gui.getPolarityColor(3);
+			return 2;
 		}
 
-		return gui.getPolarityColor(4);
+		return 3;
 	}
 
 	@Override
 	//this is the exact same logic as the checkerboard, but with edgeCount and cornerCount flipped.
-	public void logic(SwarmAgent agent, CellDisplayBase[][] layer1, CellDisplayPolarity[][] layer2, Cell[] neighbors, double cellSize) {
+	public void logic(Board board, SwarmAgent agent) {
+		int indexRow = board.getAgentRow(agent);
+		int indexColumn = board.getAgentColumn(agent);
+		
+		CellDisplayBase[][] layer1 = board.getBaseLayer();
+		CellDisplayBase cell = layer1[indexRow][indexColumn];
+		
+		Cell[] neighbors = Board.getNeighbors(board.getBaseLayer(), indexRow, indexColumn);
+		
 		int cornerCount = 0;
 		int edgeCount = 0;
-		//if (Math.random() < 0.1) {
+		
 		for(int index = 0; index<neighbors.length; index++) {
 			if(neighbors[index] != null) {
 				if(index%2==0) {
-					if (neighbors[index].getColor().equals(Color.BLACK)) {
+					if (neighbors[index].getState() == 0) {
 						edgeCount++;
 					}
 				}
 				else {
-					if (neighbors[index].getColor().equals(Color.BLACK)) {
+					if (neighbors[index].getState() == 0) {
 						cornerCount++;
 					}
 				}
 			}
 		}
+		
+		boolean adjustCellColor = false;
+		
 		//MODIFICATION #2: 99.6% follow rules and 0.3% flip no matter what.
 		//Random rand = new Random();
 		//int probabilityNum = rand.nextInt(300);
 		//if(probabilityNum >0) {
-		if(cornerCount>edgeCount) {
-			if(layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getColor().equals(Color.BLACK)) {
+		if(cornerCount > edgeCount) {
+			if(layer1[indexRow][indexColumn].getState() == 0) {
 				cornerCount = 0;
 				edgeCount = 0;
-				adjustCellColor = false; //Leave the cell Black
 			}
 			else {
-				layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].flipColor();
-				updatePolarityCell(layer2[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getBoard(), agent);
+				cell.shiftState();
+				updatePolarityCell(board, indexRow, indexColumn);
 				cornerCount = 0;
 				edgeCount = 0;
 				adjustCellColor = true; //Flip the Cell from White to Black
 			}
 		}
-		else if(edgeCount>cornerCount) {
-			if(layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getColor().equals(Color.BLACK)) {
-				layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].flipColor();
-				updatePolarityCell(layer2[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getBoard(), agent);
+		else if(edgeCount > cornerCount) {
+			if(cell.getState() == 0) {
+				cell.shiftState();
+				updatePolarityCell(board, indexRow, indexColumn);
 
 				cornerCount = 0;
 				edgeCount = 0;
@@ -182,36 +196,27 @@ public class Lines extends AbstractStrategy {
 			else {
 				cornerCount = 0;
 				edgeCount = 0;
-				adjustCellColor = false; //Leave the Cell White
 			}
 		}
 		else {
-			double flipCoin = Math.random();
-			if (flipCoin >.5) {
-				layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].flipColor();
-				updatePolarityCell(layer2[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getBoard(), agent);
+			if (Math.random() > .5) {
+				cell.shiftState();
+				updatePolarityCell(board, indexRow, indexColumn);
 
 				cornerCount = 0;
 				edgeCount = 0;
 				adjustCellColor = true; //Flip the Cell
 			}
 		}
-		//}
-		//else {
-		//	layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].flipColor();
-		//	layer2[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)] = Layer2(layer1, cellSize, (int)agent.getCenterX()/cellSize, (int)agent.getCenterY()/cellSize, neighbors);
-		//}
 
 		//MODIFICATION #7:
 		//If the cell was flipped reset the layer 4 cell to white
 		if(adjustCellColor) {
-			layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getBoard().resetToWhite(agent, cellSize);
+			board.resetToWhite(agent);
 		}
 		//If the cell does not need changed, darken the purple
 		else {
-			layer1[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].getBoard().addPurple(agent, cellSize); 
+			board.addPurple(agent); 
 		}
-
 	}
-
 }

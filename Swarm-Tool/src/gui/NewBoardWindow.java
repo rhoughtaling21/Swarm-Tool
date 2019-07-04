@@ -146,7 +146,7 @@ public class NewBoardWindow extends JFrame {
 		frame.getContentPane().add(board);
 		gui.setBoard(board);
 		//This section is to avoid bugs in the GUI.
-		board.updateGoalStrategy(gui.goalStrategy);
+		//board.updateGoalStrategy(gui.goalStrategy);
 		board.setAgentRate(gui.agentSliderRate);
 	}
 	

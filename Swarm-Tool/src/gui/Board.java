@@ -12,10 +12,8 @@ import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.event.MouseEvent;
-import java.awt.geom.Ellipse2D;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
-import java.util.HashMap;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -29,8 +27,6 @@ import cells.CellDisplayPersistence;
 import cells.CellDisplayPolarity;
 import other.SwarmAgent;
 import strategies.AbstractStrategy;
-import strategies.CheckerBoard;
-import strategies.DiagonalLines;
 /*
  * Authors: Nick, Tim, Zak, Gabriel
  * Description: This is the guts of the program. Two 2x2 Cell arrays of size[size X size] are created to be layers 1 and 2,
@@ -42,24 +38,20 @@ import strategies.DiagonalLines;
 @SuppressWarnings("serial")
 public class Board extends JPanel implements MouseInputListener {
 	public static final int RATE_STEPS_MAXIMUM = 900;
-	private static final Color COLOR_TRANSPARENT = new Color(0, 1, 0, 0);
 	
 	public int numCellsOnSide; //these are the numbers of cells in the board, NOT the graphical dimensions of the board
 	private boolean wraparound; //whether the walls of the Board wrap or not; by default, they don't
 	private double cellSize; //pixel dimensions of each cell
-	private SwarmAgent[] agents;
 	private double attractorStrength = 1;
 	private double attractorMaxDistance; //distance in cells, not pixels
 	private int attractOrRepel = 1; //1 if attract, -1 if repel
 	private int indexDisplay;
 	private int agentRate; //delay between timer firing
 	private boolean timerActive;
+	private Color colorAgents, colorAgentsSpecial;
 	private Timer timer;//main timer
 	private TimerTask task;
-	public Color storeVisibleColor;	//MODIFICATION: used to store color so the "View Agents" button toggles properly
-	public Color storeSpecialColor; //MODIFICATION: store color of the special agent
-	public boolean viewAgentsToggle; //MODIFICATION: tracks if the button has just been clicked
-	private CellDisplay[] neighbors = new CellDisplay[8];//the 8 cells that neighbor a given cell in layer 1 are stored here
+	private boolean showAgents;
 	private AbstractStrategy strategy;//strategy that the agents and layer 2 use for their calculations given the current goal
 	public int countAgents; //MODIFICATION
 	String exportInfoString = "Red,Blue,Yellow\n"; 
@@ -69,32 +61,25 @@ public class Board extends JPanel implements MouseInputListener {
 	private int[] frequencyColorsInitial;
 	private int[] frequencyColors;
 	private int[] frequencyPolarities;
+	private SwarmAgent[] agents, agentsNormal, agentsSpecial;
 	private CellDisplayBase[][] layer1;
 	private CellDisplayPolarity[][] layer2;
 	private CellDisplayPersistence[][] layer4;  //MODIFICATION #7: new layer of cells for persistency
 	private CellDisplay[][] layerDisplay; //layer to paint
-	private HashMap<Integer, CellDisplay[][]> layers;
+	private CellDisplay[][][] layers;
 
 	public Board(int width, int height, int numCellsOnSide, int countAgents, boolean wrap, GUI gui) {
 		this.countAgents = countAgents;
 		this.gui = gui;
-
+		
+		showAgents = gui.getAgentVisibility();
+		strategy = gui.getStrategy();
+		
 		timer = new Timer();
 		
 		frequencyColorsInitial = new int[CellDisplayBase.getMaximumStateCount()];
+		frequencyColors = new int[frequencyColorsInitial.length];
 		frequencyPolarities = new int[GUI.COUNT_POLARITIES_MAXIMUM];
-		layers = new HashMap<Integer, CellDisplay[][]>(4);
-		
-		//MODIFICATION
-		//Added 7/17/18
-		//By Morgan Might
-		//Allow the Board to start with the goal of Diagonal Lines
-		if(gui.diagonalLineStart) {
-			strategy = new DiagonalLines();
-		}
-		else {
-			strategy = new CheckerBoard();
-		}
 
 		//set preferred graphical dimensions of the board
 		setPreferredSize(new Dimension(width, height));
@@ -152,7 +137,6 @@ public class Board extends JPanel implements MouseInputListener {
 				}
 			}
 		}
-		layers.put(1, layer1);
 
 		layer2 = new CellDisplayPolarity[numCellsOnSide][numCellsOnSide];
 		for (int row = 0; row < layer2.length; row++) {
@@ -160,7 +144,6 @@ public class Board extends JPanel implements MouseInputListener {
 				layer2[row][col] = strategy.createPolarityCell(this, row, col);
 			}
 		}
-		layers.put(2, layer2);
 
 		//MODIFICATION #7
 		//by Morgan Might
@@ -173,24 +156,31 @@ public class Board extends JPanel implements MouseInputListener {
 				layer4[row][col] = new CellDisplayPersistence(row * cellSize, col * cellSize, cellSize, this);
 			}
 		}
-		layers.put(4, layer4);
+		
+		layers = new CellDisplay[][][]{null, layer1, layer2, null, layer4};
 		
 		//********************************************************************************************************	
 		//*************************MODIFICATION******************************************************************
 		//********************************************************************************************************		
 		//generates the swarm and adjusts their positions
+		int countAgentsSpecial = gui.getNumOfSpecialAgents();
+		
 		agents = new SwarmAgent[countAgents];
-		boolean specialAgent = false;
-		for (int indexAgent = 0; indexAgent < agents.length; indexAgent++) {
-			//these agents generate in a random spot on the board, with a random starting vector.
-			if(indexAgent < gui.getNumOfSpecialAgents()) {
-				specialAgent = true;
-			}
-			agents[indexAgent] = new SwarmAgent(width, cellSize, agentSize, specialAgent);
-			specialAgent = false;
+		agentsSpecial = new SwarmAgent[countAgentsSpecial];
+		colorAgentsSpecial = gui.getSpecialAgentColor();
+		int indexAgent = 0;
+		for(int indexAgentSpecial = 0; indexAgentSpecial < agentsSpecial.length; indexAgentSpecial++) {
+			agentsSpecial[indexAgentSpecial] = new SwarmAgent(Math.random() * width, Math.random() * height, agentSize, colorAgentsSpecial, true, this);
+			agents[indexAgent++] = agentsSpecial[indexAgentSpecial];
 		}
-
-		frequencyColors = frequencyColorsInitial.clone();
+		
+		agentsNormal = new SwarmAgent[countAgents - countAgentsSpecial];
+		colorAgents = gui.getAgentColor();
+		for(int indexAgentNormal = 0; indexAgentNormal < agentsNormal.length; indexAgentNormal++) {
+			agentsNormal[indexAgentNormal] = new SwarmAgent(Math.random() * width, Math.random() * height, agentSize, colorAgents, false, this);
+			System.out.println(indexAgent);
+			agents[indexAgent++] = agentsNormal[indexAgentNormal];
+		}
 		
 		this.addMouseListener(this);
 		this.addMouseMotionListener(this);
@@ -199,9 +189,13 @@ public class Board extends JPanel implements MouseInputListener {
 			gui.layer2Draw = 1;
 		}
 	}
-
+	
 	public int getStepCount() {
 		return countSteps;
+	}
+	
+	public double getCellSize() {
+		return cellSize;
 	}
 	
 	public AbstractStrategy getActiveStrategy() {
@@ -218,6 +212,33 @@ public class Board extends JPanel implements MouseInputListener {
 	
 	public int[] getPolarityFrequencies() {
 		return frequencyPolarities;
+	}
+	
+	public CellDisplayBase[][] getBaseLayer() {
+		return layer1;
+	}
+	
+	public CellDisplayPolarity[][] getPolarityLayer() {
+		return layer2;
+	}
+	
+	public CellDisplayPersistence[][] getPersistenceLayer() {
+		return layer4;
+	}
+	
+	
+	public int getAgentRow(SwarmAgent agent) {
+		return (int)(agent.getCenterX() / cellSize);
+	}
+	
+	public int getAgentColumn(SwarmAgent agent) {
+		return (int)(agent.getCenterY() / cellSize);
+	}
+	
+	public void toggleAgentVisibility() {
+		showAgents = !showAgents;
+		
+		scheduleRepaint();
 	}
 	
 	public void startTimer() {
@@ -256,7 +277,7 @@ public class Board extends JPanel implements MouseInputListener {
 		}
 		else {
 			indexDisplay = gui.layer2Draw;
-			layerDisplay = layers.get(indexDisplay);
+			layerDisplay = layers[indexDisplay];
 			
 			for(int indexRow = 0; indexRow < layerDisplay.length; indexRow++) {
 				for(int indexColumn = 0; indexColumn < layerDisplay[indexRow].length; indexColumn++) {
@@ -269,34 +290,19 @@ public class Board extends JPanel implements MouseInputListener {
 		//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!MODIFICATION!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 		//*************************************************************************************************
 		//draw agents
-		for (SwarmAgent agent : agents) {
-			// if the agents have been set to non-visible, sets them to a transparent color
-			if (gui.whetherAgentsVisible) {
-				agent.setColor(agent.getColor());
-			} 
-			else {
-				if(agent.getAgentStatus() && !agent.getColor().equals(COLOR_TRANSPARENT)) {
-					storeSpecialColor = agent.getColor();
-				}
-				else if(!agent.getColor().equals(COLOR_TRANSPARENT)){
-					storeVisibleColor = agent.getColor();
-				}
-				agent.setColor(COLOR_TRANSPARENT);
-			}
-			agent.draw(helperGraphics2D);
-			//if you're sticking off the right or bottom of map, draw another ellipse there too
-			//this is a hack; really, i think this should be a job for the agent's draw method.
-			if (wraparound && agent.getMaxX() > getWidth()) {
-				helperGraphics2D.fill(new Ellipse2D.Double(agent.getX() - this.getWidth(), agent.getY(), agent.getWidth(), agent.getHeight()));
-			}
-			if (wraparound && agent.getMaxY() > getHeight()) {
-				helperGraphics2D.fill(new Ellipse2D.Double(agent.getX(), agent.getY() - this.getHeight(), agent.getWidth(), agent.getHeight()));
+		if(showAgents) {
+			for(SwarmAgent agent : agents) {
+				agent.draw(helperGraphics2D);
 			}
 		}
 	}
 
-
-
+	private void scheduleRepaint() {
+		if(!timerActive) {
+			repaint();
+		}
+	}
+	
 	/**
 	 * @author Nick, zgray17, Tim
 	 * This method handles the "stepping forward" of the simulation, which for now just means updating the positions of all
@@ -311,11 +317,11 @@ public class Board extends JPanel implements MouseInputListener {
 			//before leaving it--something we haven't gotten to yet.
 
 			//TESTING NEIGHBORS
-			neighbors = getNeighbors(layer1, (int)(agent.getCenterX() / cellSize), (int)(agent.getCenterY() / cellSize));
+			//neighbors = getNeighbors(layer1, (int)(agent.getCenterX() / cellSize), (int)(agent.getCenterY() / cellSize));
 			int rowMax = layer1.length-1;
 			int colMax = layer1[rowMax-1].length-1;
 			if((int)(agent.getCenterX() / cellSize) <= rowMax && (int)(agent.getCenterY() / cellSize) <= colMax) {
-				strategy.logic(agent, layer1, layer2, neighbors, cellSize);
+				strategy.logic(this, agent);
 				for (int row = 0; row < layer2.length; row++) {
 					for (int col = 0; col < layer2[row].length; col++) {
 						strategy.updatePolarityCell(this, row, col);
@@ -326,8 +332,8 @@ public class Board extends JPanel implements MouseInputListener {
 			agent.step(cellSize);
 			if (wraparound) {
 				//since there's no walls, this lets the agents "wrap" to the other side of the screen. this is awesome.
-				agent.setX((agent.getX()+getWidth())%getWidth());
-				agent.setY((agent.getY()+getHeight())%getHeight());
+				agent.setX(agent.getX() % getWidth());
+				agent.setY(agent.getY() % getHeight());
 
 				//this is not perfect: what we actually want this to do is draw both, so long as it's sticking a bit
 				//off of the screen. that makes the above operations much uglier. :(
@@ -545,18 +551,26 @@ public class Board extends JPanel implements MouseInputListener {
 	 * This method updates the color of the agents. Blah blah blah.
 	 * @param newColor
 	 */
-	public void updateAgentColor(Color colorAgent) {
-		for (int i = 0; i < agents.length; i++) {
-			if(!agents[i].getAgentStatus()) {
-				agents[i].setColor(colorAgent);
+	public void updateAgentColor(Color colorAgents) {
+		if(!this.colorAgents.equals(colorAgents)) {
+			for (SwarmAgent agent : agentsNormal) {
+				agent.setColor(colorAgents);
+			}
+			
+			if(!timerActive) {
+				repaint();
 			}
 		}
 	}
 
-	public void updateSpecialAgentColor(Color colorAgentSpecial) {
-		for (int i = 0; i < agents.length; i++) {
-			if(agents[i].getAgentStatus()) {
-				agents[i].setColor(colorAgentSpecial);
+	public void updateSpecialAgentColor(Color colorAgentsSpecial) {
+		if(!this.colorAgentsSpecial.equals(colorAgentsSpecial)) {
+			for (SwarmAgent agent : agentsSpecial) {
+				agent.setColor(colorAgentsSpecial);
+			}
+			
+			if(!timerActive) {
+				repaint();
 			}
 		}
 	}
@@ -579,19 +593,6 @@ public class Board extends JPanel implements MouseInputListener {
 
 	public void setWraparound(boolean wraparound) {
 		this.wraparound = wraparound;
-	}
-
-	//MODIFICATION: set the color for each agent using the stored color (this will be the color it was before it went invisible)
-	public void updateVisibleAgentColors() {
-		for (SwarmAgent agent : agents) {
-			// if the agents have been set to non-visible, sets them to a transparent color
-			if (agent.getAgentStatus()) {
-				agent.setColor(storeSpecialColor);
-			}
-			else {
-				agent.setColor(storeVisibleColor);
-			}		
-		}				
 	}
 
 	//MODIFICATION #2: This method selects random cells to flip
@@ -627,23 +628,23 @@ public class Board extends JPanel implements MouseInputListener {
 	}
 
 	//MODIFICATION #3
-	public void updateAgents(int numAgents) {
-		Color[] nullArray = new Color[10];
-		SwarmAgent[] newAgents = new SwarmAgent[agents.length];
-		for(int i= 0; i < numAgents; i++) {
-			newAgents[i] = new SwarmAgent(agents[i].getX(), agents[i].getY(), agents[i].getWidth(), agents[i].getVelocity(), agents[i].getColor(), nullArray);
-		}
-	}
+//	public void updateAgents(int numAgents) {
+//		Color[] nullArray = new Color[10];
+//		SwarmAgent[] newAgents = new SwarmAgent[agents.length];
+//		for(int i= 0; i < numAgents; i++) {
+//			newAgents[i] = new SwarmAgent(agents[i].getX(), agents[i].getY(), agents[i].getWidth(), agents[i].getVelocity(), agents[i].getColor(), nullArray);
+//		}
+//	}
 
 	//MODIFICATION #7:
 	//Morgan Might on July 5, 2018
 	//This method will reset the layer 4 cell to white
-	public void resetToWhite(SwarmAgent agent, double cellSize){
-		layer4[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].setState(0);
+	public void resetToWhite(SwarmAgent agent){
+		layer4[getAgentRow(agent)][getAgentColumn(agent)].setState(0);
 	}
 
-	public void addPurple(SwarmAgent agent, double cellSize) {
-		layer4[(int)(agent.getCenterX() / cellSize)][(int)(agent.getCenterY() / cellSize)].shiftState();
+	public void addPurple(SwarmAgent agent) {
+		layer4[getAgentRow(agent)][getAgentColumn(agent)].shiftState();
 	}
 
 	public GUI getGui() {
@@ -676,14 +677,6 @@ public class Board extends JPanel implements MouseInputListener {
 	
 	public void adjustPolarityFrequency(int colorAdjust, int adjustment) {
 		frequencyPolarities[colorAdjust] += adjustment;
-	}
-	
-	public CellDisplay[][] getLayer(int indexLayer) {
-		return layers.get(indexLayer);
-	}
-	
-	public double getCellSize() {
-		return cellSize;
 	}
 	
 	public BufferedImage capture() {

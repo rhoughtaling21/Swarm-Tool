@@ -77,11 +77,14 @@ public class GUI {
 	private static final DateTimeFormatter FORMATTER_TIMESTAMP = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss-SSS");
 	private static final Color[] OPTIONS_COLORS = {Color.BLACK, Color.BLUE, Color.CYAN, Color.GRAY, Color.GREEN, Color.MAGENTA, Color.ORANGE, Color.PINK, Color.RED, Color.WHITE, Color.YELLOW};
 	private static final String[] OPTIONS_COLORS_NAMES = {"BLACK", "BLUE", "CYAN", "GRAY", "GREEN", "MAGENTA", "ORANGE", "PINK", "RED", "WHITE", "YELLOW"};
+	private static final String[] OPTIONS_STRATEGIES_NAMES = {"BLACKOUT", "CHECKERBOARD", "DIAGONALS", "LINES"};
 	private static final String[] PROPERTIES_BOARD = {PROPERTY_BOARD_SIZE};
 	private static final String[] PROPERTIES_AGENTS = {PROPERTY_AGENTS_COUNT, PROPERTY_AGENTS_COUNT_SPECIAL, PROPERTY_AGENTS_RATE, PROPERTY_AGENTS_ACTIVE, PROPERTY_AGENTS_VISIBLE};
 	private static final String[] PROPERTIES_RULES = {PROPERTY_RULE_GOAL, PROPERTY_RULE_POLARITY_DOMINANT, PROPERTY_RULE_REPETITIONS};
 	private static final String[] PROPERTIES_COLORS = generateColorProperties();
+	private static final AbstractStrategy[] OPTIONS_STRATEGIES = {new AllBlack(), new CheckerBoard(), new DiagonalLines(), new Lines()};
 	private static final String[][] PROPERTIES = {PROPERTIES_BOARD, PROPERTIES_AGENTS, PROPERTIES_RULES, PROPERTIES_COLORS};
+	private static final HashMap<Color, String> MAP_COLORS_NAMES = generateMapColorsNames();
 	private static final HashMap<String, Color> MAP_COLORS = generateMapColors();
 	private static final HashMap<String, AbstractStrategy> MAP_STRATEGIES = generateMapStrategies();
 
@@ -90,7 +93,7 @@ public class GUI {
 	private boolean timerStarted;// timer or agent step
 	public boolean attractOrRepel = true;
 	public boolean wrap = false;
-	public boolean whetherAgentsVisible = true;
+	private boolean whetherAgentsVisible;
 	public boolean threePol; //MODIFICATION #3   needs fixed
 	public boolean togglePolarity = false; //MODIFICATION #5 determines if the agents goal is a single polarity or three balanced polarities
 	public int layer2Draw = 1;// which cell array in board to display
@@ -98,16 +101,9 @@ public class GUI {
 	public int agentSliderRate;
 	public int toggleCount = 0; //MODIFICATION:  used in implementing the View Agents Button
 	public int numSpecialAgents; //MODIFICATION: how many agents should be a separate color
-	public int percentToFlip; //MODIFICATION #2 stores the number of random cells to flip
 	private int indexPolarityDominant;
-	public Color agentColor = Color.GREEN;
-	public Color specialAgentColor = Color.CYAN; //MODIFICATION color for the "special agent"
-	public String newDominantPolarity = "YELLOW";	//MODIFICATION #10 added 7/18 by Morgan Might 	//Keep track of polarity that should be most dominant
-	public String statementOne = "Red < Yellow :"; //MODIFICATION #10  //These variables will be used to display the constraints
-	public String statementTwo = "Blue < Yellow :"; //MODIFICATION #10 
-	public String statementThree = "R + B > Yellow :"; //MODIFICATION #10
 	private Properties settings;
-	public AbstractStrategy goalStrategy = new CheckerBoard();
+	private AbstractStrategy goalStrategy;
 	public Board board;// board to be drawn
 	public JFrame frmProjectLegion;// main frame
 	private JTextField textField_NumAgents;
@@ -119,13 +115,10 @@ public class GUI {
 	private JTextField textField_TriggerFlipLayer2;
 	private JLabel lblBoardSizeInt; // updates BoardSize Label
 	private JLabel lblSwarmCountInt; // updates SwarmCount Label
-//	private JLabel lblBooleanCompare1; //  displays boolean (polarity1 < polarity3)  MODIFICATION #4
-//	private JLabel lblBooleanCompare2; //  displays boolean (polarity2 < polarity3)  MODIFICATION #4
-//	private JLabel lblBooleanCompare3; //  displays boolean (polarity1+polarity2 < polarity3)  MODIFICATION #4
-	private JLabel lblCompare1; // displays the current constraints MODIFICATION #10
-	private JLabel lblCompare2; // displays the current constraints MODIFICATION #10
-	private JLabel lblCompare3; // displays the current constraints MODIFICATION #10
 	private JLabel lblStepDisplay; //displays the number of steps that have occurred
+	private JToggleButton tglbtnViewAgents;
+	private DefaultComboBoxModel<String> optionsPolarityDominant;
+	private JComboBox<String> menuDropDownGoal, menuDropDownPolarityDominant, menuDropDownColorAgents, menuDropDownColorAgentsSpecial;
 	private int[] frequencyColorsInitial;
 	private int[] frequencyColors;
 	private int[] frequencyPolarities;
@@ -135,7 +128,8 @@ public class GUI {
 	private JLabel[] labelsFrequencyColorsInitial;
 	private JLabel[] labelsFrequencyColors;
 	private JLabel[] labelsPercentPolarities;
-	private JLabel[] labels;
+	private JLabel[] labelsPolarityComparison;
+	private JLabel[] labelsPolarityComparisonText;
 	private Color[] colorsPolarity;
 	private JComboBox<String>[] menusDropDownPolarity;
 	private HashMap<Object, Command> propertyCommands;
@@ -340,9 +334,8 @@ public class GUI {
 		btnTriggerFlipCells.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				//set number in the text field to an int variable
-				percentToFlip = Integer.parseInt(textField_TriggerFlip.getText());
 				//Call method that will cause some cells to flip
-				board.flipCells(percentToFlip);
+				board.flipCells(Integer.parseInt(textField_TriggerFlip.getText()));
 			}
 		});
 		btnTriggerFlipCells.setBounds(286, 225, 125, 35);
@@ -372,7 +365,7 @@ public class GUI {
 					
 					for(int indexPolarity = 0; indexPolarity < menusDropDownPolarity.length; indexPolarity++) {
 						if(menusDropDownPolarity[indexPolarity].equals(menuDropDownSource)) {
-							colorsPolarity[indexPolarity] = getColor((String)menuDropDownSource.getSelectedItem());
+							setPolarityColor(indexPolarity, getColor((String)menuDropDownSource.getSelectedItem()));
 							return;
 						}
 					}
@@ -432,30 +425,24 @@ public class GUI {
 		lblPolarity.setBounds(238, 175, 150, 14);
 		tabLayer2.add(lblPolarity);
 
-		JComboBox<String> comboGoalStrategy = new JComboBox<String>();
-		comboGoalStrategy.setModel(new DefaultComboBoxModel<String>(new String[] { "CheckerBoard", "Lines", "All Black", "Diagonal Lines" }));
-		AllBlack allBlack = new AllBlack();
-		CheckerBoard checkerBoard = new CheckerBoard();
-		Lines lines = new Lines();
-		DiagonalLines diagonalLines = new DiagonalLines();
-		AbstractStrategy[] goalStrategyList = new AbstractStrategy[] {checkerBoard, lines, allBlack, diagonalLines};
-		//MODIFICATION: start with Diagonal Lines as the Goal
-		//Added 7/17 by Morgan Might
-		if(diagonalLineStart) {
-			goalStrategy = goalStrategyList[3]; //Still DOES NOT work
-		}
-		comboGoalStrategy.setBounds(238, 200, 150, 22);
-		comboGoalStrategy.addActionListener(new ActionListener() {
+		menuDropDownGoal = new JComboBox<String>(new DefaultComboBoxModel<String>(OPTIONS_STRATEGIES_NAMES));
+		menuDropDownGoal.setBounds(238, 200, 150, 22);
+		menuDropDownGoal.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				JComboBox<String> src = (JComboBox<String>)e.getSource();
-				goalStrategy = goalStrategyList[src.getSelectedIndex()];
-				board.updateGoalStrategy(goalStrategy);
-				whetherAgentsVisible = true;
-				settings.setProperty(PROPERTY_RULE_GOAL, (String)src.getSelectedItem());
+				String nameStrategy = (String)((JComboBox<String>)e.getSource()).getSelectedItem();
+				goalStrategy = getStrategy(nameStrategy);
+				
+				if(board != null) {
+					board.updateGoalStrategy(goalStrategy);
+				}
+				
+				settings.setProperty(PROPERTY_RULE_GOAL, nameStrategy);
+				
+				updatePolarityCount();
 			}
 		});
-		tabLayer2.add(comboGoalStrategy);
+		tabLayer2.add(menuDropDownGoal);
 
 		//MODIFICATION #5:
 		//Added 6/12 by Morgan Might
@@ -521,22 +508,16 @@ public class GUI {
 		tabLayer2.add(lblDominantPolairy);
 
 		//Action added 7/18 by Morgan Might
-		JComboBox<String> dominantPolarity = new JComboBox<String>();  //Does not work
-		dominantPolarity.setModel(new DefaultComboBoxModel<String>(new String[] { "YELLOW", "BLUE", "RED" }));
-		String[] dominantPolarityList = new String[] { "YELLOW", "BLUE", "RED" };
-		dominantPolarity.setBounds(25, 350, 125, 22);
-		dominantPolarity.addActionListener(new ActionListener() {
+		optionsPolarityDominant = new DefaultComboBoxModel<String>();
+		menuDropDownPolarityDominant = new JComboBox<String>(optionsPolarityDominant);
+		menuDropDownPolarityDominant.setBounds(25, 350, 125, 22);
+		menuDropDownPolarityDominant.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				JComboBox<String> src = (JComboBox<String>)e.getSource();
-				indexPolarityDominant = src.getSelectedIndex();
-				newDominantPolarity = dominantPolarityList[indexPolarityDominant++];
-				updateDominantPolarity(newDominantPolarity);
-				
-				settings.setProperty(PROPERTY_RULE_POLARITY_DOMINANT, newDominantPolarity);
+				setDominantPolarity(((JComboBox<String>)e.getSource()).getSelectedIndex());
 			}
 		});
-		tabLayer2.add(dominantPolarity);
+		tabLayer2.add(menuDropDownPolarityDominant);
 
 		//MODIFICATION #10:
 		//Added 7/23 by Morgan Might
@@ -606,34 +587,21 @@ public class GUI {
 		//Added 6/4 by Morgan Might
 		//Display the comparisons that are the current rules dealing with polarity. Display True or False.
 		//
-		//MODIFICATION #4: Display boolean statements (comparing polarity 1 and 3)
-		lblCompare1 = new JLabel();
-		lblCompare1.setText(statementOne);
-		lblCompare1.setHorizontalAlignment(SwingConstants.CENTER);
-		lblCompare1.setBounds(300, 400, 125, 35);
-		tabLayer2.add(lblCompare1);
-
-		labels = new JLabel[COUNT_POLARITIES_MAXIMUM];
-		for(int indexLabel = 0; indexLabel < labels.length; indexLabel++) {
-			labels[indexLabel] = new JLabel();
-			labels[indexLabel].setVerticalAlignment(SwingConstants.CENTER);
-			labels[indexLabel].setBounds(420, (405 + (20 * indexLabel)), 50, 20);
-			tabLayer2.add(labels[indexLabel]);
+		labelsPolarityComparisonText = new JLabel[COUNT_POLARITIES_MAXIMUM];
+		for(int indexLabel = 0; indexLabel < labelsPolarityComparisonText.length; indexLabel++) {
+			labelsPolarityComparisonText[indexLabel] = new JLabel();
+			labelsPolarityComparisonText[indexLabel].setHorizontalAlignment(SwingConstants.CENTER);
+			labelsPolarityComparisonText[indexLabel].setBounds(300, 400 + (20 * indexLabel), 125, 35);
+			tabLayer2.add(labelsPolarityComparisonText[indexLabel]);
 		}
-
-		//MODIFICATION #4: Display boolean statements (comparing polarity 2 and 3)
-		lblCompare2 = new JLabel();
-		lblCompare2.setText(statementTwo);
-		lblCompare2.setHorizontalAlignment(SwingConstants.CENTER);
-		lblCompare2.setBounds(300, 420, 125, 35);
-		tabLayer2.add(lblCompare2);
-
-		//MODIFICATION #4: Display boolean statements (comparing polarity 1+2 to 3)
-		lblCompare3 = new JLabel();
-		lblCompare3.setText(statementThree);
-		lblCompare3.setHorizontalAlignment(SwingConstants.CENTER);
-		lblCompare3.setBounds(300, 440, 125, 35);
-		tabLayer2.add(lblCompare3);
+		
+		labelsPolarityComparison = new JLabel[COUNT_POLARITIES_MAXIMUM];
+		for(int indexLabel = 0; indexLabel < labelsPolarityComparison.length; indexLabel++) {
+			labelsPolarityComparison[indexLabel] = new JLabel();
+			labelsPolarityComparison[indexLabel].setVerticalAlignment(SwingConstants.CENTER);
+			labelsPolarityComparison[indexLabel].setBounds(420, (405 + (20 * indexLabel)), 50, 20);
+			tabLayer2.add(labelsPolarityComparison[indexLabel]);
+		}
 
 		// ************************************************************ TAB 3 *************************************************************
 		// ************************************************************ TAB 3 *************************************************************
@@ -665,28 +633,23 @@ public class GUI {
 		JLabel lblAgentsColor = new JLabel("Agents Color:");
 		lblAgentsColor.setBounds(440, 25, 125, 14);
 		tabLayer3.add(lblAgentsColor);
+		
 		// update the color of agents in board.agents[]
-		JComboBox<String> comboBox_AgentColor = new JComboBox<String>();
-		comboBox_AgentColor.setModel(new DefaultComboBoxModel<String>(new String[] { "GREEN", "YELLOW", "ORANGE", "MAGENTA", "BLUE", "RED", "WHITE", "BLACK", "CYAN" }));
-		Color[] agentColorList = new Color[] { Color.GREEN, Color.YELLOW, Color.ORANGE, Color.MAGENTA, Color.BLUE, Color.RED, Color.WHITE, Color.BLACK, Color.CYAN };
-		comboBox_AgentColor.setBounds(568, 23, 100, 20);
-		comboBox_AgentColor.addActionListener(new ActionListener() {
+		menuDropDownColorAgents = new JComboBox<String>(new DefaultComboBoxModel<String>(OPTIONS_COLORS_NAMES));
+		menuDropDownColorAgents.setBounds(568, 23, 100, 20);
+		menuDropDownColorAgents.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				JComboBox<String> src = (JComboBox<String>) e.getSource();
-				agentColor = agentColorList[src.getSelectedIndex()];
-				board.updateAgentColor(agentColor);
-				whetherAgentsVisible = true;
-				board.repaint();
-
-				if (!timerStarted) {
-					board.repaint();
+				String nameColor = (String)((JComboBox<String>)e.getSource()).getSelectedItem();
+				
+				if(board != null) {
+					board.updateAgentColor(getColor(nameColor));
 				}
 				
-				settings.setProperty(PROPERTY_COLOR_AGENT, (String)src.getSelectedItem());
+				settings.setProperty(PROPERTY_COLOR_AGENT, nameColor);
 			}
 		});
-		tabLayer3.add(comboBox_AgentColor);
+		tabLayer3.add(menuDropDownColorAgents);
 
 		//MODIFICATION: Special Agent Color
 		//
@@ -696,29 +659,23 @@ public class GUI {
 		JLabel lblSpecialAgentsColor = new JLabel("Special Agent Color:");
 		lblSpecialAgentsColor.setBounds(440, 58, 125, 14);
 		tabLayer3.add(lblSpecialAgentsColor);
+		
 		// update the color of the special agent in board.agents[]
-		JComboBox<String> comboBox_SpecialAgentColor = new JComboBox<String>();
-		comboBox_SpecialAgentColor.setModel(new DefaultComboBoxModel<String>(new String[] {"CYAN", "GREEN", "YELLOW", "ORANGE", "MAGENTA", "BLUE", "RED", "WHITE", "BLACK"}));
-		Color[] specialAgentColorList = new Color[] { Color.CYAN, Color.GREEN, Color.YELLOW, Color.ORANGE, Color.MAGENTA, Color.BLUE,
-				Color.RED, Color.WHITE, Color.BLACK};
-		comboBox_SpecialAgentColor.setBounds(568, 56, 100, 20);
-		comboBox_SpecialAgentColor.addActionListener(new ActionListener() {
+		menuDropDownColorAgentsSpecial = new JComboBox<String>(new DefaultComboBoxModel<String>(OPTIONS_COLORS_NAMES));
+		menuDropDownColorAgentsSpecial.setBounds(568, 56, 100, 20);
+		menuDropDownColorAgentsSpecial.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				JComboBox<String> src = (JComboBox<String>)e.getSource();
-				specialAgentColor = specialAgentColorList[src.getSelectedIndex()];
-				board.updateSpecialAgentColor(specialAgentColor);
-				whetherAgentsVisible = true;
-				board.repaint();
-
-				if (!timerStarted) {
-					board.repaint();
+				String nameColor = (String)((JComboBox<String>)e.getSource()).getSelectedItem();
+				
+				if(board != null) {
+					board.updateSpecialAgentColor(getColor(nameColor));
 				}
 				
-				settings.setProperty(PROPERTY_COLOR_AGENT_SPECIAL, (String)src.getSelectedItem());
+				settings.setProperty(PROPERTY_COLOR_AGENT_SPECIAL, nameColor);
 			}
 		});
-		tabLayer3.add(comboBox_SpecialAgentColor);
+		tabLayer3.add(menuDropDownColorAgentsSpecial);
 
 		// ************************************************************ User can select
 		// how many changes the agent can make
@@ -764,8 +721,7 @@ public class GUI {
 		lblPharamoneTrailColor.setBounds(440, 91, 125, 14);
 		tabLayer3.add(lblPharamoneTrailColor);
 
-		JComboBox<String> comboBox_PheromoneColor = new JComboBox<String>();
-		comboBox_PheromoneColor.setModel(new DefaultComboBoxModel<String>(new String[] { "WHITE", "GREEN", "YELLOW", "ORANGE", "MAGENTA", "BLUE", "RED", "BLACK" }));
+		JComboBox<String> comboBox_PheromoneColor = new JComboBox<String>(new DefaultComboBoxModel<String>(OPTIONS_COLORS_NAMES));
 		comboBox_PheromoneColor.setBounds(568, 89, 100, 20);
 		tabLayer3.add(comboBox_PheromoneColor);
 
@@ -791,20 +747,15 @@ public class GUI {
 		//
 		//Altered 5/18 by Morgan Might
 		//Added toggleCount integer to allow button to properly set the agents color back to visible
-		JToggleButton tglbtnViewAgents = new JToggleButton("View Agents");
-		tglbtnViewAgents.setSelected(true);
+		tglbtnViewAgents = new JToggleButton("View Agents");
 		tglbtnViewAgents.setBounds(10, 495, 187, 69);
 		tglbtnViewAgents.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				whetherAgentsVisible = !whetherAgentsVisible;
-				toggleCount++;
-				//MODIFICATION: if the agents are now visible restore their color
-				if(toggleCount > 0 && whetherAgentsVisible) {
-					board.updateVisibleAgentColors();					
-				}
-				if (!timerStarted) {
-					board.repaint();
+				whetherAgentsVisible = tglbtnViewAgents.isSelected();
+				
+				if(board != null) {
+					board.toggleAgentVisibility();
 				}
 				
 				settings.setProperty(PROPERTY_AGENTS_VISIBLE, Boolean.toString(whetherAgentsVisible));
@@ -951,6 +902,7 @@ public class GUI {
 				if(board != null) {
 					board.stopTimer();
 				}
+				
 				settings.setProperty(PROPERTY_AGENTS_ACTIVE, Boolean.toString(timerStarted = false));
 			}
 		});
@@ -984,7 +936,6 @@ public class GUI {
 		// open a new JFrame that will ask the user the new dimensions for the new
 		// board.
 		JButton btnNewScreenSave = new JButton("Screen Shot");
-		btnNewScreenSave.setForeground(Color.LIGHT_GRAY);
 		btnNewScreenSave.setBackground(new Color(204, 51, 255));
 		btnNewScreenSave.addActionListener(new ActionListener() {
 			@Override
@@ -994,7 +945,7 @@ public class GUI {
 					BufferedImage capture = board.capture();
 					
 					SELECTOR_FILEPATH.setSelectedFile(new File("Simulation_" + FORMATTER_TIMESTAMP.format(LocalDateTime.now()) + FILETYPE_SCREENSHOT));
-					int outcomeSave = SELECTOR_FILEPATH.showSaveDialog(btnNewScreenSave);
+					int outcomeSave = SELECTOR_FILEPATH.showSaveDialog(board);
 					if(outcomeSave == JFileChooser.APPROVE_OPTION) {
 						try {
 							ImageIO.write(capture, "JPG", SELECTOR_FILEPATH.getSelectedFile());
@@ -1034,7 +985,7 @@ public class GUI {
 						NewBoardWindow newBoardWindow = new NewBoardWindow(frmProjectLegion, gui);
 						newBoardWindow.setVisible(true);
 						tglbtnWrapAgents.setSelected(true);
-						comboGoalStrategy.setSelectedItem(goalStrategy);
+						menuDropDownGoal.setSelectedItem(goalStrategy);
 						// lblBoardSizeInt.setText(String.valueOf(board.labelHandler.getInitBoardSize()));
 					}
 				}.setGUI(this)
@@ -1048,11 +999,24 @@ public class GUI {
 		settings = new Properties(settings);
 	}
 	
+	public boolean getAgentVisibility() {
+		return whetherAgentsVisible;
+	}
+	
+	public int getDominantPolarity() {
+		return indexPolarityDominant;
+	}
+	
 	public Color[] getPolarityColors() {
 		return colorsPolarity;
 	}
 
 	public void setBoard(Board board) {
+		timerStarted = false;
+		if(board != null) {
+			board.stopTimer();
+		}
+		
 		this.board = board;
 		
 		this.frequencyColorsInitial = board.getInitialColorFrequencies();
@@ -1236,44 +1200,98 @@ public class GUI {
 	public boolean getTogglePolarity() {
 		return togglePolarity;
 	}
+	
+	public Color getAgentColor() {
+		return getColor((String)menuDropDownColorAgents.getSelectedItem());
+	}
+	
+	public Color getSpecialAgentColor() {
+		return getColor((String)menuDropDownColorAgentsSpecial.getSelectedItem());
+	}
+	
+	public AbstractStrategy getStrategy() {
+		return goalStrategy;
+	}
+	
+	private void setPolarityColor(int indexPolarity, Color colorPolarity) {
+		colorsPolarity[indexPolarity] = colorPolarity;
+		
+		if(optionsPolarityDominant.getSize() > 0) {
+			int indexPolarityDominantSelected = menuDropDownPolarityDominant.getSelectedIndex();
+			optionsPolarityDominant.removeElementAt(indexPolarity);
+			optionsPolarityDominant.insertElementAt("(" + (indexPolarity + 1) + ") " + getColorName(colorPolarity), indexPolarity);
+			menuDropDownPolarityDominant.setSelectedIndex(indexPolarityDominantSelected);
+		}
+	}
+	
+	private void updatePolarityCount() {
+		int countPolarities = goalStrategy.getPolarityCount();
+		
+		if(countPolarities > 2) {
+			if(true) {
+				if(indexPolarityDominant >= countPolarities) {
+					setDominantPolarity(countPolarities - 1);
+				}
+				
+				int countPolaritiesPrevious = optionsPolarityDominant.getSize();
+				
+				for(int indexPolarity = countPolaritiesPrevious; indexPolarity < countPolarities; indexPolarity++) {
+					optionsPolarityDominant.addElement("(" + (indexPolarity + 1) + ") " + getColorName(colorsPolarity[indexPolarity]));
+				}
+				
+				for(int indexPolarity = countPolarities; indexPolarity < countPolaritiesPrevious; indexPolarity++) {
+					optionsPolarityDominant.removeElementAt(countPolarities);
+				}
+				
+				menuDropDownPolarityDominant.setVisible(true);
+			}
+		}
+		else {
+			menuDropDownPolarityDominant.setVisible(false);
+		}
+	}
 
 	//MODIFICATION #10
 	//Added 7/18/2018
 	//By Morgan Might
 	//This method updates the label and goal of the constraints
-	public void updateDominantPolarity(String polarity) {
-		newDominantPolarity = polarity;
-		if(newDominantPolarity.equals("YELLOW")) {
-			//Change Label
-			statementOne = "Red < Yellow :";
-			statementTwo = "Blue < Yellow :";
-			statementThree = "R + B > Yellow :";
-			//Change constraint
-		}
-		else if(newDominantPolarity.equals("BLUE")) {
-			//Change Label
-			statementOne = "Red < Blue :";
-			statementTwo = "Yellow < Blue :";
-			statementThree = "R + Y > Blue :";
-		}
-		else if(newDominantPolarity.equals("RED")) {
-			//Change Label
-			statementOne = "Blue < Red :";
-			statementTwo = "Yellow < Red :";
-			statementThree = "B + Y > Red :";
-		}
-
-		updateComparisonLabels(statementOne, statementTwo, statementThree);
+	private void setDominantPolarity(int indexPolarityDominant) {
+		this.indexPolarityDominant = indexPolarityDominant;
+		settings.setProperty(PROPERTY_RULE_POLARITY_DOMINANT, getColorName(colorsPolarity[indexPolarityDominant]));
+		updateDominantPolarity();
 	}
-
-	//MODIFICATION #10
-	//Added 7/18 
-	//By Morgan Might
-	//Updates the text in the JLables to display the new constraints		
-	public void updateComparisonLabels(String one, String two, String three) {
-		lblCompare1.setText(one);
-		lblCompare2.setText(two);
-		lblCompare3.setText(three);
+	
+	private void updateDominantPolarity() {
+		int countPolarities = goalStrategy.getPolarityCount();
+		
+		if(countPolarities > 2) {
+			String namePolarityDominant = getColorName(colorsPolarity[indexPolarityDominant]);
+			String comparisonPolarityDominantGreater = " < " + namePolarityDominant;
+			StringBuilder comparisonPolarityDominantLesser = new StringBuilder();
+			
+			int indexPolarityOther = 0;
+			String namePolarityOther;
+			for(int indexLabel = 0; indexLabel < countPolarities - 1; indexLabel++) {
+				if(indexPolarityOther == indexPolarityDominant) {
+					indexPolarityOther++;
+				}
+				
+				namePolarityOther = getColorName(colorsPolarity[indexPolarityOther]);
+				labelsPolarityComparisonText[indexLabel].setText(namePolarityOther + comparisonPolarityDominantGreater + " :");
+				labelsPolarityComparisonText[indexLabel].setVisible(true);
+				
+				comparisonPolarityDominantLesser.append(namePolarityOther.charAt(0)).append(" + ");
+				
+				indexPolarityOther++;
+			}
+			comparisonPolarityDominantLesser.replace(comparisonPolarityDominantLesser.length() - 2, comparisonPolarityDominantLesser.length(), "").append(" > ").append(namePolarityDominant).append(" :");
+			labelsPolarityComparisonText[countPolarities - 1].setText(comparisonPolarityDominantLesser.toString());
+			labelsPolarityComparisonText[countPolarities - 1].setVisible(true);
+		}
+		
+		for(int indexLabel = countPolarities; indexLabel < labelsPolarityComparisonText.length; indexLabel++) {
+			labelsPolarityComparisonText[indexLabel].setVisible(false);
+		}
 	}
 
 	public void updateStepCountLabel(String count) {
@@ -1306,13 +1324,13 @@ public class GUI {
 			}
 			
 			frequencyPolarity = frequencyPolarities[indexPolarity];
-			labels[indexLabel].setText(Boolean.toString(frequencyPolarity < frequencyPolarityDominant));
+			labelsPolarityComparison[indexLabel].setText(Boolean.toString(frequencyPolarity < frequencyPolarityDominant));
 			frequencyPolaritiesSum += frequencyPolarity;
 		}
 		
-		JLabel labelComparisonSum = labels[indexLabelComparisonSum];
+		JLabel labelComparisonSum = labelsPolarityComparison[indexLabelComparisonSum];
 		if(labelComparisonSum.isVisible()) {
-			labels[indexLabelComparisonSum].setText(Boolean.toString(frequencyPolarityDominant < frequencyPolaritiesSum));
+			labelsPolarityComparison[indexLabelComparisonSum].setText(Boolean.toString(frequencyPolarityDominant < frequencyPolaritiesSum));
 		}
 	}
 	
@@ -1368,6 +1386,14 @@ public class GUI {
 		return Color.LIGHT_GRAY;
 	}
 	
+	private static String getColorName(Color color) {
+		if(MAP_COLORS_NAMES.containsKey(color)) {
+			return MAP_COLORS_NAMES.get(color);
+		}
+		
+		return null;
+	}
+	
 	private static AbstractStrategy getStrategy(String nameStrategy) {
 		nameStrategy = nameStrategy.toUpperCase();
 		
@@ -1401,6 +1427,16 @@ public class GUI {
 		return propertiesColors;
 	}
 	
+	private static HashMap<Color, String> generateMapColorsNames() {
+		HashMap<Color, String> mapColorsNames = new HashMap<Color, String>();
+		
+		for(int indexColorName = 0; indexColorName < OPTIONS_COLORS_NAMES.length; indexColorName++) {
+			mapColorsNames.put(OPTIONS_COLORS[indexColorName], OPTIONS_COLORS_NAMES[indexColorName]);
+		}
+		
+		return mapColorsNames;
+	}
+	
 	private static HashMap<String, Color> generateMapColors() {
 		HashMap<String, Color> mapColors = new HashMap<String, Color>();
 		
@@ -1412,14 +1448,13 @@ public class GUI {
 	}
 	
 	private static HashMap<String, AbstractStrategy> generateMapStrategies() {
-		HashMap<String, AbstractStrategy> strategies = new HashMap<String, AbstractStrategy>();
+		HashMap<String, AbstractStrategy> mapStrategies = new HashMap<String, AbstractStrategy>();
 		
-		strategies.put("BLACKOUT", new AllBlack());
-		strategies.put("CHECKERBOARD", new CheckerBoard());
-		strategies.put("DIAGONALS", new DiagonalLines());
-		strategies.put("LINES", new Lines());
+		for(int indexStrategy = 0; indexStrategy < OPTIONS_STRATEGIES.length; indexStrategy++) {
+			mapStrategies.put(OPTIONS_STRATEGIES_NAMES[indexStrategy], OPTIONS_STRATEGIES[indexStrategy]);
+		}
 		
-		return strategies;
+		return mapStrategies;
 	}
 	
 	private abstract class Command {
@@ -1464,21 +1499,22 @@ public class GUI {
 	private class CommandAgentVisible extends Command {
 		@Override
 		public void execute(String value) {
-			
+			tglbtnViewAgents.setSelected(!Boolean.parseBoolean(value));
+			tglbtnViewAgents.doClick();
 		}
 	}
 
 	private class CommandRuleGoal extends Command {
 		@Override
 		public void execute(String value) {
-			
+			menuDropDownGoal.setSelectedItem(value);
 		}
 	}
 	
 	private class CommandRulePolarityDominant extends Command {
 		@Override
 		public void execute(String value) {
-			
+			menuDropDownPolarityDominant.setSelectedItem(value);
 		}
 	}
 	
@@ -1492,14 +1528,14 @@ public class GUI {
 	private class CommandColorAgents extends Command {
 		@Override
 		public void execute(String value) {
-//			setAgentColor(getColor(value));
+			menuDropDownColorAgents.setSelectedItem(value);
 		}
 	}
 	
 	private class CommandColorAgentsSpecial extends Command {
 		@Override
 		public void execute(String value) {
-//			setSpecialAgentColor(getColor(value));
+			menuDropDownColorAgentsSpecial.setSelectedItem(value);
 		}
 	}
 	

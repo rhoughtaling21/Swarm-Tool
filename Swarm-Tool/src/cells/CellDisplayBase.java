@@ -20,6 +20,7 @@ import gui.Board;
 @SuppressWarnings("serial")
 public class CellDisplayBase extends CellDisplay {
 	private static final Color[] COLORS_BASE = {Color.BLACK, Color.WHITE, Color.GRAY};
+	private int[] frequenciesBase;
 	
 	public static int getMaximumStateCount() {
 		return COLORS_BASE.length;
@@ -28,19 +29,29 @@ public class CellDisplayBase extends CellDisplay {
 	public CellDisplayBase(double x, double y, double size, int indexState, Board board) {
 		//a lot of these parameters actually belong to Rectangle2D.Double, so we call in the super class CellDisplay
 		super(x, y, size, board);
-		setState(indexState);
+		
+		frequenciesBase = board.getColorFrequencies();
+		
+		board.getInitialColorFrequencies()[indexState]++;
+		setStateValue(indexState);
 	}
 
 	//MODIFICATION #3
 	//change color of Cell
 	public void setState(int indexState) {
-		this.indexState = indexState;
-		colorFill = COLORS_BASE[indexState];
+		frequenciesBase[this.indexState]--;
+		setStateValue(indexState);
 	}
 	
 	//flip color of Cell
 	public void shiftState() {
 		setState((indexState + 1) % board.getActiveStrategy().getStateCount());
+	}
+	
+	private void setStateValue(int indexState) {
+		this.indexState = indexState;
+		colorFill = COLORS_BASE[indexState];
+		frequenciesBase[this.indexState]++;
 	}
 }
 

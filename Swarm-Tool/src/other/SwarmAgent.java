@@ -14,6 +14,10 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Point2D;
+import java.util.ArrayList;
+
+import gui.Board;
+import gui.GUI;
 
 /**
  * @author Nick
@@ -25,12 +29,14 @@ import java.awt.geom.Point2D;
  */
 @SuppressWarnings("serial")
 public class SwarmAgent extends Ellipse2D.Double {
-	private Point2D velocity;	//adds direction to our agents
-	private Color colorFill; 	//only adding a color here so we can make it green or invisible in the board class
-	private boolean specialAgent;	//MODIFICATION: one agent will be a different color (when true)
-	private Color[] recentColorsArray = new Color[20];
-	public boolean colorArrayFilled = false;
-
+	private static final int MEMORY = 20;
+	
+	private boolean specialAgent; //MODIFICATION: one agent will be a different color (when true)
+	private boolean memoryFull;
+	private Point2D velocity; //adds direction to our agents
+	private Color colorFill; //only adding a color here so we can make it green or invisible in the board class
+	private int[] countsPolaritiesRecent;
+	private ArrayList<Integer> polaritiesRecent;
 	/**
 	 * @author Nick
 	 * Constructor that makes an agent using given coordinates, Color, and velocity vector.
@@ -42,20 +48,27 @@ public class SwarmAgent extends Ellipse2D.Double {
 	 * @param velocity
 	 * @param colorFill
 	 */
-	public SwarmAgent(double x, double y, double size, Point2D velocity, Color colorFill) {
+	public SwarmAgent(double x, double y, double size, Color colorFill, boolean specialAgent, Board board) {
 		super(x, y, size, size);
-		this.velocity = velocity;
 		this.colorFill = colorFill;
+		this.specialAgent = specialAgent;
+		
+		double sizeCell = board.getCellSize();
+		velocity = new Point2D.Double(sizeCell * (Math.random() - 0.5), sizeCell * (Math.random() - 0.5));
+		
+		polaritiesRecent = new ArrayList<Integer>(MEMORY);
+		countsPolaritiesRecent = new int[GUI.COUNT_POLARITIES_MAXIMUM];
+		memoryFull = false;
 	}
 	
-	//MODIFICATION #3
-	public SwarmAgent(double x, double y, double size, Point2D velocity, Color colorFill, Color[] recentColorArray) {
-		super(x, y, size, size);
-		this.velocity = velocity;
-		this.colorFill = colorFill;
-		this.recentColorsArray = recentColorArray;
-		System.out.println("agents updated");
-	}
+//	//MODIFICATION #3
+//	public SwarmAgent(double x, double y, double size, Point2D velocity, Color colorFill, int[] polaritiesRecent) {
+//		super(x, y, size, size);
+//		this.velocity = velocity;
+//		this.colorFill = colorFill;
+//		this.polaritiesRecent = polaritiesRecent;
+//		System.out.println("agents updated");
+//	}
 
 	/**
 	 * @author Nick
@@ -69,17 +82,21 @@ public class SwarmAgent extends Ellipse2D.Double {
 	//Modification!!!
 	//Make all the agents green. But create one that is cyan.
 	//Problem down the road: how do you modify the color of the special agent
-	public SwarmAgent(int boardWidth, double cellSize, double agentSize, boolean specialAgent) {
-		super((int)(Math.random()*boardWidth), (int)(Math.random()*boardWidth), agentSize, agentSize);
-		this.velocity = new Point2D.Double(cellSize*(Math.random()-0.5), cellSize*(Math.random()-0.5));
-		if(specialAgent) {
-			this.colorFill = Color.CYAN;
-		}
-		else {
-			this.colorFill = Color.GREEN;
-		}
-		this.specialAgent = specialAgent;
-	}
+//	public SwarmAgent(int boardWidth, double cellSize, double agentSize, boolean specialAgent) {
+//		super((int)(Math.random()*boardWidth), (int)(Math.random()*boardWidth), agentSize, agentSize);
+//		this.velocity = new Point2D.Double(cellSize*(Math.random()-0.5), cellSize*(Math.random()-0.5));
+//		if(specialAgent) {
+//			this.colorFill = Color.CYAN;
+//		}
+//		else {
+//			this.colorFill = Color.GREEN;
+//		}
+//		this.specialAgent = specialAgent;
+//		
+//		polaritiesRecent = new ArrayList<Integer>(MEMORY);
+//		countsPolaritiesRecent = new int[GUI.COUNT_POLARITIES_MAXIMUM];
+//		memoryFull = false;
+//	}
 
 	/**
 	 * @author Nick
@@ -127,11 +144,11 @@ public class SwarmAgent extends Ellipse2D.Double {
 	 * and y directions so that values will be evenly distributed in each direction.
 	 */
 	public void step(double cellSize) {
-		this.setX(x+velocity.getX());
-		this.setY(y+velocity.getY());
+		setX(x+velocity.getX());
+		setY(y+velocity.getY());
 
 		if (Math.random() < 0.1) {
-			this.setVelocity(cellSize*(Math.random()-0.5), cellSize*(Math.random()-0.5));
+			setVelocity(cellSize*(Math.random()-0.5), cellSize*(Math.random()-0.5));
 		}
 	}
 
@@ -141,7 +158,7 @@ public class SwarmAgent extends Ellipse2D.Double {
 	 * bounced off the wall of the simulation.
 	 */
 	public void xBounce() {
-		this.setVelocity(-1*this.getVelocity().getX(), this.getVelocity().getY());
+		setVelocity(-1 * getVelocity().getX(), getVelocity().getY());
 	}
 
 	/**
@@ -150,105 +167,48 @@ public class SwarmAgent extends Ellipse2D.Double {
 	 * bounced off the ceiling or floor of the simulation.
 	 */
 	public void yBounce() {
-		this.setVelocity(this.getVelocity().getX(), -1*this.getVelocity().getY());
-	}
-	
-	//MODIFICATION
-	public Color getColor() {
-		return this.colorFill;
+		setVelocity(getVelocity().getX(), -1 * getVelocity().getY());
 	}
 	
 	//MODIFICATION
 	public boolean getAgentStatus() {
-		return this.specialAgent;
+		return specialAgent;
+	}
+	
+//	//MODIFICATION #3
+//	public int[] getRecentlySeenPolarities() {
+//		return polaritiesRecent;
+//	}
+	
+//	//MODIFICATION #3
+//	public boolean doNotChange() {
+//		int red = this.getRedCount();
+//		int blue = this.getBlueCount();
+//		int yellow = this.getYellowCount();
+//		//System.out.println("Red: " + red + "/lnBlue: " + blue + "/lnYellow: " + yellow);
+//		if(red < yellow && blue < yellow && (red + blue) > yellow) {
+//			return true;
+//		}
+//		return false;
+//	}
+	
+	public int getPolarityCount(int indexPolarity) {
+		return countsPolaritiesRecent[indexPolarity];
 	}
 	
 	//MODIFICATION #3
-	public Color[] getLayer2Array() {
-		return this.recentColorsArray;
-	}
-	
-	//MODIFICATION #3
-	public void setLayer2Array(Color color) {
-		int nullCount =0;
-		for(int i=0; i< recentColorsArray.length; i++) {
-				if(this.recentColorsArray[i] == null) {
-					nullCount++;
-				}
-		}
-		if(nullCount == 0) {
-			for(int i=0; i< recentColorsArray.length - 1; i++) {
-				this.recentColorsArray[i] = this.recentColorsArray[i+1];
-			}
-			this.recentColorsArray[recentColorsArray.length - 1] = color;
-			colorArrayFilled = true;
-			//System.out.println("ADD NEW COLOR TO ARRAY");
-			
-		}
-		else {
-			int index = recentColorsArray.length - nullCount;
-			recentColorsArray[index] = color;
-			colorArrayFilled = false;
-		}
-	}
-	
-	//MODIFICATION #3
-	public boolean doNotChange() {
-		int red = this.getRedCount();
-		int blue = this.getBlueCount();
-		int yellow = this.getYellowCount();
-		//System.out.println("Red: " + red + "/lnBlue: " + blue + "/lnYellow: " + yellow);
-		if(red < yellow && blue < yellow && (red + blue) > yellow) {
-			return true;
-		}
-		return false;
-	}
-	
-	//MODIFICATION #3
-	public int getRedCount() {
-		int count = 0;
-		for(int i=0; i < recentColorsArray.length; i++) {
-			if(recentColorsArray[i] == Color.RED || recentColorsArray[i] == Color.red) {
-				count++;
-			}
-		}
-		return count;
-	}
-	
-	//MODIFICATION #3
-	public int getBlueCount() {
-		int count = 0;
-		for(int i=0; i < recentColorsArray.length; i++) {
-			if(recentColorsArray[i] == Color.BLUE || recentColorsArray[i] == Color.blue) {
-				count++;
-			}
-		}
-		return count;
-	}
-	
-	//MODIFICATION #3
-	public int getYellowCount() {
-		int count = 0;
-		for(int i=0; i < recentColorsArray.length; i++) {
-			if(recentColorsArray[i] == Color.YELLOW || recentColorsArray[i] == Color.yellow) {
-				count++;
-			}
-		}
-		return count;
-	}
-	
-	//MODIFICATION #3
-	public boolean getColorArrayFilled() {
-		return colorArrayFilled;
-	}
-	
-	//MODIFICATION #3
-	public void printColorsInArray() {
-		int red = this.getRedCount();
-		int blue = this.getBlueCount();
-		int yellow = this.getYellowCount();
-		//System.out.println("Red: " + red + "  Blue: " + blue + "  Yellow: " + yellow);
+	public boolean isMemoryFull() {
+		return memoryFull;
 	}
 
+	public void seePolarity(int indexPolarity) {
+		if(memoryFull = polaritiesRecent.size() >= MEMORY) {
+			countsPolaritiesRecent[polaritiesRecent.remove(0)]--;
+		}
+		
+		polaritiesRecent.add(indexPolarity);
+		countsPolaritiesRecent[indexPolarity]++;
+		
+		//System.out.println("Memory: [0]: " + countsPolaritiesRecent[0] + "  [1]: " + countsPolaritiesRecent[1] + "  [2]: " + countsPolaritiesRecent[2]);
+	}
 }
-

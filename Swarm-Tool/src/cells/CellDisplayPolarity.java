@@ -19,18 +19,28 @@ import gui.Board;
  */
 @SuppressWarnings("serial")
 public class CellDisplayPolarity extends CellDisplay {
+	private int[] frequenciesPolarities;
 	private Color[] colorsPolarity;
 	
 	public CellDisplayPolarity(double x, double y, double size, int indexState, Board board) {
 		//a lot of these parameters actually belong to Rectangle2D.Double, so we call in the super class CellDisplay
 		super(x, y, size, board);
+		
 		colorsPolarity = board.getGui().getPolarityColors();
-		setState(indexState);
+		frequenciesPolarities = board.getPolarityFrequencies();
+		
+		setStateValue(indexState);
 	}
 	
 	@Override
 	public void setState(int indexState) {
+		frequenciesPolarities[this.indexState]--;
+		setStateValue(indexState);
+	}
+	
+	private void setStateValue(int indexState) {
 		this.indexState = indexState;
 		colorFill = colorsPolarity[indexState];
+		frequenciesPolarities[indexState]++;
 	}
 }
