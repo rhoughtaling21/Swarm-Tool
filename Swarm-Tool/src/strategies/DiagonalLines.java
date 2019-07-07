@@ -1,11 +1,8 @@
 package strategies;
 
-import java.awt.Color;
-
 import cells.Cell;
 import cells.CellDisplay;
 import gui.Board;
-import gui.GUI;
 import other.SwarmAgent;
 
 public class DiagonalLines extends AbstractStrategy {
@@ -417,7 +414,7 @@ public class DiagonalLines extends AbstractStrategy {
 		//DETERMINE NEW POLARITY	
 		//
 			//If the agent's memory array is not yet filled or the goal is a single polarity
-			if(!agent.isMemoryFull() || board.getGui().togglePolarity) {
+			if(!agent.isMemoryFull() || !board.getGui().getTogglePolarity()) {
 				//RULE #1
 				//If the cell is surrounded by one color
 				if(redPolCount == neighborCount) {	//Surrounded by RED

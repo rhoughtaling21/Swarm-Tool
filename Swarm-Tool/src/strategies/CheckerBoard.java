@@ -95,8 +95,8 @@ public class CheckerBoard extends AbstractStrategy {
 				}
 			}
 			else {
-				double flipCoin = Math.random();// and if you are tied, like if all are black
-				if (flipCoin >.5) { // flip a coin
+				// and if you are tied, like if all are black
+				if (Math.random() < .5) { // flip a coin
 					layer1[indexRow][indexColumn].shiftState();
 					updatePolarityCell(layer1[indexRow][indexColumn].getBoard(), indexRow, indexColumn);
 					cornerCount = 0;

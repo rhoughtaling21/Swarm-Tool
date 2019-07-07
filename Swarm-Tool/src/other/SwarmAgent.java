@@ -35,6 +35,7 @@ public class SwarmAgent extends Ellipse2D.Double {
 	private boolean memoryFull;
 	private Point2D velocity; //adds direction to our agents
 	private Color colorFill; //only adding a color here so we can make it green or invisible in the board class
+	private Board board;
 	private int[] countsPolaritiesRecent;
 	private ArrayList<Integer> polaritiesRecent;
 	/**
@@ -52,6 +53,7 @@ public class SwarmAgent extends Ellipse2D.Double {
 		super(x, y, size, size);
 		this.colorFill = colorFill;
 		this.specialAgent = specialAgent;
+		this.board = board;
 		
 		double sizeCell = board.getCellSize();
 		velocity = new Point2D.Double(sizeCell * (Math.random() - 0.5), sizeCell * (Math.random() - 0.5));
@@ -101,11 +103,32 @@ public class SwarmAgent extends Ellipse2D.Double {
 	/**
 	 * @author Nick
 	 * Draws the agent as an ellipse.
-	 * @param g
+	 * @param helperGraphics2D
 	 */
-	public void draw(Graphics2D g) {
-		g.setColor(colorFill);
-		g.fill(this);
+	public void draw(Graphics2D helperGraphics2D) {
+		helperGraphics2D.setColor(colorFill);
+		helperGraphics2D.fill(this);
+		
+		if(board.getWraparound()) {
+			int widthBoard = board.getWidth();
+			
+			if(getX() < 0) {
+				helperGraphics2D.fillOval((int)(getX() + widthBoard), (int)getY(), (int)getWidth(), (int)getHeight());
+			}
+			else if(getMaxX() > widthBoard) {
+				helperGraphics2D.fillOval((int)(getMaxX() - widthBoard), (int)getY(), (int)getWidth(), (int)getHeight());
+			}
+			
+			int heightBoard = board.getHeight();
+			
+			if(getY() < 0) {
+				helperGraphics2D.fillOval((int)getX(), (int)(getY() + heightBoard), (int)getWidth(), (int)getHeight());
+			}
+			else if(getMaxY() > heightBoard) {
+				helperGraphics2D.fillOval((int)getX(), (int)(getMaxY() - heightBoard), (int)getWidth(), (int)getHeight());
+			}
+		}
+		
 	}
 
 	public void setColor(Color color) {

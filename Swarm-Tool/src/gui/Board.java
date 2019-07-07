@@ -53,7 +53,7 @@ public class Board extends JPanel implements MouseInputListener {
 	private TimerTask task;
 	private boolean showAgents;
 	private AbstractStrategy strategy;//strategy that the agents and layer 2 use for their calculations given the current goal
-	public int countAgents; //MODIFICATION
+	private int countAgents, countAgentsSpecial; //MODIFICATION
 	String exportInfoString = "Red,Blue,Yellow\n"; 
 	public int countSteps = 0; //MODIFICATION #6
 	private long rateExecute;
@@ -68,14 +68,12 @@ public class Board extends JPanel implements MouseInputListener {
 	private CellDisplay[][] layerDisplay; //layer to paint
 	private CellDisplay[][][] layers;
 
-	public Board(int width, int height, int numCellsOnSide, int countAgents, boolean wrap, GUI gui) {
+	public Board(int width, int height, int numCellsOnSide, int countAgents, GUI gui) {
 		this.countAgents = countAgents;
 		this.gui = gui;
 		
 		showAgents = gui.getAgentVisibility();
 		strategy = gui.getStrategy();
-		
-		timer = new Timer();
 		
 		frequencyColorsInitial = new int[CellDisplayBase.getMaximumStateCount()];
 		frequencyColors = new int[frequencyColorsInitial.length];
@@ -84,7 +82,7 @@ public class Board extends JPanel implements MouseInputListener {
 		//set preferred graphical dimensions of the board
 		setPreferredSize(new Dimension(width, height));
 		this.numCellsOnSide = numCellsOnSide;
-		this.wraparound = wrap;
+		this.wraparound = gui.getBoardWraparound();
 		
 		//set the graphical dimensions of the cells themselves. the cells are always square, but the
 		//space they take up is constrained by the width and height of the board and by the number of cells.
@@ -104,7 +102,7 @@ public class Board extends JPanel implements MouseInputListener {
 			}
 		}
 		// MODIFICATION: This will test swarms when the polarity is split and the agents are no longer effective
-		else if(!gui.getThreeColor()){
+		else if(gui.getStrategy().getPolarityCount() == 2){
 			int pos;
 			int stateInitial;
 			for (int indexRow = 0; indexRow < layer1.length; indexRow++) {
@@ -163,7 +161,7 @@ public class Board extends JPanel implements MouseInputListener {
 		//*************************MODIFICATION******************************************************************
 		//********************************************************************************************************		
 		//generates the swarm and adjusts their positions
-		int countAgentsSpecial = gui.getNumOfSpecialAgents();
+		countAgentsSpecial = gui.getSpecialAgentCount();
 		
 		agents = new SwarmAgent[countAgents];
 		agentsSpecial = new SwarmAgent[countAgentsSpecial];
@@ -178,7 +176,6 @@ public class Board extends JPanel implements MouseInputListener {
 		colorAgents = gui.getAgentColor();
 		for(int indexAgentNormal = 0; indexAgentNormal < agentsNormal.length; indexAgentNormal++) {
 			agentsNormal[indexAgentNormal] = new SwarmAgent(Math.random() * width, Math.random() * height, agentSize, colorAgents, false, this);
-			System.out.println(indexAgent);
 			agents[indexAgent++] = agentsNormal[indexAgentNormal];
 		}
 		
@@ -188,6 +185,23 @@ public class Board extends JPanel implements MouseInputListener {
 		if (gui.layer2Draw == 3) {
 			gui.layer2Draw = 1;
 		}
+		
+		timer = new Timer();
+		timerActive = false;
+		
+		setAgentRate(gui.getAgentRate());
+		
+		if(gui.getToggleAgents()) {
+			toggleTimer();
+		}
+	}
+	
+	public int getAgentCount() {
+		return countAgents;
+	}
+	
+	public int getSpecialAgentCount() {
+		return countAgentsSpecial;
 	}
 	
 	public int getStepCount() {
@@ -226,7 +240,6 @@ public class Board extends JPanel implements MouseInputListener {
 		return layer4;
 	}
 	
-	
 	public int getAgentRow(SwarmAgent agent) {
 		return (int)(agent.getCenterX() / cellSize);
 	}
@@ -241,8 +254,12 @@ public class Board extends JPanel implements MouseInputListener {
 		scheduleRepaint();
 	}
 	
-	public void startTimer() {
-		if(!timerActive) {
+	public void toggleTimer() {
+		if(timerActive) {
+			task.cancel();
+			timer.purge();
+		}
+		else {
 			task = new TimerTask() {
 				@Override
 				public void run() {
@@ -252,16 +269,9 @@ public class Board extends JPanel implements MouseInputListener {
 			};
 			
 			timer.scheduleAtFixedRate(task, rateExecute, rateExecute);
-			timerActive = true;
 		}
-	}
-	
-	public void stopTimer() {
-		if(timerActive) {
-			task.cancel();
-			timer.purge();
-			timerActive = false;
-		}
+		
+		timerActive = !timerActive;
 	}
 
 	@Override
@@ -297,7 +307,7 @@ public class Board extends JPanel implements MouseInputListener {
 		}
 	}
 
-	private void scheduleRepaint() {
+	public void scheduleRepaint() {
 		if(!timerActive) {
 			repaint();
 		}
@@ -310,6 +320,10 @@ public class Board extends JPanel implements MouseInputListener {
 	 */
 	public void step() {
 		//for each agent, have the agent decide randomly whether to flip its cell's color
+		
+		int indexRow, indexColumn;
+		int width = getWidth();
+		int height = getHeight();
 		for (SwarmAgent agent : agents) {
 			//10% of the time, the agent will determine algebraically which cell it's in, then flip the color of that cell.
 			//a better approach than this would be to have the agent store which cell it's currently in, then just flip that
@@ -318,9 +332,10 @@ public class Board extends JPanel implements MouseInputListener {
 
 			//TESTING NEIGHBORS
 			//neighbors = getNeighbors(layer1, (int)(agent.getCenterX() / cellSize), (int)(agent.getCenterY() / cellSize));
-			int rowMax = layer1.length-1;
-			int colMax = layer1[rowMax-1].length-1;
-			if((int)(agent.getCenterX() / cellSize) <= rowMax && (int)(agent.getCenterY() / cellSize) <= colMax) {
+			indexRow = getAgentRow(agent);
+			indexColumn = getAgentColumn(agent);
+			
+			if(indexRow >= 0 && indexRow < layer1.length && indexColumn >= 0 && indexColumn < layer1[indexRow].length) {
 				strategy.logic(this, agent);
 				for (int row = 0; row < layer2.length; row++) {
 					for (int col = 0; col < layer2[row].length; col++) {
@@ -330,10 +345,11 @@ public class Board extends JPanel implements MouseInputListener {
 			}
 
 			agent.step(cellSize);
+			
 			if (wraparound) {
-				//since there's no walls, this lets the agents "wrap" to the other side of the screen. this is awesome.
-				agent.setX(agent.getX() % getWidth());
-				agent.setY(agent.getY() % getHeight());
+				//since there's no walls, this lets the agents "wrap" to the other side of the screen. this is awesome.		
+				agent.setX((((agent.getCenterX() % width) + width) % width) - (agent.getWidth() / 2));
+				agent.setY((((agent.getCenterY() % height) + height) % height) - (agent.getHeight() / 2));
 
 				//this is not perfect: what we actually want this to do is draw both, so long as it's sticking a bit
 				//off of the screen. that makes the above operations much uglier. :(
@@ -362,6 +378,10 @@ public class Board extends JPanel implements MouseInputListener {
 		countSteps++; //keep track of how many steps
 		
 		gui.updateLabels(countSteps);
+	}
+	
+	public boolean getWraparound() {
+		return wraparound;
 	}
 
 	/**
@@ -541,8 +561,8 @@ public class Board extends JPanel implements MouseInputListener {
 		rateExecute = Math.max(1000 / agentRate, 1000 / RATE_STEPS_MAXIMUM);
 		
 		if(timerActive) {
-			stopTimer();
-			startTimer();
+			toggleTimer();
+			toggleTimer();
 		}
 	}
 
@@ -590,9 +610,9 @@ public class Board extends JPanel implements MouseInputListener {
 			}
 		}
 	}
-
-	public void setWraparound(boolean wraparound) {
-		this.wraparound = wraparound;
+	
+	public void toggleWraparound() {
+		wraparound = !wraparound;
 	}
 
 	//MODIFICATION #2: This method selects random cells to flip

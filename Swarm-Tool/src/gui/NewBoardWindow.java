@@ -27,7 +27,7 @@ public class NewBoardWindow extends JFrame {
 	private JCheckBox splitPolarityBox; //MODIFICATION
 	private JCheckBox threeColorsBox; //MODIFICATION #3
 	private int numCellsOnSide, numAgents;
-	public int numSpecialAgents, splitPolNum;
+	private int numSpecialAgents;
 	private int totalCells; //MODIFICATION #3
 	private GUI gui;
 
@@ -42,7 +42,7 @@ public class NewBoardWindow extends JFrame {
 		
 		//System.out.println("test");
 		setTitle("New Board Size");
-		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 		setBounds(100, 100, 450, 350);
 		contentPane = new JPanel();
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
@@ -67,25 +67,19 @@ public class NewBoardWindow extends JFrame {
 		lblSplitPolarity.setBounds(95, 129, 100, 20);
 		contentPane.add(lblSplitPolarity);
 		
-		//MODIFICATION #3
-		JLabel lblThreeColor = new JLabel("Diagonal Line");
-		lblThreeColor.setBounds(95, 156, 100, 20);
-		contentPane.add(lblThreeColor);
-		
-
-		NewBoardSize = new JTextField("20",5);
+		NewBoardSize = new JTextField(Integer.toString(gui.getBoardSize()));
 		NewBoardSize.setBounds(292, 48, 40, 20);
 		contentPane.add(NewBoardSize);
 		NewBoardSize.setColumns(10);
 
 
-		txtNewswarmsize = new JTextField("20");
+		txtNewswarmsize = new JTextField(Integer.toString(gui.getAgentCount()));
 		txtNewswarmsize.setBounds(292, 75, 40, 20);
 		contentPane.add(txtNewswarmsize);
 		txtNewswarmsize.setColumns(10);
 		
 		//MODIFICATION
-		newNumSpecialAgents = new JTextField("0");
+		newNumSpecialAgents = new JTextField(Integer.toString(gui.getSpecialAgentCount()));
 		newNumSpecialAgents.setBounds(292, 102, 40, 20);
 		contentPane.add(newNumSpecialAgents);
 		newNumSpecialAgents.setColumns(10);
@@ -95,13 +89,6 @@ public class NewBoardWindow extends JFrame {
 		splitPolarityBox.setSelected(false);
 		splitPolarityBox.setBounds(292, 129, 40, 20);
 		contentPane.add(splitPolarityBox);
-					
-		//MODIFICATION #3 
-		threeColorsBox = new JCheckBox();
-		threeColorsBox.setSelected(false);
-		threeColorsBox.setBounds(292, 156, 40, 20);
-		contentPane.add(threeColorsBox);
-
 
 		//This button will close the JFrame and set the request Board class to create a new board that will be shown in the Main GUI
 		JButton btnMakeNewBoard = new JButton("Make New Board");
@@ -114,9 +101,7 @@ public class NewBoardWindow extends JFrame {
 				//splitPolNum = Integer.parseInt(splitPolarity.getText());
 				//gui.setLblBoardSizeInt(numCellsOnSide);
 				//gui.setLblSwarmSizeInt(numAgents);
-				gui.setNumOfSpecialAgents(numSpecialAgents);
 				gui.setSplitPolarity(splitPolarityBox.isSelected());
-				gui.setDiagonalLineStart(threeColorsBox.isSelected());
 				MakeNewBoard(frame);
 				dispose();
 			}
@@ -138,8 +123,7 @@ public class NewBoardWindow extends JFrame {
 		int borderForCentering = spareSpace/2;
 		int boardSize = GUI.SIZE_BOARD_MAXIMUM-borderForCentering*2;
 
-		boolean whetherBoardWraps = gui.wrap;
-		Board board = new Board(boardSize,boardSize,numCellsOnSide,numAgents, whetherBoardWraps, gui);
+		Board board = new Board(boardSize,boardSize,numCellsOnSide,numAgents, gui);
 		board.setBackground(Color.WHITE);
 		board.setBounds(10+borderForCentering, 10+borderForCentering, boardSize, boardSize);
 		//displayPanel.add();
@@ -147,7 +131,6 @@ public class NewBoardWindow extends JFrame {
 		gui.setBoard(board);
 		//This section is to avoid bugs in the GUI.
 		//board.updateGoalStrategy(gui.goalStrategy);
-		board.setAgentRate(gui.agentSliderRate);
 	}
 	
 	public void setTotalNumOfCells() {
