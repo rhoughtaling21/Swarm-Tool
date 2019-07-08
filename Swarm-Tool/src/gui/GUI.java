@@ -80,7 +80,7 @@ public class GUI {
 	private static final Color[] OPTIONS_COLORS = {Color.BLACK, Color.BLUE, Color.CYAN, Color.GRAY, Color.GREEN, Color.MAGENTA, Color.ORANGE, Color.PINK, Color.RED, Color.WHITE, Color.YELLOW};
 	private static final String[] OPTIONS_COLORS_NAMES = {"BLACK", "BLUE", "CYAN", "GRAY", "GREEN", "MAGENTA", "ORANGE", "PINK", "RED", "WHITE", "YELLOW"};
 	private static final String[] OPTIONS_STRATEGIES_NAMES = {"BLACKOUT", "CHECKERBOARD", "DIAGONALS", "LINES"};
-	private static final String[] PROPERTIES_BOARD = {PROPERTY_BOARD_SIZE};
+	private static final String[] PROPERTIES_BOARD = {PROPERTY_BOARD_SIZE, PROPERTY_BOARD_WRAPAROUND};
 	private static final String[] PROPERTIES_AGENTS = {PROPERTY_AGENTS_COUNT, PROPERTY_AGENTS_COUNT_SPECIAL, PROPERTY_AGENTS_RATE, PROPERTY_AGENTS_ACTIVE, PROPERTY_AGENTS_VISIBLE};
 	private static final String[] PROPERTIES_RULES = {PROPERTY_RULE_GOAL, PROPERTY_RULE_EQUILIBRIUM, PROPERTY_RULE_EQUILIBRIUM_POLARITY, PROPERTY_RULE_REPETITIONS};
 	private static final String[] PROPERTIES_COLORS = generateColorProperties();
@@ -476,6 +476,8 @@ public class GUI {
 					tglbtnRulesApply.setText("Mode: Single");
 				}
 				
+				settings.setProperty(PROPERTY_RULE_EQUILIBRIUM, Boolean.toString(modeEquilibrium));
+				
 				updateDominantPolarity();
 			}
 		});
@@ -825,6 +827,8 @@ public class GUI {
 				else {
 					tglbtnWrapAgents.setText("Bounce Agents");
 				}
+				
+				settings.setProperty(PROPERTY_BOARD_WRAPAROUND, Boolean.toString(boardWraparound));
 			}
 		});
 		tabLayer3.add(tglbtnWrapAgents);
@@ -841,8 +845,6 @@ public class GUI {
 		tabLayer4.setBackground(new Color(211, 211, 211));
 		tabbedPane.addTab("Layer 4", null, tabLayer4, null);
 		tabLayer4.setLayout(null);
-
-
 
 		// ************************************************************ Global Zone
 		// Buttons + Slider ************************************************************
@@ -987,7 +989,6 @@ public class GUI {
 						// Object obj = new NewBoardWindow();
 						NewBoardWindow newBoardWindow = new NewBoardWindow(frmProjectLegion, gui);
 						newBoardWindow.setVisible(true);
-						tglbtnWrapAgents.setSelected(true);
 						menuDropDownGoal.setSelectedItem(goalStrategy);
 						// lblBoardSizeInt.setText(String.valueOf(board.labelHandler.getInitBoardSize()));
 					}
@@ -1213,6 +1214,8 @@ public class GUI {
 			optionsPolarityDominant.insertElementAt("(" + (indexPolarity + 1) + ") " + getColorName(colorPolarity), indexPolarity);
 			menuDropDownPolarityDominant.setSelectedIndex(indexPolarityDominant);
 		}
+		
+		settings.setProperty(PROPERTY_COLOR_POLARITY + (indexPolarity + 1), getColorName(colorsPolarity[indexPolarity]));
 	}
 
 	private void updatePolarityCount() {
@@ -1473,6 +1476,7 @@ public class GUI {
 	private class CommandBoardWraparound extends Command {
 		@Override
 		public void execute(String value) {
+			System.out.println("Reading Wraparound");
 			tglbtnWrapAgents.setSelected(!Boolean.parseBoolean(value));
 			tglbtnWrapAgents.doClick();
 		}
@@ -1533,7 +1537,8 @@ public class GUI {
 	private class CommandRuleEquilibriumPolarity extends Command {
 		@Override
 		public void execute(String value) {
-			int valueInteger = Integer.parseInt(value);
+			int valueInteger = Math.max(Integer.parseInt(value), 1);
+			
 			if(goalStrategy.getPolarityCount() > 2) {
 				menuDropDownPolarityDominant.setSelectedItem("(" + valueInteger + ") " + getColorName(colorsPolarity[valueInteger - 1]));
 			}

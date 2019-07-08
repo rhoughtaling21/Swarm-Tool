@@ -111,21 +111,31 @@ public class SwarmAgent extends Ellipse2D.Double {
 		
 		if(board.getWraparound()) {
 			int widthBoard = board.getWidth();
-			
-			if(getX() < 0) {
-				helperGraphics2D.fillOval((int)(getX() + widthBoard), (int)getY(), (int)getWidth(), (int)getHeight());
-			}
-			else if(getMaxX() > widthBoard) {
-				helperGraphics2D.fillOval((int)(getMaxX() - widthBoard), (int)getY(), (int)getWidth(), (int)getHeight());
-			}
-			
 			int heightBoard = board.getHeight();
 			
-			if(getY() < 0) {
-				helperGraphics2D.fillOval((int)getX(), (int)(getY() + heightBoard), (int)getWidth(), (int)getHeight());
+			boolean offTop = y < 0;
+			boolean offBottom = getMaxY() > heightBoard;
+			
+			if(x < 0) {
+				helperGraphics2D.fillOval((int)(x + widthBoard), (int)y, (int)width, (int)height);
+				
+				if(offTop) {
+					helperGraphics2D.fillOval((int)(x + widthBoard), (int)(y + heightBoard), (int)width, (int)height);
+				}
 			}
-			else if(getMaxY() > heightBoard) {
-				helperGraphics2D.fillOval((int)getX(), (int)(getMaxY() - heightBoard), (int)getWidth(), (int)getHeight());
+			else if(getMaxX() > widthBoard) {
+				helperGraphics2D.fillOval((int)(x - widthBoard), (int)y, (int)width, (int)height);
+				
+				if(offBottom) {
+					helperGraphics2D.fillOval((int)(x - widthBoard), (int)(y - heightBoard), (int)width, (int)height);
+				}
+			}
+			
+			if(offTop) {
+				helperGraphics2D.fillOval((int)x, (int)(y + heightBoard), (int)width, (int)height);
+			}
+			else if(offBottom) {
+				helperGraphics2D.fillOval((int)x, (int)(y - heightBoard), (int)width, (int)height);
 			}
 		}
 		

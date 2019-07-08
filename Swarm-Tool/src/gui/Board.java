@@ -68,8 +68,9 @@ public class Board extends JPanel implements MouseInputListener {
 	private CellDisplay[][] layerDisplay; //layer to paint
 	private CellDisplay[][][] layers;
 
-	public Board(int width, int height, int numCellsOnSide, int countAgents, GUI gui) {
+	public Board(int width, int height, int numCellsOnSide, int countAgents, int countAgentsSpecial, GUI gui) {
 		this.countAgents = countAgents;
+		this.countAgentsSpecial = countAgentsSpecial;
 		this.gui = gui;
 		
 		showAgents = gui.getAgentVisibility();
@@ -161,7 +162,6 @@ public class Board extends JPanel implements MouseInputListener {
 		//*************************MODIFICATION******************************************************************
 		//********************************************************************************************************		
 		//generates the swarm and adjusts their positions
-		countAgentsSpecial = gui.getSpecialAgentCount();
 		
 		agents = new SwarmAgent[countAgents];
 		agentsSpecial = new SwarmAgent[countAgentsSpecial];
