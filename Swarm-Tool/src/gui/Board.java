@@ -37,7 +37,7 @@ import strategies.AbstractStrategy;
  */
 @SuppressWarnings("serial")
 public class Board extends JPanel implements MouseInputListener {
-	public static final int RATE_STEPS_MAXIMUM = 900;
+	public static final int RATE_STEPS_MAXIMUM = 85;
 	
 	public int numCellsOnSide; //these are the numbers of cells in the board, NOT the graphical dimensions of the board
 	private boolean wraparound; //whether the walls of the Board wrap or not; by default, they don't
@@ -558,7 +558,7 @@ public class Board extends JPanel implements MouseInputListener {
 	 */
 	public void setAgentRate(int rate) {
 		agentRate = rate;
-		rateExecute = Math.max(1000 / agentRate, 1000 / RATE_STEPS_MAXIMUM);
+		rateExecute = Math.max(2000 / agentRate, 2000 / RATE_STEPS_MAXIMUM);
 		
 		if(timerActive) {
 			toggleTimer();

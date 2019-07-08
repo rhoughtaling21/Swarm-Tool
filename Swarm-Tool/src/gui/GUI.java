@@ -54,7 +54,7 @@ import strategies.Lines;
  * which to be most dominant (as the yellow has been in previous versions).
  *  */
 public class GUI {
-	private static final int DIMENSION_HEIGHT_INITIAL = 864;
+	private static final int DIMENSION_HEIGHT_INITIAL = 1070;
 	private static final int DIMENSION_WIDTH_INITIAL = 1536;
 	public static final int SIZE_BOARD_MAXIMUM = 800;// pixel size of board
 	public static final int COUNT_POLARITIES_MAXIMUM = 4;
@@ -248,7 +248,7 @@ public class GUI {
 
 		// This is where the tabs for the layer options go.
 		JTabbedPane tabbedPane = new JTabbedPane(JTabbedPane.TOP);
-		tabbedPane.setBounds(818, 10, 700, 600);
+		tabbedPane.setBounds(820, 10, 700, 970);
 		// used to change whether board.cells or board.cells2 is shown in board when the
 		// tab selected is changed
 		ChangeListener changeListener = new ChangeListener() {
@@ -320,7 +320,6 @@ public class GUI {
 		lblBoardSizeLayer.setForeground(Color.LIGHT_GRAY);
 		lblBoardSizeLayer.setHorizontalAlignment(SwingConstants.CENTER);
 		lblBoardSizeLayer.setBounds(10, 157, 125, 35);
-		tabLayer1.add(lblBoardSizeLayer);
 
 		//MODIFICATION #2: Flip random cells that the user has specified the amount (Percent)
 		//
@@ -850,34 +849,35 @@ public class GUI {
 		// Buttons + Slider ************************************************************
 		// ************************************************************ Just shows
 		// information
+		//TODO rearrange
 		JLabel lblBoardSizeGlobal = new JLabel("Board Size:");
-		lblBoardSizeGlobal.setBounds(820, 621, 74, 14);
+		lblBoardSizeGlobal.setBounds(10, 830, 80, 30);
 		frmProjectLegion.getContentPane().add(lblBoardSizeGlobal);
 
 		lblBoardSizeInt = new JLabel();
-		lblBoardSizeInt.setBounds(910, 621, 46, 14);
+		lblBoardSizeInt.setBounds(100, 830, 20, 30);
+		lblBoardSizeInt.setHorizontalAlignment(SwingConstants.RIGHT);
 		frmProjectLegion.getContentPane().add(lblBoardSizeInt);
 
-		JLabel lblSwarmCount = new JLabel("Swarm Count:");
-		lblSwarmCount.setBounds(1014, 621, 100, 14);
+		JLabel lblSwarmCount = new JLabel("Swarm Size:");
+		lblSwarmCount.setBounds(10, 900, 80, 30);
 		frmProjectLegion.getContentPane().add(lblSwarmCount);
 
 		lblSwarmCountInt = new JLabel();
-		lblSwarmCountInt.setBounds(1109, 621, 46, 14);
+		lblSwarmCountInt.setBounds(100, 900, 20, 30);
+		lblSwarmCountInt.setHorizontalAlignment(SwingConstants.RIGHT);
 		frmProjectLegion.getContentPane().add(lblSwarmCountInt);
 
-		JLabel lblSwarmRate = new JLabel("Swarm Rate:");
-		lblSwarmRate.setBounds(820, 646, 90, 14);
+		JLabel lblSwarmRate = new JLabel("Swarm Rate (Cycles per 2s)");
+		lblSwarmRate.setBounds(340, 930, 470, 30);
+		lblSwarmRate.setHorizontalAlignment(SwingConstants.CENTER);
 		frmProjectLegion.getContentPane().add(lblSwarmRate);
 
 		// ************************************************************ Slider for the
 		// user to change how fast the board will step
-		sliderSwarmSpeed = new JSlider(0, 100, 50);
-		sliderSwarmSpeed.setBounds(953, 646, 450, 30);
-		sliderSwarmSpeed.setMinimum(1);
-		sliderSwarmSpeed.setMaximum(Board.RATE_STEPS_MAXIMUM);
-		sliderSwarmSpeed.setValue(agentSliderRate = ((sliderSwarmSpeed.getMaximum() - sliderSwarmSpeed.getMinimum()) / 2));
-		sliderSwarmSpeed.setMajorTickSpacing(sliderSwarmSpeed.getMaximum() / 10);
+		sliderSwarmSpeed = new JSlider(1, 2 * Board.RATE_STEPS_MAXIMUM);
+		sliderSwarmSpeed.setBounds(340, 900, 470, 30);
+		sliderSwarmSpeed.setMajorTickSpacing(13);
 		sliderSwarmSpeed.setPaintLabels(true);
 
 		// slider to change the speed of the agents in board.agents[]
@@ -896,18 +896,19 @@ public class GUI {
 		frmProjectLegion.getContentPane().add(sliderSwarmSpeed);
 
 		JLabel lblSlow = new JLabel("Slow");
-		lblSlow.setBounds(910, 646, 46, 14);
+		lblSlow.setBounds(340, 880, 50, 20);
 		frmProjectLegion.getContentPane().add(lblSlow);
 
 		JLabel lblFast = new JLabel("Fast");
-		lblFast.setBounds(1417, 646, 46, 14);
+		lblFast.setBounds(760, 880, 50, 20);
+		lblFast.setHorizontalAlignment(SwingConstants.RIGHT);
 		frmProjectLegion.getContentPane().add(lblFast);
 
 		// ************************************************************ Buttons that
 		// start stop and do other things that they are clearly labeled for.
 		// button to freeze swarm agents
 		buttonSwarm = new JToggleButton();
-		buttonSwarm.setBounds(50, 820, 125, 23);
+		buttonSwarm.setBounds(150, 900, 160, 30);
 		buttonSwarm.addActionListener(
 				new ActionListener() {
 					@Override
@@ -921,6 +922,7 @@ public class GUI {
 						}
 						else {
 							buttonSwarm.setText("Swarm: Inactive");
+							buttonSwarm.setBackground(new Color(255, 200, 200));
 						}
 
 						settings.setProperty(PROPERTY_AGENTS_ACTIVE, Boolean.toString(timerStarted));
@@ -929,24 +931,20 @@ public class GUI {
 				);
 		frmProjectLegion.getContentPane().add(buttonSwarm);
 
-		//THESE BUTTONS DO NOT WORK
-
-		JButton btnRestart = new JButton("Restart");
-		btnRestart.setForeground(Color.LIGHT_GRAY);
-		btnRestart.setBackground(new Color(51, 204, 255));
-		btnRestart.setBounds(1203, 726, 125, 23);
-		frmProjectLegion.getContentPane().add(btnRestart);
-
 		// ************************************************************ This code will
 		// open a new JFrame that will ask the user the new dimensions for the new
 		// board.
-		JButton btnNewScreenSave = new JButton("Screen Shot");
-		btnNewScreenSave.setBackground(new Color(204, 51, 255));
+		JButton btnNewScreenSave = new JButton("Screenshot");
+		btnNewScreenSave.setBackground(new Color(240, 230, 235));
 		btnNewScreenSave.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				//TODO SCREEENSHOT
 				if(board != null) {
+					if(timerStarted) {
+						board.toggleTimer();
+					}
+					
 					BufferedImage capture = board.capture();
 
 					SELECTOR_FILEPATH.setSelectedFile(new File("Simulation_" + FORMATTER_TIMESTAMP.format(LocalDateTime.now()) + FILETYPE_SCREENSHOT));
@@ -959,22 +957,18 @@ public class GUI {
 							e.printStackTrace();
 						}
 					}
+					
+					if(timerStarted) {
+						board.toggleTimer();
+					}
 				}
 			}
 		});
-		btnNewScreenSave.setBounds(1338, 767, 125, 23);
+		btnNewScreenSave.setBounds(610, 830, 200, 30);
 		frmProjectLegion.getContentPane().add(btnNewScreenSave);
 
-		JLabel lblSlowCycless = new JLabel("1/2 Cycle/s");
-		lblSlowCycless.setBounds(910, 671, 100, 14);
-		frmProjectLegion.getContentPane().add(lblSlowCycless);
-
-		JLabel lblFastCycless = new JLabel("5 Cycles/s");
-		lblFastCycless.setBounds(1417, 671, 100, 14);
-		frmProjectLegion.getContentPane().add(lblFastCycless);
 		// create new NewBoardWindow to make new board
 		JButton btnNewBoard = new JButton("New Board");
-
 		btnNewBoard.addActionListener(
 				new ActionListener() {
 					private GUI gui;
@@ -994,8 +988,8 @@ public class GUI {
 					}
 				}.setGUI(this)
 				);
-		btnNewBoard.setBackground(new Color(51, 102, 255));
-		btnNewBoard.setBounds(1338, 726, 125, 23);
+		btnNewBoard.setBackground(new Color(170, 240, 255));
+		btnNewBoard.setBounds(150, 830, 430, 30);
 		frmProjectLegion.getContentPane().add(btnNewBoard);
 
 		applyProperties();
@@ -1037,10 +1031,19 @@ public class GUI {
 		this.frequencyColorsInitial = board.getInitialColorFrequencies();
 		this.frequencyColors = board.getColorFrequencies();
 		this.frequencyPolarities = board.getPolarityFrequencies();
+		
+		sizeBoard = board.numCellsOnSide;
+		countAgents = board.getAgentCount();
+		countAgentsSpecial = board.getSpecialAgentCount();
+		
+		String sizeBoardString = Integer.toString(sizeBoard);
 
-		settings.setProperty(PROPERTY_BOARD_SIZE, Integer.toString(board.numCellsOnSide));
-		settings.setProperty(PROPERTY_AGENTS_COUNT, Integer.toString(board.getAgentCount()));
-		settings.setProperty(PROPERTY_AGENTS_COUNT_SPECIAL, Integer.toString(board.getSpecialAgentCount()));
+		settings.setProperty(PROPERTY_BOARD_SIZE, sizeBoardString);
+		settings.setProperty(PROPERTY_AGENTS_COUNT, Integer.toString(countAgents));
+		settings.setProperty(PROPERTY_AGENTS_COUNT_SPECIAL, Integer.toString(countAgentsSpecial));
+		
+		lblBoardSizeInt.setText(sizeBoardString);
+		lblSwarmCountInt.setText(Integer.toString(countAgents + countAgentsSpecial));
 
 		board.scheduleRepaint();
 
@@ -1476,7 +1479,6 @@ public class GUI {
 	private class CommandBoardWraparound extends Command {
 		@Override
 		public void execute(String value) {
-			System.out.println("Reading Wraparound");
 			tglbtnWrapAgents.setSelected(!Boolean.parseBoolean(value));
 			tglbtnWrapAgents.doClick();
 		}
