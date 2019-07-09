@@ -22,6 +22,7 @@ import javax.swing.JPanel;
 import javax.swing.event.MouseInputListener;
 
 import cells.CellDisplayBase;
+import cells.CellDisplayCorrectness;
 import cells.CellDisplay;
 import cells.CellDisplayPersistence;
 import cells.CellDisplayPolarity;
@@ -65,6 +66,7 @@ public class Board extends JPanel implements MouseInputListener {
 	private CellDisplayBase[][] layer1;
 	private CellDisplayPolarity[][] layer2;
 	private CellDisplayPersistence[][] layer4;  //MODIFICATION #7: new layer of cells for persistency
+	private CellDisplayCorrectness[][] layer5;
 	private CellDisplay[][] layerDisplay; //layer to paint
 	private CellDisplay[][][] layers;
 
@@ -151,12 +153,19 @@ public class Board extends JPanel implements MouseInputListener {
 		//
 		layer4 = new CellDisplayPersistence[numCellsOnSide][numCellsOnSide];
 		for (int row = 0; row < layer4.length; row++) {
-			for (int col = 0; col < layer4[row].length; col++) {
-				layer4[row][col] = new CellDisplayPersistence(row * cellSize, col * cellSize, cellSize, this);
+			for (int indexColumn = 0; indexColumn < layer4[row].length; indexColumn++) {
+				layer4[row][indexColumn] = new CellDisplayPersistence(row * cellSize, indexColumn * cellSize, cellSize, this);
 			}
 		}
 		
-		layers = new CellDisplay[][][]{null, layer1, layer2, null, layer4};
+		layer5 = new CellDisplayCorrectness[numCellsOnSide][numCellsOnSide];
+		for (int indexRow = 0; indexRow < layer5.length; indexRow++) {
+			for (int indexColumn = 0; indexColumn < layer5[indexRow].length; indexColumn++) {
+				layer5[indexRow][indexColumn] = strategy.createCorrectnessCell(this, indexRow, indexColumn);
+			}
+		}
+		
+		layers = new CellDisplay[][][]{null, layer1, layer2, null, layer4, layer5};
 		
 		//********************************************************************************************************	
 		//*************************MODIFICATION******************************************************************
@@ -238,6 +247,10 @@ public class Board extends JPanel implements MouseInputListener {
 	
 	public CellDisplayPersistence[][] getPersistenceLayer() {
 		return layer4;
+	}
+	
+	public CellDisplayCorrectness[][] getCorrectnessLayer(){
+		return layer5;
 	}
 	
 	public int getAgentRow(SwarmAgent agent) {
@@ -373,6 +386,8 @@ public class Board extends JPanel implements MouseInputListener {
 					agent.yBounce();
 				}
 			}
+			
+			updateCorrectnessCells();
 		}
 
 		countSteps++; //keep track of how many steps
@@ -600,6 +615,7 @@ public class Board extends JPanel implements MouseInputListener {
 			this.strategy = strategy;
 			
 			updatePolarityCells();
+			updateCorrectnessCells();
 		}
 	}
 	
@@ -607,6 +623,14 @@ public class Board extends JPanel implements MouseInputListener {
 		for (int indexRow = 0; indexRow < layer2.length; indexRow++) {
 			for (int indexColumn = 0; indexColumn < layer2[indexRow].length; indexColumn++) {
 				strategy.updatePolarityCell(this, indexRow, indexColumn);
+			}
+		}
+	}
+	
+	public void updateCorrectnessCells() {
+		for (int indexRow = 0; indexRow < layer5.length; indexRow++) {
+			for (int indexColumn = 0; indexColumn < layer5[indexRow].length; indexColumn++) {
+				strategy.updateCorrectnessCell(this, indexRow, indexColumn);
 			}
 		}
 	}

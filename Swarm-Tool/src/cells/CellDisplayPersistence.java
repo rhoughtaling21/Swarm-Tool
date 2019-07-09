@@ -16,7 +16,8 @@ public class CellDisplayPersistence extends CellDisplay {
 	
 	public CellDisplayPersistence(double x, double y, double size, Board board) {
 		super(x, y, size, board);
-		setState(indexState);
+		indexState = -1;
+		setState(0);
 	}
 
 	@Override

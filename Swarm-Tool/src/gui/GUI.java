@@ -69,8 +69,8 @@ public class GUI {
 	private static final String PROPERTY_AGENTS_ACTIVE = "agents.active";
 	private static final String PROPERTY_AGENTS_VISIBLE = "agents.visible";
 	private static final String PROPERTY_RULE_GOAL = "rule.goal";
+	private static final String PROPERTY_RULE_POLARITY_DOMINANT = "rule.polarity.dominant";
 	private static final String PROPERTY_RULE_EQUILIBRIUM = "rule.equilibrium";
-	private static final String PROPERTY_RULE_EQUILIBRIUM_POLARITY = "rule.equilibrium.polarity";
 	private static final String PROPERTY_RULE_REPETITIONS = "rule.repetitions";
 	private static final String PROPERTY_COLOR_AGENT = "color.agents";
 	private static final String PROPERTY_COLOR_AGENT_SPECIAL = "color.agents.special";
@@ -82,10 +82,10 @@ public class GUI {
 	private static final String[] OPTIONS_STRATEGIES_NAMES = {"BLACKOUT", "CHECKERBOARD", "DIAGONALS", "LINES"};
 	private static final String[] PROPERTIES_BOARD = {PROPERTY_BOARD_SIZE, PROPERTY_BOARD_WRAPAROUND};
 	private static final String[] PROPERTIES_AGENTS = {PROPERTY_AGENTS_COUNT, PROPERTY_AGENTS_COUNT_SPECIAL, PROPERTY_AGENTS_RATE, PROPERTY_AGENTS_ACTIVE, PROPERTY_AGENTS_VISIBLE};
-	private static final String[] PROPERTIES_RULES = {PROPERTY_RULE_GOAL, PROPERTY_RULE_EQUILIBRIUM, PROPERTY_RULE_EQUILIBRIUM_POLARITY, PROPERTY_RULE_REPETITIONS};
+	private static final String[] PROPERTIES_RULES = {PROPERTY_RULE_GOAL, PROPERTY_RULE_POLARITY_DOMINANT, PROPERTY_RULE_EQUILIBRIUM, PROPERTY_RULE_REPETITIONS};
 	private static final String[] PROPERTIES_COLORS = generateColorProperties();
 	private static final AbstractStrategy[] OPTIONS_STRATEGIES = {new AllBlack(), new CheckerBoard(), new DiagonalLines(), new Lines()};
-	private static final String[][] PROPERTIES = {PROPERTIES_BOARD, PROPERTIES_AGENTS, PROPERTIES_COLORS, PROPERTIES_RULES};
+	private static final String[][] PROPERTIES = {PROPERTIES_BOARD, PROPERTIES_AGENTS, PROPERTIES_RULES, PROPERTIES_COLORS};
 	private static final HashMap<Color, String> MAP_COLORS_NAMES = generateMapColorsNames();
 	private static final HashMap<String, Color> MAP_COLORS = generateMapColors();
 	private static final HashMap<String, AbstractStrategy> MAP_STRATEGIES = generateMapStrategies();
@@ -177,7 +177,7 @@ public class GUI {
 		propertyCommands.put(PROPERTY_AGENTS_VISIBLE, new CommandAgentVisible());
 		propertyCommands.put(PROPERTY_RULE_GOAL, new CommandRuleGoal());
 		propertyCommands.put(PROPERTY_RULE_EQUILIBRIUM, new CommandRuleEquilibrium());
-		propertyCommands.put(PROPERTY_RULE_EQUILIBRIUM_POLARITY, new CommandRuleEquilibriumPolarity());
+		propertyCommands.put(PROPERTY_RULE_POLARITY_DOMINANT, new CommandRuleEquilibriumPolarity());
 		propertyCommands.put(PROPERTY_RULE_REPETITIONS, new CommandRuleRepetitions());
 		propertyCommands.put(PROPERTY_COLOR_AGENT, new CommandColorAgents());
 		propertyCommands.put(PROPERTY_COLOR_AGENT_SPECIAL, new CommandColorAgentsSpecial());
@@ -248,7 +248,7 @@ public class GUI {
 
 		// This is where the tabs for the layer options go.
 		JTabbedPane tabbedPane = new JTabbedPane(JTabbedPane.TOP);
-		tabbedPane.setBounds(820, 10, 700, 970);
+		tabbedPane.setBounds(830, 10, 700, 970);
 		// used to change whether board.cells or board.cells2 is shown in board when the
 		// tab selected is changed
 		ChangeListener changeListener = new ChangeListener() {
@@ -257,6 +257,10 @@ public class GUI {
 				JTabbedPane sourceTabbedPane = (JTabbedPane) changeEvent.getSource();
 				int index = sourceTabbedPane.getSelectedIndex();
 				layer2Draw = index + 1;
+
+				if(board != null) {
+					board.scheduleRepaint();
+				}
 			}
 		};
 		tabbedPane.addChangeListener(changeListener);
@@ -266,7 +270,7 @@ public class GUI {
 		// ************************************************************ TAB 1 **************************************************************
 		JPanel tabLayer1 = new JPanel();
 		tabLayer1.setBackground(new Color(211, 211, 211));
-		tabbedPane.addTab("Layer 1", null, tabLayer1, null);
+		tabbedPane.addTab("Base Layer", null, tabLayer1, null);
 		tabLayer1.setLayout(null);
 
 		// ************************************************************ Change Size of
@@ -359,7 +363,7 @@ public class GUI {
 		// ************************************************************ TAB 2 **************************************************************
 		JPanel tabLayer2 = new JPanel();
 		tabLayer2.setBackground(new Color(211, 211, 211));
-		tabbedPane.addTab("Layer 2", null, tabLayer2, null);
+		tabbedPane.addTab("Polarity Layer", null, tabLayer2, null);
 		tabLayer2.setLayout(null);
 
 		ItemListener listenerDropDownColorPolarity = new ItemListener() {
@@ -474,10 +478,10 @@ public class GUI {
 				else {
 					tglbtnRulesApply.setText("Mode: Single");
 				}
-				
+
 				settings.setProperty(PROPERTY_RULE_EQUILIBRIUM, Boolean.toString(modeEquilibrium));
-				
-				updateDominantPolarity();
+
+				updateEquilibriumLabelsText();
 			}
 		});
 		tabLayer2.add(tglbtnRulesApply);
@@ -622,7 +626,7 @@ public class GUI {
 		// ************************************************************ TAB 3 *************************************************************
 		JPanel tabLayer3 = new JPanel();
 		tabLayer3.setBackground(new Color(211, 211, 211));
-		tabbedPane.addTab("Layer 3", null, tabLayer3, null);
+		tabbedPane.addTab("Interactive Layer", null, tabLayer3, null);
 		tabLayer3.setLayout(null);
 
 		// ************************************************************ User can set the
@@ -826,7 +830,7 @@ public class GUI {
 				else {
 					tglbtnWrapAgents.setText("Bounce Agents");
 				}
-				
+
 				settings.setProperty(PROPERTY_BOARD_WRAPAROUND, Boolean.toString(boardWraparound));
 			}
 		});
@@ -842,14 +846,19 @@ public class GUI {
 		// ************************************************************ TAB 4 *************************************************************
 		JPanel tabLayer4 = new JPanel();
 		tabLayer4.setBackground(new Color(211, 211, 211));
-		tabbedPane.addTab("Layer 4", null, tabLayer4, null);
+		tabbedPane.addTab("Persistence Layer", tabLayer4);
 		tabLayer4.setLayout(null);
+
+		/* Tab 5 */
+		JPanel tabLayerCorrectness = new JPanel();
+		tabLayerCorrectness.setBackground(new Color(211, 211, 211));
+		tabbedPane.addTab("Correctness Layer", tabLayerCorrectness);
+		tabLayerCorrectness.setLayout(null);
 
 		// ************************************************************ Global Zone
 		// Buttons + Slider ************************************************************
 		// ************************************************************ Just shows
 		// information
-		//TODO rearrange
 		JLabel lblBoardSizeGlobal = new JLabel("Board Size:");
 		lblBoardSizeGlobal.setBounds(10, 830, 80, 30);
 		frmProjectLegion.getContentPane().add(lblBoardSizeGlobal);
@@ -939,12 +948,11 @@ public class GUI {
 		btnNewScreenSave.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				//TODO SCREEENSHOT
 				if(board != null) {
 					if(timerStarted) {
 						board.toggleTimer();
 					}
-					
+
 					BufferedImage capture = board.capture();
 
 					SELECTOR_FILEPATH.setSelectedFile(new File("Simulation_" + FORMATTER_TIMESTAMP.format(LocalDateTime.now()) + FILETYPE_SCREENSHOT));
@@ -957,7 +965,7 @@ public class GUI {
 							e.printStackTrace();
 						}
 					}
-					
+
 					if(timerStarted) {
 						board.toggleTimer();
 					}
@@ -1008,15 +1016,15 @@ public class GUI {
 	public int getBoardSize() {
 		return sizeBoard;
 	}
-	
+
 	public int getAgentCount() {
 		return countAgents;
 	}
-	
+
 	public int getSpecialAgentCount() {
 		return countAgentsSpecial;
 	}
-	
+
 	public int getDominantPolarity() {
 		return indexPolarityDominant;
 	}
@@ -1031,17 +1039,17 @@ public class GUI {
 		this.frequencyColorsInitial = board.getInitialColorFrequencies();
 		this.frequencyColors = board.getColorFrequencies();
 		this.frequencyPolarities = board.getPolarityFrequencies();
-		
+
 		sizeBoard = board.numCellsOnSide;
 		countAgents = board.getAgentCount();
 		countAgentsSpecial = board.getSpecialAgentCount();
-		
+
 		String sizeBoardString = Integer.toString(sizeBoard);
 
 		settings.setProperty(PROPERTY_BOARD_SIZE, sizeBoardString);
 		settings.setProperty(PROPERTY_AGENTS_COUNT, Integer.toString(countAgents));
 		settings.setProperty(PROPERTY_AGENTS_COUNT_SPECIAL, Integer.toString(countAgentsSpecial));
-		
+
 		lblBoardSizeInt.setText(sizeBoardString);
 		lblSwarmCountInt.setText(Integer.toString(countAgents + countAgentsSpecial));
 
@@ -1212,45 +1220,41 @@ public class GUI {
 	private void setPolarityColor(int indexPolarity, Color colorPolarity) {
 		colorsPolarity[indexPolarity] = colorPolarity;
 
-		if(optionsPolarityDominant.getSize() > 0) {
+		if(optionsPolarityDominant.getSize() > indexPolarity) {
 			optionsPolarityDominant.removeElementAt(indexPolarity);
 			optionsPolarityDominant.insertElementAt("(" + (indexPolarity + 1) + ") " + getColorName(colorPolarity), indexPolarity);
 			menuDropDownPolarityDominant.setSelectedIndex(indexPolarityDominant);
 		}
-		
+
 		settings.setProperty(PROPERTY_COLOR_POLARITY + (indexPolarity + 1), getColorName(colorsPolarity[indexPolarity]));
 	}
 
 	private void updatePolarityCount() {
 		int countPolarities = goalStrategy.getPolarityCount();
-		boolean allowEquilibrium = countPolarities > 2;
 		int indexPolarityDominant = this.indexPolarityDominant;
-		
-		if(allowEquilibrium) {
-			int countPolaritiesPrevious = optionsPolarityDominant.getSize();
-			
-			for(int indexPolarity = countPolaritiesPrevious; indexPolarity < countPolarities; indexPolarity++) {
-				optionsPolarityDominant.addElement("(" + (indexPolarity + 1) + ") " + getColorName(colorsPolarity[indexPolarity]));
-			}
-			
-			for(int indexPolarity = countPolarities; indexPolarity < countPolaritiesPrevious; indexPolarity++) {
-				optionsPolarityDominant.removeElementAt(countPolarities);
-			}
-			
-			if(indexPolarityDominant >= countPolarities) {
-				indexPolarityDominant = countPolarities - 1;
-			}
+
+		int countPolaritiesPrevious = optionsPolarityDominant.getSize();
+
+		for(int indexPolarity = countPolaritiesPrevious; indexPolarity < countPolarities; indexPolarity++) {
+			optionsPolarityDominant.addElement("(" + (indexPolarity + 1) + ") " + getColorName(colorsPolarity[indexPolarity]));
 		}
-		
+
+		for(int indexPolarity = countPolarities; indexPolarity < countPolaritiesPrevious; indexPolarity++) {
+			optionsPolarityDominant.removeElementAt(countPolarities);
+		}
+
+		if(indexPolarityDominant >= countPolarities) {
+			indexPolarityDominant = countPolarities - 1;
+		}
+
 		if(indexPolarityDominant == this.indexPolarityDominant) {
-			updateDominantPolarity();
+			updateEquilibriumLabelsText();
 		}
 		else {
 			menuDropDownPolarityDominant.setSelectedIndex(indexPolarityDominant);
 		}
 
-		tglbtnRulesApply.setVisible(allowEquilibrium);
-		menuDropDownPolarityDominant.setVisible(allowEquilibrium);
+		tglbtnRulesApply.setVisible(countPolarities > 2);
 	}
 
 	//MODIFICATION #10
@@ -1259,12 +1263,16 @@ public class GUI {
 	//This method updates the label and goal of the constraints
 	private void setDominantPolarity(int indexPolarityDominant) {
 		this.indexPolarityDominant = indexPolarityDominant;
-		settings.setProperty(PROPERTY_RULE_EQUILIBRIUM_POLARITY, Integer.toString(indexPolarityDominant + 1));
+		settings.setProperty(PROPERTY_RULE_POLARITY_DOMINANT, Integer.toString(indexPolarityDominant + 1));
 		
-		updateDominantPolarity();
+		if(board != null) {
+			board.updateCorrectnessCells();
+		}
+		
+		updateEquilibriumLabelsText();
 	}
 
-	private void updateDominantPolarity() {
+	private void updateEquilibriumLabelsText() {
 		int countPolarities = goalStrategy.getPolarityCount();
 		if(countPolarities > 2 && modeEquilibrium) {
 			String namePolarityDominant = getColorName(colorsPolarity[indexPolarityDominant]);
@@ -1539,14 +1547,9 @@ public class GUI {
 	private class CommandRuleEquilibriumPolarity extends Command {
 		@Override
 		public void execute(String value) {
-			int valueInteger = Math.max(Integer.parseInt(value), 1);
-			
-			if(goalStrategy.getPolarityCount() > 2) {
-				menuDropDownPolarityDominant.setSelectedItem("(" + valueInteger + ") " + getColorName(colorsPolarity[valueInteger - 1]));
-			}
-			else {
-				setDominantPolarity(valueInteger - 1);
-			}
+			int valueInteger = Math.min(Math.max(Integer.parseInt(value), 1), goalStrategy.getPolarityCount());
+
+			menuDropDownPolarityDominant.setSelectedItem("(" + valueInteger + ") " + getColorName(colorsPolarity[valueInteger - 1]));
 		}
 	}
 
