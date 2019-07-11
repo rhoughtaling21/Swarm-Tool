@@ -15,9 +15,15 @@ import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Properties;
 import javax.imageio.ImageIO;
 import javax.swing.DefaultComboBoxModel;
@@ -35,6 +41,7 @@ import javax.swing.JToggleButton;
 import javax.swing.SwingConstants;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
+import javax.swing.filechooser.FileSystemView;
 
 import cells.CellDisplayBase;
 import strategies.AbstractStrategy;
@@ -72,9 +79,14 @@ public class GUI {
 	private static final String PROPERTY_RULE_POLARITY_DOMINANT = "rule.polarity.dominant";
 	private static final String PROPERTY_RULE_EQUILIBRIUM = "rule.equilibrium";
 	private static final String PROPERTY_RULE_REPETITIONS = "rule.repetitions";
+	private static final String PROPERTY_RULE_REPETITIONS_STEPS = "rule.repetitions.steps";
 	private static final String PROPERTY_COLOR_AGENT = "color.agents";
 	private static final String PROPERTY_COLOR_AGENT_SPECIAL = "color.agents.special";
 	private static final String PROPERTY_COLOR_POLARITY = "color.polarity.";
+	private static final String PROPERTY_EXPORT_POLARITIES_INTERVAL = "export.polarities.interval";
+	private static final String PROPERTY_EXPORT_POLARITIES_DIRECTORY = "export.polarities.directory";
+	private static final String PROPERTY_EXPORT_SCREENSHOT_INTERVAL = "export.screenshot.interval";
+	private static final String PROPERTY_EXPORT_SCREENSHOT_DIRECTORY = "export.screenshot.directory";
 	private static final JFileChooser SELECTOR_FILEPATH = new JFileChooser();
 	private static final DateTimeFormatter FORMATTER_TIMESTAMP = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss-SSS");
 	private static final Color[] OPTIONS_COLORS = {Color.BLACK, Color.BLUE, Color.CYAN, Color.GRAY, Color.GREEN, Color.MAGENTA, Color.ORANGE, Color.PINK, Color.RED, Color.WHITE, Color.YELLOW};
@@ -82,10 +94,11 @@ public class GUI {
 	private static final String[] OPTIONS_STRATEGIES_NAMES = {"BLACKOUT", "CHECKERBOARD", "DIAGONALS", "LINES"};
 	private static final String[] PROPERTIES_BOARD = {PROPERTY_BOARD_SIZE, PROPERTY_BOARD_WRAPAROUND};
 	private static final String[] PROPERTIES_AGENTS = {PROPERTY_AGENTS_COUNT, PROPERTY_AGENTS_COUNT_SPECIAL, PROPERTY_AGENTS_RATE, PROPERTY_AGENTS_ACTIVE, PROPERTY_AGENTS_VISIBLE};
-	private static final String[] PROPERTIES_RULES = {PROPERTY_RULE_GOAL, PROPERTY_RULE_POLARITY_DOMINANT, PROPERTY_RULE_EQUILIBRIUM, PROPERTY_RULE_REPETITIONS};
+	private static final String[] PROPERTIES_RULES = {PROPERTY_RULE_GOAL, PROPERTY_RULE_POLARITY_DOMINANT, PROPERTY_RULE_EQUILIBRIUM, PROPERTY_RULE_REPETITIONS, PROPERTY_RULE_REPETITIONS_STEPS};
 	private static final String[] PROPERTIES_COLORS = generateColorProperties();
+	private static final String[] PROPERTIES_EXPORT = {PROPERTY_EXPORT_POLARITIES_INTERVAL, PROPERTY_EXPORT_POLARITIES_DIRECTORY, PROPERTY_EXPORT_SCREENSHOT_INTERVAL, PROPERTY_EXPORT_SCREENSHOT_DIRECTORY};
 	private static final AbstractStrategy[] OPTIONS_STRATEGIES = {new AllBlack(), new CheckerBoard(), new DiagonalLines(), new Lines()};
-	private static final String[][] PROPERTIES = {PROPERTIES_BOARD, PROPERTIES_AGENTS, PROPERTIES_RULES, PROPERTIES_COLORS};
+	private static final String[][] PROPERTIES = {PROPERTIES_BOARD, PROPERTIES_AGENTS, PROPERTIES_RULES, PROPERTIES_COLORS, PROPERTIES_EXPORT};
 	private static final HashMap<Color, String> MAP_COLORS_NAMES = generateMapColorsNames();
 	private static final HashMap<String, Color> MAP_COLORS = generateMapColors();
 	private static final HashMap<String, AbstractStrategy> MAP_STRATEGIES = generateMapStrategies();
@@ -98,16 +111,19 @@ public class GUI {
 	private boolean whetherAgentsVisible;
 	public boolean threePol; //MODIFICATION #3   needs fixed
 	public int layer2Draw = 1;// which cell array in board to display
-	public int initBoardSize, initAgentCount;
 	public int agentSliderRate;
-	public int toggleCount = 0; //MODIFICATION:  used in implementing the View Agents Button
-	public int numSpecialAgents; //MODIFICATION: how many agents should be a separate color
 	private int indexPolarityDominant;
 	private int sizeBoard;
+	private int indexRepetition;
+	private int countRepetitionsMaximum;
+	private int countStepsMaximum;
 	private int countAgents, countAgentsSpecial;
+	private int intervalExportPolarities;
+	private int intervalExportScreenshot;
+	private Path pathFrequencies, pathScreenshot;
 	private Properties settings;
 	private AbstractStrategy goalStrategy;
-	public Board board;// board to be drawn
+	private Board board;// board to be drawn
 	public JFrame frmProjectLegion;// main frame
 	private JTextField textField_NumAgents;
 	private JTextField textField_NumAgentChanges;
@@ -120,9 +136,9 @@ public class GUI {
 	private JLabel lblSwarmCountInt; // updates SwarmCount Label
 	private JLabel lblStepDisplay; //displays the number of steps that have occurred
 	private JToggleButton tglbtnViewAgents, tglbtnWrapAgents, tglbtnRulesApply, buttonSwarm;
+	private JSlider sliderSwarmSpeed;
 	private DefaultComboBoxModel<String> optionsPolarityDominant;
 	private JComboBox<String> menuDropDownGoal, menuDropDownPolarityDominant, menuDropDownColorAgents, menuDropDownColorAgentsSpecial;
-	private JSlider sliderSwarmSpeed;
 	private int[] frequencyColorsInitial;
 	private int[] frequencyColors;
 	private int[] frequencyPolarities;
@@ -135,6 +151,7 @@ public class GUI {
 	private JLabel[] labelsPolarityComparison;
 	private JLabel[] labelsPolarityComparisonText;
 	private Color[] colorsPolarity;
+	private ArrayList<double[]> frequenciesPolaritiesAverage;
 	private JComboBox<String>[] menusDropDownPolarity;
 	private HashMap<Object, Command> propertyCommands;
 
@@ -176,17 +193,34 @@ public class GUI {
 		propertyCommands.put(PROPERTY_AGENTS_ACTIVE, new CommandAgentActive());
 		propertyCommands.put(PROPERTY_AGENTS_VISIBLE, new CommandAgentVisible());
 		propertyCommands.put(PROPERTY_RULE_GOAL, new CommandRuleGoal());
+		propertyCommands.put(PROPERTY_RULE_POLARITY_DOMINANT, new CommandRuleDominantPolarity());
 		propertyCommands.put(PROPERTY_RULE_EQUILIBRIUM, new CommandRuleEquilibrium());
-		propertyCommands.put(PROPERTY_RULE_POLARITY_DOMINANT, new CommandRuleEquilibriumPolarity());
 		propertyCommands.put(PROPERTY_RULE_REPETITIONS, new CommandRuleRepetitions());
+		propertyCommands.put(PROPERTY_RULE_REPETITIONS_STEPS, new CommandRuleRepetitionsSteps());
 		propertyCommands.put(PROPERTY_COLOR_AGENT, new CommandColorAgents());
 		propertyCommands.put(PROPERTY_COLOR_AGENT_SPECIAL, new CommandColorAgentsSpecial());
 		for(int indexPolarity = 0; indexPolarity < COUNT_POLARITIES_MAXIMUM; indexPolarity++) {
 			propertyCommands.put(PROPERTY_COLOR_POLARITY + (indexPolarity + 1), new CommandColorPolarity(indexPolarity));
 		}
+		propertyCommands.put(PROPERTY_EXPORT_POLARITIES_INTERVAL, new CommandExportPolaritiesInterval());
+		propertyCommands.put(PROPERTY_EXPORT_POLARITIES_DIRECTORY, new CommandExportPolaritiesDirectory());
+		propertyCommands.put(PROPERTY_EXPORT_SCREENSHOT_INTERVAL, new CommandExportScreenshotInterval());
+		propertyCommands.put(PROPERTY_EXPORT_SCREENSHOT_DIRECTORY, new CommandExportScreenshotDirectory());
 
+		String directoryHome = FileSystemView.getFileSystemView().getDefaultDirectory().getPath();
+		String directorySwarm = "Swarm";
+		pathFrequencies = Paths.get(directoryHome, File.separator, directorySwarm, File.separator, "Data");
+		if(Files.notExists(pathFrequencies)) {
+			pathFrequencies.toFile().mkdirs();
+		}
+		
+		pathScreenshot = Paths.get(directoryHome, File.separator, directorySwarm, File.separator, "Captures");
+		if(Files.notExists(pathScreenshot)) {
+			pathScreenshot.toFile().mkdirs();
+		}
+		
 		settings = new Properties();
-
+		
 		try {
 			InputStream streamInput = getClass().getResourceAsStream("/settings/simulation.properties");
 			settings.load(streamInput);
@@ -956,8 +990,7 @@ public class GUI {
 					BufferedImage capture = board.capture();
 
 					SELECTOR_FILEPATH.setSelectedFile(new File("Simulation_" + FORMATTER_TIMESTAMP.format(LocalDateTime.now()) + FILETYPE_SCREENSHOT));
-					int outcomeSave = SELECTOR_FILEPATH.showSaveDialog(board);
-					if(outcomeSave == JFileChooser.APPROVE_OPTION) {
+					if(SELECTOR_FILEPATH.showSaveDialog(board) == JFileChooser.APPROVE_OPTION) {
 						try {
 							ImageIO.write(capture, "JPG", SELECTOR_FILEPATH.getSelectedFile());
 						}
@@ -991,7 +1024,7 @@ public class GUI {
 						// Object obj = new NewBoardWindow();
 						NewBoardWindow newBoardWindow = new NewBoardWindow(frmProjectLegion, gui);
 						newBoardWindow.setVisible(true);
-						menuDropDownGoal.setSelectedItem(goalStrategy);
+						//menuDropDownGoal.setSelectedItem(goalStrategy);
 						// lblBoardSizeInt.setText(String.valueOf(board.labelHandler.getInitBoardSize()));
 					}
 				}.setGUI(this)
@@ -1003,6 +1036,8 @@ public class GUI {
 		applyProperties();
 
 		settings = new Properties(settings);
+		
+		frequenciesPolaritiesAverage = new ArrayList<double[]>();
 	}
 
 	public boolean getAgentVisibility() {
@@ -1034,6 +1069,14 @@ public class GUI {
 	}
 
 	public void setBoard(Board board) {
+		if(this.board != null) {
+			if(timerStarted) {
+				this.board.toggleTimer();
+			}
+			
+			frmProjectLegion.remove(this.board);
+		}
+		
 		this.board = board;
 
 		this.frequencyColorsInitial = board.getInitialColorFrequencies();
@@ -1053,13 +1096,14 @@ public class GUI {
 		lblBoardSizeInt.setText(sizeBoardString);
 		lblSwarmCountInt.setText(Integer.toString(countAgents + countAgentsSpecial));
 
+		frmProjectLegion.add(board);
 		board.scheduleRepaint();
 
 		for(int indexLabel = 0; indexLabel < labelsFrequencyColorsInitial.length; indexLabel++) {
 			labelsFrequencyColorsInitial[indexLabel].setText(Integer.toString(frequencyColorsInitial[indexLabel]));
 		}
 
-		updateLabels(board.getStepCount());
+		step(board.getStepCount());
 	}
 
 	// ************************************************************ OTHER *************************************************************
@@ -1315,8 +1359,67 @@ public class GUI {
 		return board;
 	}
 
-	public void updateLabels(int step) {
-		lblStepDisplay.setText(Integer.toString(step));
+	public void step(int indexStep) {
+		if(indexStep == countStepsMaximum) {
+			try {
+				BufferedWriter writer = new BufferedWriter(new FileWriter(pathFrequencies + "\\swarm.csv"));
+				
+				List<String> headersColumn = new ArrayList<String>(1 + COUNT_POLARITIES_MAXIMUM);
+				
+				headersColumn.add("Step");
+				
+				int indexPolarity;
+				for(indexPolarity = 1; indexPolarity <= COUNT_POLARITIES_MAXIMUM; indexPolarity++) {
+					headersColumn.add("Polarity " + indexPolarity);
+				}
+				
+				writer.write(String.join(", ", headersColumn));
+				writer.newLine();
+				
+				StringBuilder line;
+				for(double[] frequencyPolaritiesAverage : frequenciesPolaritiesAverage) {
+					line = new StringBuilder();
+					
+					for(indexPolarity = 0; indexPolarity < frequencyPolaritiesAverage.length - 1; indexPolarity++) {
+						line.append(frequencyPolaritiesAverage[indexPolarity]);
+						line.append(", ");
+					}
+					line.append(frequencyPolaritiesAverage[indexPolarity]);
+					
+					writer.append(line);
+					writer.newLine();
+				}
+				
+				writer.close();
+			}
+			catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		else {
+			if(intervalExportPolarities > 0 && indexStep % intervalExportPolarities == 0) {
+				storePolarities(indexStep);
+			}
+			
+			if(intervalExportScreenshot > 0 && indexStep % intervalExportScreenshot == 0) {
+				if(timerStarted) {
+					board.toggleTimer();
+				}
+				
+				try {
+					ImageIO.write(board.capture(), "JPG", new File(pathScreenshot + File.separator + "Simulation_" + FORMATTER_TIMESTAMP.format(LocalDateTime.now()) + FILETYPE_SCREENSHOT));
+				}
+				catch (IOException e) {
+					e.printStackTrace();
+				}
+
+				if(timerStarted) {
+					board.toggleTimer();
+				}
+			}
+		}
+		
+		lblStepDisplay.setText(Integer.toString(indexStep));
 
 		for(int indexLabel = 0; indexLabel < labelsFrequencyColors.length; indexLabel++) {
 			labelsFrequencyColors[indexLabel].setText(Integer.toString(frequencyColors[indexLabel]));
@@ -1380,6 +1483,26 @@ public class GUI {
 			}
 		}
 	}
+	
+	private void storePolarities(int index) {
+		double[] frequencyPolaritiesAverage = new double[COUNT_POLARITIES_MAXIMUM];
+		frequencyPolaritiesAverage[0] = board.getStepCount() + 1;
+		
+		if(index < frequenciesPolaritiesAverage.size()) {
+			for(int indexPolarity = 1; indexPolarity < frequencyPolaritiesAverage.length; indexPolarity++) {
+				frequencyPolaritiesAverage[indexPolarity] = (frequenciesPolaritiesAverage.get(index)[indexPolarity] * (indexRepetition - 1) + frequencyPolarities[indexPolarity - 1]) / indexRepetition;
+			}
+			
+			frequenciesPolaritiesAverage.set(index, frequencyPolaritiesAverage);
+		}
+		else {
+			for(int indexPolarity = 1; indexPolarity < frequencyPolaritiesAverage.length; indexPolarity++) {
+				frequencyPolaritiesAverage[indexPolarity] = frequencyPolarities[indexPolarity - 1];
+			}
+			
+			frequenciesPolaritiesAverage.add(frequencyPolaritiesAverage);
+		}
+	}
 
 	private static Color getColor(String nameColor) {
 		nameColor = nameColor.toUpperCase();
@@ -1388,8 +1511,7 @@ public class GUI {
 			return MAP_COLORS.get(nameColor);
 		}
 
-		StringBuilder messageError = new StringBuilder("Error: Invalid Color ");
-		messageError.append("'");
+		StringBuilder messageError = new StringBuilder("Error: Invalid Color '");
 		messageError.append(nameColor);
 		messageError.append("' (Allowed Colors:");
 		for(String nameColorKey : MAP_COLORS.keySet()) {
@@ -1417,8 +1539,7 @@ public class GUI {
 			return MAP_STRATEGIES.get(nameStrategy);
 		}
 
-		StringBuilder messageError = new StringBuilder("Error: Invalid Strategy ");
-		messageError.append('\'');
+		StringBuilder messageError = new StringBuilder("Error: Invalid Strategy '");
 		messageError.append(nameStrategy);
 		messageError.append("' (Allowed Strategies:");
 		for(String nameStrategyKey : MAP_COLORS.keySet()) {
@@ -1536,6 +1657,15 @@ public class GUI {
 		}
 	}
 
+	private class CommandRuleDominantPolarity extends Command {
+		@Override
+		public void execute(String value) {
+			int valueInteger = Math.min(Math.max(Integer.parseInt(value), 1), goalStrategy.getPolarityCount());
+
+			menuDropDownPolarityDominant.setSelectedItem("(" + valueInteger + ") " + getColorName(colorsPolarity[valueInteger - 1]));
+		}
+	}
+	
 	private class CommandRuleEquilibrium extends Command {
 		@Override
 		public void execute(String value) {
@@ -1544,19 +1674,17 @@ public class GUI {
 		}
 	}
 
-	private class CommandRuleEquilibriumPolarity extends Command {
-		@Override
-		public void execute(String value) {
-			int valueInteger = Math.min(Math.max(Integer.parseInt(value), 1), goalStrategy.getPolarityCount());
-
-			menuDropDownPolarityDominant.setSelectedItem("(" + valueInteger + ") " + getColorName(colorsPolarity[valueInteger - 1]));
-		}
-	}
-
 	private class CommandRuleRepetitions extends Command {
 		@Override
 		public void execute(String value) {
-
+			countRepetitionsMaximum = Integer.parseInt(value);
+		}
+	}
+	
+	private class CommandRuleRepetitionsSteps extends Command {
+		@Override
+		public void execute(String value) {
+			countStepsMaximum = Integer.parseInt(value);
 		}
 	}
 
@@ -1584,6 +1712,34 @@ public class GUI {
 		@Override
 		public void execute(String value) {
 			menusDropDownPolarity[indexPolarity].setSelectedItem(value);
+		}
+	}
+	
+	private class CommandExportPolaritiesInterval extends Command{
+		@Override
+		public void execute(String value) {
+			intervalExportPolarities = Integer.parseInt(value);
+		}
+	}
+	
+	private class CommandExportPolaritiesDirectory extends Command{
+		@Override
+		public void execute(String value) {
+			
+		}
+	}
+	
+	private class CommandExportScreenshotInterval extends Command{
+		@Override
+		public void execute(String value) {
+			intervalExportScreenshot = Integer.parseInt(value);
+		}
+	}
+	
+	private class CommandExportScreenshotDirectory extends Command{
+		@Override
+		public void execute(String value) {
+			
 		}
 	}
 }

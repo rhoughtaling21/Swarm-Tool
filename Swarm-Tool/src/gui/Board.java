@@ -392,7 +392,7 @@ public class Board extends JPanel implements MouseInputListener {
 
 		countSteps++; //keep track of how many steps
 		
-		gui.updateLabels(countSteps);
+		gui.step(countSteps);
 	}
 	
 	public boolean getWraparound() {

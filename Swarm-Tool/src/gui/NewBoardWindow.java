@@ -25,10 +25,8 @@ public class NewBoardWindow extends JFrame {
 	private JTextField txtNewswarmsize;
 	private JTextField newNumSpecialAgents; //MODIFICATION
 	private JCheckBox splitPolarityBox; //MODIFICATION
-	private JCheckBox threeColorsBox; //MODIFICATION #3
 	private int numCellsOnSide, numAgents;
 	private int numSpecialAgents;
-	private int totalCells; //MODIFICATION #3
 	private GUI gui;
 
 	/**
@@ -95,14 +93,11 @@ public class NewBoardWindow extends JFrame {
 		btnMakeNewBoard.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				numCellsOnSide = Integer.parseInt(NewBoardSize.getText());
-				setTotalNumOfCells();
 				numAgents = Integer.parseInt(txtNewswarmsize.getText());
 				numSpecialAgents = Integer.parseInt(newNumSpecialAgents.getText());
 				//splitPolNum = Integer.parseInt(splitPolarity.getText());
-				//gui.setLblBoardSizeInt(numCellsOnSide);
-				//gui.setLblSwarmSizeInt(numAgents);
 				gui.setSplitPolarity(splitPolarityBox.isSelected());
-				MakeNewBoard(frame);
+				gui.setBoard(generateBoard());
 				dispose();
 			}
 		});
@@ -111,33 +106,17 @@ public class NewBoardWindow extends JFrame {
 	}
 
 	//This will be the code that will make a new board and set the variables in the Primary GUI to the selected ones in this.
-	protected void MakeNewBoard(JFrame frame) {
-		if(gui.board != null) {
-			frame.remove(gui.board);
-		}
-		//		GUI.board.getGraphics().setColor(Color.WHITE);
-		//		GUI.board.getGraphics().drawRect(-5, -5, 810, 810);
+	protected Board generateBoard() {
 		//I factored out the borderForCentering so that the border is around the Board JPanel itself.
 		//This math is the same math that used to be done at the beginning of the Board constructor.
 		int spareSpace = GUI.SIZE_BOARD_MAXIMUM%numCellsOnSide;
 		int borderForCentering = spareSpace/2;
 		int boardSize = GUI.SIZE_BOARD_MAXIMUM-borderForCentering*2;
 
-		Board board = new Board(boardSize,boardSize,numCellsOnSide,numAgents, numSpecialAgents, gui);
+		Board board = new Board(boardSize, boardSize, numCellsOnSide, numAgents, numSpecialAgents, gui);
 		board.setBackground(Color.WHITE);
 		board.setBounds(10+borderForCentering, 10+borderForCentering, boardSize, boardSize);
-		//displayPanel.add();
-		frame.getContentPane().add(board);
-		gui.setBoard(board);
-		//This section is to avoid bugs in the GUI.
-		//board.updateGoalStrategy(gui.goalStrategy);
-	}
-	
-	public void setTotalNumOfCells() {
-		totalCells = numCellsOnSide*numCellsOnSide;
-	}
-	
-	public int getTotalNumOfCells() {
-		return totalCells;
+		
+		return board;
 	}
 }
