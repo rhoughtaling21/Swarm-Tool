@@ -38,6 +38,7 @@ import strategies.AbstractStrategy;
  */
 @SuppressWarnings("serial")
 public class Board extends JPanel implements MouseInputListener {
+	public static final int BREADTH_MINIMUM = 1;
 	public static final int RATE_STEPS_MAXIMUM = 85;
 	
 	public int numCellsOnSide; //these are the numbers of cells in the board, NOT the graphical dimensions of the board
@@ -172,7 +173,7 @@ public class Board extends JPanel implements MouseInputListener {
 		//********************************************************************************************************		
 		//generates the swarm and adjusts their positions
 		
-		agents = new SwarmAgent[countAgents];
+		agents = new SwarmAgent[countAgents + countAgentsSpecial];
 		agentsSpecial = new SwarmAgent[countAgentsSpecial];
 		colorAgentsSpecial = gui.getSpecialAgentColor();
 		int indexAgent = 0;

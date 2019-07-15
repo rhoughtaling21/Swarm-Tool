@@ -19,7 +19,7 @@ import gui.Board;
  */
 @SuppressWarnings("serial")
 public class CellDisplayBase extends CellDisplay {
-	private static final Color[] COLORS_BASE = {Color.BLACK, Color.WHITE, Color.GRAY};
+	public static final Color[] COLORS_BASE = {Color.BLACK, Color.WHITE, Color.GRAY};
 	private int[] frequenciesBase;
 	
 	public static int getMaximumStateCount() {

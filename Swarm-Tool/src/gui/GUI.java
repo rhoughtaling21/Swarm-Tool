@@ -1,14 +1,26 @@
 package gui;
 
 import java.awt.EventQueue;
+import java.awt.Font;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
+
 import javax.swing.JFrame;
 import javax.swing.JTabbedPane;
 import java.awt.Color;
+import java.awt.Component;
+import java.awt.Container;
+import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ComponentEvent;
+import java.awt.event.ComponentListener;
+import java.awt.event.ContainerListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.awt.image.BufferedImage;
+import java.awt.peer.FramePeer;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
@@ -18,30 +30,42 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.NumberFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
+import java.util.Timer;
+import java.util.TimerTask;
+
 import javax.imageio.ImageIO;
+import javax.swing.BorderFactory;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
+import javax.swing.JComponent;
 import javax.swing.JFileChooser;
+import javax.swing.JFormattedTextField;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JSlider;
 import javax.swing.JTextField;
 import javax.swing.JToggleButton;
+import javax.swing.SpringLayout;
 import javax.swing.SwingConstants;
+import javax.swing.UIManager;
+import javax.swing.border.LineBorder;
+import javax.swing.border.TitledBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.filechooser.FileSystemView;
+import javax.swing.text.NumberFormatter;
 
 import cells.CellDisplayBase;
 import strategies.AbstractStrategy;
@@ -78,8 +102,9 @@ public class GUI {
 	private static final String PROPERTY_RULE_GOAL = "rule.goal";
 	private static final String PROPERTY_RULE_POLARITY_DOMINANT = "rule.polarity.dominant";
 	private static final String PROPERTY_RULE_EQUILIBRIUM = "rule.equilibrium";
-	private static final String PROPERTY_RULE_REPETITIONS = "rule.repetitions";
-	private static final String PROPERTY_RULE_REPETITIONS_STEPS = "rule.repetitions.steps";
+	private static final String PROPERTY_RULE_AUTOMATIC = "rule.automatic";
+	private static final String PROPERTY_RULE_AUTOMATIC_REPETITITONS = "rule.automatic.repetitions";
+	private static final String PROPERTY_RULE_AUTOMATIC_STEPS = "rule.automatic.steps";
 	private static final String PROPERTY_COLOR_AGENT = "color.agents";
 	private static final String PROPERTY_COLOR_AGENT_SPECIAL = "color.agents.special";
 	private static final String PROPERTY_COLOR_POLARITY = "color.polarity.";
@@ -87,14 +112,14 @@ public class GUI {
 	private static final String PROPERTY_EXPORT_POLARITIES_DIRECTORY = "export.polarities.directory";
 	private static final String PROPERTY_EXPORT_SCREENSHOT_INTERVAL = "export.screenshot.interval";
 	private static final String PROPERTY_EXPORT_SCREENSHOT_DIRECTORY = "export.screenshot.directory";
-	private static final JFileChooser SELECTOR_FILEPATH = new JFileChooser();
 	private static final DateTimeFormatter FORMATTER_TIMESTAMP = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss-SSS");
+	private static final JFileChooser SELECTOR_FILEPATH = new JFileChooser();
 	private static final Color[] OPTIONS_COLORS = {Color.BLACK, Color.BLUE, Color.CYAN, Color.GRAY, Color.GREEN, Color.MAGENTA, Color.ORANGE, Color.PINK, Color.RED, Color.WHITE, Color.YELLOW};
 	private static final String[] OPTIONS_COLORS_NAMES = {"BLACK", "BLUE", "CYAN", "GRAY", "GREEN", "MAGENTA", "ORANGE", "PINK", "RED", "WHITE", "YELLOW"};
 	private static final String[] OPTIONS_STRATEGIES_NAMES = {"BLACKOUT", "CHECKERBOARD", "DIAGONALS", "LINES"};
 	private static final String[] PROPERTIES_BOARD = {PROPERTY_BOARD_SIZE, PROPERTY_BOARD_WRAPAROUND};
 	private static final String[] PROPERTIES_AGENTS = {PROPERTY_AGENTS_COUNT, PROPERTY_AGENTS_COUNT_SPECIAL, PROPERTY_AGENTS_RATE, PROPERTY_AGENTS_ACTIVE, PROPERTY_AGENTS_VISIBLE};
-	private static final String[] PROPERTIES_RULES = {PROPERTY_RULE_GOAL, PROPERTY_RULE_POLARITY_DOMINANT, PROPERTY_RULE_EQUILIBRIUM, PROPERTY_RULE_REPETITIONS, PROPERTY_RULE_REPETITIONS_STEPS};
+	private static final String[] PROPERTIES_RULES = {PROPERTY_RULE_GOAL, PROPERTY_RULE_POLARITY_DOMINANT, PROPERTY_RULE_EQUILIBRIUM, PROPERTY_RULE_AUTOMATIC, PROPERTY_RULE_AUTOMATIC_REPETITITONS, PROPERTY_RULE_AUTOMATIC_STEPS};
 	private static final String[] PROPERTIES_COLORS = generateColorProperties();
 	private static final String[] PROPERTIES_EXPORT = {PROPERTY_EXPORT_POLARITIES_INTERVAL, PROPERTY_EXPORT_POLARITIES_DIRECTORY, PROPERTY_EXPORT_SCREENSHOT_INTERVAL, PROPERTY_EXPORT_SCREENSHOT_DIRECTORY};
 	private static final AbstractStrategy[] OPTIONS_STRATEGIES = {new AllBlack(), new CheckerBoard(), new DiagonalLines(), new Lines()};
@@ -108,6 +133,7 @@ public class GUI {
 	public boolean attractOrRepel = true;
 	private boolean boardWraparound;
 	private boolean modeEquilibrium; //MODIFICATION #5 determines if the agents goal is a single polarity or three balanced polarities
+	private boolean modeAutomatic;
 	private boolean whetherAgentsVisible;
 	public boolean threePol; //MODIFICATION #3   needs fixed
 	public int layer2Draw = 1;// which cell array in board to display
@@ -195,8 +221,9 @@ public class GUI {
 		propertyCommands.put(PROPERTY_RULE_GOAL, new CommandRuleGoal());
 		propertyCommands.put(PROPERTY_RULE_POLARITY_DOMINANT, new CommandRuleDominantPolarity());
 		propertyCommands.put(PROPERTY_RULE_EQUILIBRIUM, new CommandRuleEquilibrium());
-		propertyCommands.put(PROPERTY_RULE_REPETITIONS, new CommandRuleRepetitions());
-		propertyCommands.put(PROPERTY_RULE_REPETITIONS_STEPS, new CommandRuleRepetitionsSteps());
+		propertyCommands.put(PROPERTY_RULE_AUTOMATIC, new CommandRuleAutomatic());
+		propertyCommands.put(PROPERTY_RULE_AUTOMATIC_REPETITITONS, new CommandRuleAutomaticRepetitions());
+		propertyCommands.put(PROPERTY_RULE_AUTOMATIC_STEPS, new CommandRuleAutomaticSteps());
 		propertyCommands.put(PROPERTY_COLOR_AGENT, new CommandColorAgents());
 		propertyCommands.put(PROPERTY_COLOR_AGENT_SPECIAL, new CommandColorAgentsSpecial());
 		for(int indexPolarity = 0; indexPolarity < COUNT_POLARITIES_MAXIMUM; indexPolarity++) {
@@ -206,21 +233,24 @@ public class GUI {
 		propertyCommands.put(PROPERTY_EXPORT_POLARITIES_DIRECTORY, new CommandExportPolaritiesDirectory());
 		propertyCommands.put(PROPERTY_EXPORT_SCREENSHOT_INTERVAL, new CommandExportScreenshotInterval());
 		propertyCommands.put(PROPERTY_EXPORT_SCREENSHOT_DIRECTORY, new CommandExportScreenshotDirectory());
-
+		
 		String directoryHome = FileSystemView.getFileSystemView().getDefaultDirectory().getPath();
 		String directorySwarm = "Swarm";
 		pathFrequencies = Paths.get(directoryHome, File.separator, directorySwarm, File.separator, "Data");
 		if(Files.notExists(pathFrequencies)) {
 			pathFrequencies.toFile().mkdirs();
 		}
-		
+
 		pathScreenshot = Paths.get(directoryHome, File.separator, directorySwarm, File.separator, "Captures");
 		if(Files.notExists(pathScreenshot)) {
 			pathScreenshot.toFile().mkdirs();
 		}
-		
+
 		settings = new Properties();
-		
+
+		settings.setProperty(PROPERTY_EXPORT_POLARITIES_DIRECTORY, pathFrequencies.toString());
+		settings.setProperty(PROPERTY_EXPORT_SCREENSHOT_DIRECTORY, pathScreenshot.toString());
+
 		try {
 			InputStream streamInput = getClass().getResourceAsStream("/settings/simulation.properties");
 			settings.load(streamInput);
@@ -328,29 +358,28 @@ public class GUI {
 		labelsFrequencyColorsInitial = new JLabel[countStates];
 		labelsFrequencyColorsText = new JLabel[countStates];
 		labelsFrequencyColors = new JLabel[countStates];
+		String nameColor;
 		for(int indexLabel = 0; indexLabel < countStates; indexLabel++) {
-			labelsFrequencyColorsInitialText[indexLabel] = new JLabel("Initial Cells:");	
+			nameColor = getColorName(CellDisplayBase.COLORS_BASE[indexLabel]);
+			nameColor = nameColor.substring(0, 1) + nameColor.substring(1).toLowerCase();
+			labelsFrequencyColorsInitialText[indexLabel] = new JLabel("Initial " + nameColor + " Cells:");	
 			labelsFrequencyColorsInitialText[indexLabel].setBounds(10, 11 + (indexLabel * 34), 125, 35);
 			labelsFrequencyColorsInitialText[indexLabel].setHorizontalAlignment(SwingConstants.CENTER);
-			labelsFrequencyColorsInitialText[indexLabel].setVerticalAlignment(SwingConstants.CENTER);
 			tabLayer1.add(labelsFrequencyColorsInitialText[indexLabel]);
 
 			labelsFrequencyColorsInitial[indexLabel] = new JLabel();
 			labelsFrequencyColorsInitial[indexLabel].setBounds(145, 11 + (indexLabel * 34), 125, 35);
 			labelsFrequencyColorsInitial[indexLabel].setHorizontalAlignment(SwingConstants.CENTER);
-			labelsFrequencyColorsInitial[indexLabel].setVerticalAlignment(SwingConstants.CENTER);
 			tabLayer1.add(labelsFrequencyColorsInitial[indexLabel]);
 
-			labelsFrequencyColorsText[indexLabel] = new JLabel("Current Cells:");	
+			labelsFrequencyColorsText[indexLabel] = new JLabel("Current " + nameColor + " Cells:");	
 			labelsFrequencyColorsText[indexLabel].setBounds(10, 300 + (indexLabel * 34), 125, 35);
 			labelsFrequencyColorsText[indexLabel].setHorizontalAlignment(SwingConstants.CENTER);
-			labelsFrequencyColorsText[indexLabel].setVerticalAlignment(SwingConstants.CENTER);
 			tabLayer1.add(labelsFrequencyColorsText[indexLabel]);
 
 			labelsFrequencyColors[indexLabel] = new JLabel();
 			labelsFrequencyColors[indexLabel].setBounds(145, 300 + (indexLabel * 34), 125, 35);	
 			labelsFrequencyColors[indexLabel].setHorizontalAlignment(SwingConstants.CENTER);
-			labelsFrequencyColors[indexLabel].setVerticalAlignment(SwingConstants.CENTER);
 			tabLayer1.add(labelsFrequencyColors[indexLabel]);
 		}
 
@@ -1007,28 +1036,228 @@ public class GUI {
 		});
 		btnNewScreenSave.setBounds(610, 830, 200, 30);
 		frmProjectLegion.getContentPane().add(btnNewScreenSave);
+		
+		JFrame frameOptions = new JFrame("Simulation Settings");
+		frameOptions.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
+		frameOptions.setAlwaysOnTop(true);
+		frameOptions.setLayout(new GridBagLayout());
+		frameOptions.setMinimumSize(new Dimension(1000, 1000));
+		
+		HashMap<Component, TitledBorder> mapBordersTitled = new HashMap<Component, TitledBorder>();
+		TitledBorder borderTitled;
+		
+		JPanel panelOptionsGeneral = new JPanel(new GridBagLayout());
+		borderTitled = BorderFactory.createTitledBorder("General");
+		mapBordersTitled.put(panelOptionsGeneral, borderTitled);
+		panelOptionsGeneral.setBorder(BorderFactory.createCompoundBorder(borderTitled, BorderFactory.createEmptyBorder(5, 5, 5, 5)));
+		
+		GridBagConstraints constraints;
+		
+		constraints = new GridBagConstraints();
+		constraints.fill = GridBagConstraints.BOTH;
+		constraints.gridy = 1;
+		constraints.weightx = 1.0;
+		constraints.weighty = 1.0;
+		constraints.insets = new Insets(30, 30, 30, 30);
+		
+		frameOptions.add(panelOptionsGeneral, constraints);
+		
+		JLabel labelSizeBoard = new JLabel("Board Size:");
+		JLabel labelCountAgents = new JLabel("Standard Agents:");
+		JLabel labelCountAgentsSpecial = new JLabel("Special Agents:");
+		JLabel labelStrategy = new JLabel("Strategy:");
+		
+		panelOptionsGeneral.add(labelStrategy);
 
-		// create new NewBoardWindow to make new board
-		JButton btnNewBoard = new JButton("New Board");
-		btnNewBoard.addActionListener(
+		JTextField fieldSizeBoard = new JFormattedTextField(getIntegerFormatter(Board.BREADTH_MINIMUM));
+		
+		NumberFormatter formatterInteger = getIntegerFormatter(0);
+		
+		JTextField fieldCountAgents = new JFormattedTextField(formatterInteger);
+		
+		JTextField fieldCountAgentsSpecial = new JFormattedTextField(formatterInteger);
+		
+		JComboBox<String> menuDropDownStrategy = new JComboBox<String>(new DefaultComboBoxModel<String>(OPTIONS_STRATEGIES_NAMES));
+		
+		JLabel[] labelsOptions = {labelSizeBoard, labelCountAgents, labelCountAgentsSpecial, labelStrategy};
+		JComponent[] componentsOptions = {fieldSizeBoard, fieldCountAgents, fieldCountAgentsSpecial, menuDropDownStrategy};
+		
+		ComponentListener listenerFont = new ComponentListener() {
+			@Override
+			public void componentResized(ComponentEvent event) {
+				Container container = (Container)event.getComponent();
+				Font font = new Font("sans-serif", Font.PLAIN, Math.min(container.getWidth(), container.getHeight()) / 20);
+				
+				if(mapBordersTitled.containsKey(container)) {
+					mapBordersTitled.get(container).setTitleFont(font);
+				}
+				
+				for(Component component : container.getComponents()) {
+					component.setFont(font);
+				}
+			}
+
+			@Override
+			public void componentMoved(ComponentEvent event) {
+				
+			}
+
+			@Override
+			public void componentShown(ComponentEvent event) {
+				
+			}
+
+			@Override
+			public void componentHidden(ComponentEvent event) {
+				
+			}
+		};
+		
+		panelOptionsGeneral.addComponentListener(listenerFont);
+		
+		JLabel label;
+		JComponent component;
+		for(int indexComponent = 0; indexComponent < componentsOptions.length; indexComponent++) {
+			label = labelsOptions[indexComponent];
+			component = componentsOptions[indexComponent];
+			
+			label.setHorizontalAlignment(SwingConstants.RIGHT);
+			label.setLabelFor(component);
+			
+			constraints = new GridBagConstraints();
+			constraints.fill = GridBagConstraints.BOTH;
+			constraints.gridx = 0;
+			constraints.weightx = 0.1;
+			constraints.weighty = 1.0;
+			
+			panelOptionsGeneral.add(label, constraints);
+			
+			constraints = new GridBagConstraints();
+			constraints.fill = GridBagConstraints.BOTH;
+			constraints.gridy = indexComponent;
+			constraints.weightx = 1.0;
+			constraints.weighty = 1.0;
+			constraints.insets = new Insets(20, 20, 20, 20);
+			
+			panelOptionsGeneral.add(component, constraints);
+		}
+		
+		JPanel panelOptionsBatch = new JPanel(new GridBagLayout());
+		panelOptionsBatch.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY), BorderFactory.createEmptyBorder(5, 5, 5, 5)));
+		panelOptionsBatch.addComponentListener(listenerFont);
+		
+		GridBagConstraints constraintsOptionsBatch = new GridBagConstraints();
+		constraintsOptionsBatch.fill = GridBagConstraints.BOTH;
+		constraintsOptionsBatch.gridy = 3;
+		constraintsOptionsBatch.weightx = 1.0;
+		constraintsOptionsBatch.weighty = 1.0;
+		constraintsOptionsBatch.insets = new Insets(0, 30, 30, 30);
+		
+		JLabel labelCountRepetitions = new JLabel("Repetitions:");
+		JLabel labelCountSteps = new JLabel("Steps:");
+		
+		JFormattedTextField fieldCountRepetitions = new JFormattedTextField(getIntegerFormatter(1));
+		JFormattedTextField fieldCountSteps = new JFormattedTextField(getIntegerFormatter(1));
+		
+		labelsOptions = new JLabel[]{labelCountRepetitions, labelCountSteps};
+		componentsOptions = new JComponent[]{fieldCountRepetitions, fieldCountSteps};
+		for(int indexComponent = 0; indexComponent < componentsOptions.length; indexComponent++) {
+			label = labelsOptions[indexComponent];
+			component = componentsOptions[indexComponent];
+			
+			label.setHorizontalAlignment(SwingConstants.RIGHT);
+			label.setLabelFor(component);
+			
+			constraints = new GridBagConstraints();
+			constraints.fill = GridBagConstraints.BOTH;
+			constraints.gridx = 0;
+			constraints.weightx = 0.1;
+			constraints.weighty = 1.0;
+			
+			panelOptionsBatch.add(label, constraints);
+			
+			constraints = new GridBagConstraints();
+			constraints.fill = GridBagConstraints.BOTH;
+			constraints.gridy = indexComponent;
+			constraints.weightx = 1.0;
+			constraints.weighty = 1.0;
+			constraints.insets = new Insets(20, 20, 20, 20);
+			
+			panelOptionsBatch.add(component, constraints);
+		}
+		
+		JToggleButton buttonAutomatic = new JToggleButton("Automatic Run");
+		buttonAutomatic.addActionListener(
 				new ActionListener() {
-					private GUI gui;
-
-					public ActionListener setGUI (GUI gui) {
-						this.gui = gui;
-						return this;
-					}
-
 					@Override
 					public void actionPerformed(ActionEvent e) {
-						// Object obj = new NewBoardWindow();
-						NewBoardWindow newBoardWindow = new NewBoardWindow(frmProjectLegion, gui);
-						newBoardWindow.setVisible(true);
-						//menuDropDownGoal.setSelectedItem(goalStrategy);
-						// lblBoardSizeInt.setText(String.valueOf(board.labelHandler.getInitBoardSize()));
+						if(buttonAutomatic.isSelected()) {
+							frameOptions.add(panelOptionsBatch, constraintsOptionsBatch);
+						}
+						else {
+							frameOptions.remove(panelOptionsBatch);
+						}
+						
+						frameOptions.revalidate();
 					}
-				}.setGUI(this)
-				);
+				}
+		);
+		constraints = new GridBagConstraints();
+		constraints.fill = GridBagConstraints.BOTH;
+		constraints.gridy = 2;
+		constraints.weightx = 1.0;
+		constraints.weighty = 0.2;
+		constraints.insets = new Insets(30, 30, 0, 30);
+		frameOptions.add(buttonAutomatic, constraints);
+		
+		JButton buttonRun = new JButton("Run Simulation");
+		buttonRun.addActionListener(
+				new ActionListener() {
+					@Override
+					public void actionPerformed(ActionEvent event) {
+						sizeBoard = Integer.parseInt(fieldSizeBoard.getText());
+						countAgents = Integer.parseInt(fieldCountAgents.getText());
+						countAgentsSpecial = Integer.parseInt(fieldCountAgentsSpecial.getText());
+						if(modeAutomatic = buttonAutomatic.isSelected()) {
+							countRepetitionsMaximum = Integer.parseInt(fieldCountRepetitions.getText());
+							countStepsMaximum = Integer.parseInt(fieldCountSteps.getText());
+						}
+						menuDropDownGoal.setSelectedIndex(menuDropDownStrategy.getSelectedIndex());
+						
+						frameOptions.setVisible(false);
+						run();
+					}
+				}
+		);
+		
+		constraints = new GridBagConstraints();
+		constraints.fill = GridBagConstraints.BOTH;
+		constraints.gridy = 4;
+		constraints.weightx = 1.0;
+		constraints.weighty = 0.5;
+		constraints.insets = new Insets(30, 30, 30, 30);
+		frameOptions.add(buttonRun, constraints);
+		
+		frameOptions.pack();
+		
+		// create new NewBoardWindow to make new board
+		JButton btnNewBoard = new JButton("Prepare Simulation");
+		btnNewBoard.addActionListener(
+			new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					fieldSizeBoard.setText(Integer.toString(sizeBoard));
+					fieldCountAgents.setText(Integer.toString(countAgents));
+					fieldCountAgentsSpecial.setText(Integer.toString(countAgentsSpecial));
+					fieldCountRepetitions.setText(Integer.toString(countRepetitionsMaximum));
+					fieldCountSteps.setText(Integer.toString(countStepsMaximum));
+					menuDropDownStrategy.setSelectedIndex(menuDropDownGoal.getSelectedIndex());
+					buttonAutomatic.setSelected(!modeAutomatic);
+					buttonAutomatic.doClick();
+					frameOptions.setVisible(true);
+				}
+			}
+		);
 		btnNewBoard.setBackground(new Color(170, 240, 255));
 		btnNewBoard.setBounds(150, 830, 430, 30);
 		frmProjectLegion.getContentPane().add(btnNewBoard);
@@ -1036,7 +1265,7 @@ public class GUI {
 		applyProperties();
 
 		settings = new Properties(settings);
-		
+
 		frequenciesPolaritiesAverage = new ArrayList<double[]>();
 	}
 
@@ -1073,10 +1302,10 @@ public class GUI {
 			if(timerStarted) {
 				this.board.toggleTimer();
 			}
-			
+
 			frmProjectLegion.remove(this.board);
 		}
-		
+
 		this.board = board;
 
 		this.frequencyColorsInitial = board.getInitialColorFrequencies();
@@ -1096,14 +1325,15 @@ public class GUI {
 		lblBoardSizeInt.setText(sizeBoardString);
 		lblSwarmCountInt.setText(Integer.toString(countAgents + countAgentsSpecial));
 
-		frmProjectLegion.add(board);
+		board.setBackground(Color.WHITE);
+		board.setBounds(10, 10, SIZE_BOARD_MAXIMUM, SIZE_BOARD_MAXIMUM);
+		
+		frmProjectLegion.getContentPane().add(board);
 		board.scheduleRepaint();
 
 		for(int indexLabel = 0; indexLabel < labelsFrequencyColorsInitial.length; indexLabel++) {
 			labelsFrequencyColorsInitial[indexLabel].setText(Integer.toString(frequencyColorsInitial[indexLabel]));
 		}
-
-		step(board.getStepCount());
 	}
 
 	// ************************************************************ OTHER *************************************************************
@@ -1308,11 +1538,11 @@ public class GUI {
 	private void setDominantPolarity(int indexPolarityDominant) {
 		this.indexPolarityDominant = indexPolarityDominant;
 		settings.setProperty(PROPERTY_RULE_POLARITY_DOMINANT, Integer.toString(indexPolarityDominant + 1));
-		
+
 		if(board != null) {
 			board.updateCorrectnessCells();
 		}
-		
+
 		updateEquilibriumLabelsText();
 	}
 
@@ -1359,66 +1589,73 @@ public class GUI {
 		return board;
 	}
 
-	public void step(int indexStep) {
-		if(indexStep == countStepsMaximum) {
-			try {
-				BufferedWriter writer = new BufferedWriter(new FileWriter(pathFrequencies + "\\swarm.csv"));
-				
-				List<String> headersColumn = new ArrayList<String>(1 + COUNT_POLARITIES_MAXIMUM);
-				
-				headersColumn.add("Step");
-				
-				int indexPolarity;
-				for(indexPolarity = 1; indexPolarity <= COUNT_POLARITIES_MAXIMUM; indexPolarity++) {
-					headersColumn.add("Polarity " + indexPolarity);
-				}
-				
-				writer.write(String.join(", ", headersColumn));
-				writer.newLine();
-				
-				StringBuilder line;
-				for(double[] frequencyPolaritiesAverage : frequenciesPolaritiesAverage) {
-					line = new StringBuilder();
-					
-					for(indexPolarity = 0; indexPolarity < frequencyPolaritiesAverage.length - 1; indexPolarity++) {
-						line.append(frequencyPolaritiesAverage[indexPolarity]);
-						line.append(", ");
-					}
+	public void run() {
+		for(indexRepetition = 0; indexRepetition < countRepetitionsMaximum; indexRepetition++) {
+			setBoard(generateBoard());
+		}
+
+		try {
+			BufferedWriter writer = new BufferedWriter(new FileWriter(pathFrequencies + "\\Swarm_" + FORMATTER_TIMESTAMP.format(LocalDateTime.now()) + ".csv"));
+
+			List<String> headersColumn = new ArrayList<String>(1 + COUNT_POLARITIES_MAXIMUM);
+
+			headersColumn.add("Step");
+
+			int indexPolarity;
+			for(indexPolarity = 1; indexPolarity <= COUNT_POLARITIES_MAXIMUM; indexPolarity++) {
+				headersColumn.add("Polarity " + indexPolarity);
+			}
+
+			writer.write(String.join(", ", headersColumn));
+			writer.newLine();
+
+			StringBuilder line;
+			for(double[] frequencyPolaritiesAverage : frequenciesPolaritiesAverage) {
+				line = new StringBuilder();
+
+				for(indexPolarity = 0; indexPolarity < frequencyPolaritiesAverage.length - 1; indexPolarity++) {
 					line.append(frequencyPolaritiesAverage[indexPolarity]);
-					
-					writer.append(line);
-					writer.newLine();
+					line.append(", ");
 				}
-				
-				writer.close();
+				line.append(frequencyPolaritiesAverage[indexPolarity]);
+
+				writer.append(line);
+				writer.newLine();
+			}
+
+			writer.close();
+		}
+		catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	public Board generateBoard() {
+		return new Board(SIZE_BOARD_MAXIMUM, SIZE_BOARD_MAXIMUM, sizeBoard, countAgents, countAgentsSpecial, this);
+	}
+
+	public void step(int indexStep) {
+		if(intervalExportPolarities > 0 && indexStep % intervalExportPolarities == 0) {
+			storePolarities(indexStep);
+		}
+
+		if(intervalExportScreenshot > 0 && indexStep % intervalExportScreenshot == 0) {
+			if(timerStarted) {
+				board.toggleTimer();
+			}
+
+			try {
+				ImageIO.write(board.capture(), "JPG", new File(pathScreenshot + File.separator + "Simulation_" + FORMATTER_TIMESTAMP.format(LocalDateTime.now()) + FILETYPE_SCREENSHOT));
 			}
 			catch (IOException e) {
 				e.printStackTrace();
 			}
-		}
-		else {
-			if(intervalExportPolarities > 0 && indexStep % intervalExportPolarities == 0) {
-				storePolarities(indexStep);
-			}
-			
-			if(intervalExportScreenshot > 0 && indexStep % intervalExportScreenshot == 0) {
-				if(timerStarted) {
-					board.toggleTimer();
-				}
-				
-				try {
-					ImageIO.write(board.capture(), "JPG", new File(pathScreenshot + File.separator + "Simulation_" + FORMATTER_TIMESTAMP.format(LocalDateTime.now()) + FILETYPE_SCREENSHOT));
-				}
-				catch (IOException e) {
-					e.printStackTrace();
-				}
 
-				if(timerStarted) {
-					board.toggleTimer();
-				}
+			if(timerStarted) {
+				board.toggleTimer();
 			}
 		}
-		
+
 		lblStepDisplay.setText(Integer.toString(indexStep));
 
 		for(int indexLabel = 0; indexLabel < labelsFrequencyColors.length; indexLabel++) {
@@ -1483,25 +1720,34 @@ public class GUI {
 			}
 		}
 	}
-	
+
 	private void storePolarities(int index) {
-		double[] frequencyPolaritiesAverage = new double[COUNT_POLARITIES_MAXIMUM];
+		double[] frequencyPolaritiesAverage = new double[COUNT_POLARITIES_MAXIMUM + 1];
 		frequencyPolaritiesAverage[0] = board.getStepCount() + 1;
-		
+
 		if(index < frequenciesPolaritiesAverage.size()) {
 			for(int indexPolarity = 1; indexPolarity < frequencyPolaritiesAverage.length; indexPolarity++) {
 				frequencyPolaritiesAverage[indexPolarity] = (frequenciesPolaritiesAverage.get(index)[indexPolarity] * (indexRepetition - 1) + frequencyPolarities[indexPolarity - 1]) / indexRepetition;
 			}
-			
+
 			frequenciesPolaritiesAverage.set(index, frequencyPolaritiesAverage);
 		}
 		else {
 			for(int indexPolarity = 1; indexPolarity < frequencyPolaritiesAverage.length; indexPolarity++) {
 				frequencyPolaritiesAverage[indexPolarity] = frequencyPolarities[indexPolarity - 1];
 			}
-			
+
 			frequenciesPolaritiesAverage.add(frequencyPolaritiesAverage);
 		}
+	}
+	
+	private static NumberFormatter getIntegerFormatter(int minimum) {
+		NumberFormat formatInteger = NumberFormat.getIntegerInstance();
+		formatInteger.setGroupingUsed(false);
+		
+		NumberFormatter formatterInteger = new NumberFormatter(formatInteger);
+		formatterInteger.setMinimum(minimum);
+		return formatterInteger;
 	}
 
 	private static Color getColor(String nameColor) {
@@ -1665,7 +1911,7 @@ public class GUI {
 			menuDropDownPolarityDominant.setSelectedItem("(" + valueInteger + ") " + getColorName(colorsPolarity[valueInteger - 1]));
 		}
 	}
-	
+
 	private class CommandRuleEquilibrium extends Command {
 		@Override
 		public void execute(String value) {
@@ -1674,14 +1920,21 @@ public class GUI {
 		}
 	}
 
-	private class CommandRuleRepetitions extends Command {
+	private class CommandRuleAutomatic extends Command {
+		@Override
+		public void execute(String value) {
+			modeAutomatic = Boolean.parseBoolean(value);
+		}
+	}
+	
+	private class CommandRuleAutomaticRepetitions extends Command {
 		@Override
 		public void execute(String value) {
 			countRepetitionsMaximum = Integer.parseInt(value);
 		}
 	}
-	
-	private class CommandRuleRepetitionsSteps extends Command {
+
+	private class CommandRuleAutomaticSteps extends Command {
 		@Override
 		public void execute(String value) {
 			countStepsMaximum = Integer.parseInt(value);
@@ -1714,32 +1967,32 @@ public class GUI {
 			menusDropDownPolarity[indexPolarity].setSelectedItem(value);
 		}
 	}
-	
-	private class CommandExportPolaritiesInterval extends Command{
+
+	private class CommandExportPolaritiesInterval extends Command {
 		@Override
 		public void execute(String value) {
 			intervalExportPolarities = Integer.parseInt(value);
 		}
 	}
-	
-	private class CommandExportPolaritiesDirectory extends Command{
+
+	private class CommandExportPolaritiesDirectory extends Command {
 		@Override
 		public void execute(String value) {
-			
+			pathFrequencies = Paths.get(value);
 		}
 	}
-	
-	private class CommandExportScreenshotInterval extends Command{
+
+	private class CommandExportScreenshotInterval extends Command {
 		@Override
 		public void execute(String value) {
 			intervalExportScreenshot = Integer.parseInt(value);
 		}
 	}
-	
-	private class CommandExportScreenshotDirectory extends Command{
+
+	private class CommandExportScreenshotDirectory extends Command {
 		@Override
 		public void execute(String value) {
-			
+			pathScreenshot = Paths.get(value);
 		}
 	}
 }
