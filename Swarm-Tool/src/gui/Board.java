@@ -15,9 +15,6 @@ import java.awt.event.MouseEvent;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.util.Random;
-import java.util.Timer;
-import java.util.TimerTask;
-
 import javax.swing.JPanel;
 import javax.swing.event.MouseInputListener;
 
@@ -39,7 +36,6 @@ import strategies.AbstractStrategy;
 @SuppressWarnings("serial")
 public class Board extends JPanel implements MouseInputListener {
 	public static final int BREADTH_MINIMUM = 1;
-	public static final int RATE_STEPS_MAXIMUM = 85;
 	
 	public int numCellsOnSide; //these are the numbers of cells in the board, NOT the graphical dimensions of the board
 	private boolean wraparound; //whether the walls of the Board wrap or not; by default, they don't
@@ -48,17 +44,11 @@ public class Board extends JPanel implements MouseInputListener {
 	private double attractorMaxDistance; //distance in cells, not pixels
 	private int attractOrRepel = 1; //1 if attract, -1 if repel
 	private int indexDisplay;
-	private int agentRate; //delay between timer firing
-	private boolean timerActive;
 	private Color colorAgents, colorAgentsSpecial;
-	private Timer timer;//main timer
-	private TimerTask task;
 	private boolean showAgents;
 	private AbstractStrategy strategy;//strategy that the agents and layer 2 use for their calculations given the current goal
 	private int countAgents, countAgentsSpecial; //MODIFICATION
-	String exportInfoString = "Red,Blue,Yellow\n"; 
-	public int countSteps = 0; //MODIFICATION #6
-	private long rateExecute;
+	String exportInfoString = "Red,Blue,Yellow\n";
 	private GUI gui;
 	private int[] frequencyColorsInitial;
 	private int[] frequencyColors;
@@ -195,15 +185,6 @@ public class Board extends JPanel implements MouseInputListener {
 		if (gui.layer2Draw == 3) {
 			gui.layer2Draw = 1;
 		}
-		
-		timer = new Timer();
-		timerActive = false;
-		
-		setAgentRate(gui.getAgentRate());
-		
-		if(gui.getToggleAgents()) {
-			toggleTimer();
-		}
 	}
 	
 	public int getAgentCount() {
@@ -212,10 +193,6 @@ public class Board extends JPanel implements MouseInputListener {
 	
 	public int getSpecialAgentCount() {
 		return countAgentsSpecial;
-	}
-	
-	public int getStepCount() {
-		return countSteps;
 	}
 	
 	public double getCellSize() {
@@ -267,26 +244,6 @@ public class Board extends JPanel implements MouseInputListener {
 		
 		scheduleRepaint();
 	}
-	
-	public void toggleTimer() {
-		if(timerActive) {
-			task.cancel();
-			timer.purge();
-		}
-		else {
-			task = new TimerTask() {
-				@Override
-				public void run() {
-					step();
-					repaint();
-				}
-			};
-			
-			timer.scheduleAtFixedRate(task, rateExecute, rateExecute);
-		}
-		
-		timerActive = !timerActive;
-	}
 
 	@Override
 	protected void paintComponent(Graphics helperGraphics) {
@@ -322,7 +279,7 @@ public class Board extends JPanel implements MouseInputListener {
 	}
 
 	public void scheduleRepaint() {
-		if(!timerActive) {
+		if(!gui.getTimerActive()) {
 			repaint();
 		}
 	}
@@ -390,10 +347,6 @@ public class Board extends JPanel implements MouseInputListener {
 			
 			updateCorrectnessCells();
 		}
-
-		countSteps++; //keep track of how many steps
-		
-		gui.step(countSteps);
 	}
 	
 	public boolean getWraparound() {
@@ -569,21 +522,6 @@ public class Board extends JPanel implements MouseInputListener {
 
 	/**
 	 * @author zgray17
-	 * This method updates the rate of the agent clock. Blah blah blah.
-	 * @param rate
-	 */
-	public void setAgentRate(int rate) {
-		agentRate = rate;
-		rateExecute = Math.max(2000 / agentRate, 2000 / RATE_STEPS_MAXIMUM);
-		
-		if(timerActive) {
-			toggleTimer();
-			toggleTimer();
-		}
-	}
-
-	/**
-	 * @author zgray17
 	 * This method updates the color of the agents. Blah blah blah.
 	 * @param newColor
 	 */
@@ -593,9 +531,7 @@ public class Board extends JPanel implements MouseInputListener {
 				agent.setColor(colorAgents);
 			}
 			
-			if(!timerActive) {
-				repaint();
-			}
+			scheduleRepaint();
 		}
 	}
 
@@ -605,9 +541,7 @@ public class Board extends JPanel implements MouseInputListener {
 				agent.setColor(colorAgentsSpecial);
 			}
 			
-			if(!timerActive) {
-				repaint();
-			}
+			scheduleRepaint();
 		}
 	}
 

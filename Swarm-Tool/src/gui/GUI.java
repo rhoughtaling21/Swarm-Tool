@@ -16,24 +16,25 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
-import java.awt.event.ContainerListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
 import java.awt.image.BufferedImage;
-import java.awt.peer.FramePeer;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.NumberFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
@@ -45,24 +46,18 @@ import javax.swing.BorderFactory;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
-import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JFormattedTextField;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JSlider;
 import javax.swing.JTextField;
 import javax.swing.JToggleButton;
-import javax.swing.SpringLayout;
 import javax.swing.SwingConstants;
-import javax.swing.UIManager;
 import javax.swing.border.Border;
-import javax.swing.border.LineBorder;
-import javax.swing.border.TitledBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.filechooser.FileSystemView;
@@ -90,6 +85,7 @@ public class GUI {
 	private static final int DIMENSION_WIDTH_INITIAL = 1536;
 	public static final int SIZE_BOARD_MAXIMUM = 800;// pixel size of board
 	public static final int COUNT_POLARITIES_MAXIMUM = 4;
+	public static final int RATE_STEPS_MAXIMUM = 85;
 	private static final String HEADER_PROPERTIES = "#--- Swarm Simulation Properties ---#";
 	private static final String FILETYPE_SCREENSHOT = ".jpg";
 	private static final String FILETYPE_PROPERTIES = ".properties";
@@ -132,7 +128,8 @@ public class GUI {
 	private static final HashMap<String, AbstractStrategy> MAP_STRATEGIES = generateMapStrategies();
 
 	public boolean splitPolarity; //MODIFICATION: if true set the board to be "stuck"
-	private boolean timerStarted;// timer or agent step
+	private boolean timerReady;// timer or agent step
+	private boolean timerActive;
 	public boolean attractOrRepel = true;
 	private boolean boardWraparound;
 	private boolean modeEquilibrium; //MODIFICATION #5 determines if the agents goal is a single polarity or three balanced polarities
@@ -141,19 +138,23 @@ public class GUI {
 	public boolean threePol; //MODIFICATION #3   needs fixed
 	private boolean exportData, exportScreenshot;
 	public int layer2Draw = 1;// which cell array in board to display
-	public int agentSliderRate;
 	private int indexPolarityDominant;
 	private int sizeBoard;
 	private int indexRepetition;
 	private int countRepetitionsMaximum;
+	private int indexStep;
 	private int countStepsMaximum;
 	private int countAgents, countAgentsSpecial;
 	private int intervalExportPolarities;
 	private int intervalExportScreenshot;
+	private long rateExecute;
 	private Path pathFrequencies, pathScreenshot;
 	private Properties settings;
+	private Timer timer;
+	private TimerTask task;
 	private AbstractStrategy goalStrategy;
 	private Board board;// board to be drawn
+	private BufferedWriter writerData;
 	public JFrame frmProjectLegion;// main frame
 	private JTextField textField_NumAgents;
 	private JTextField textField_NumAgentChanges;
@@ -209,10 +210,39 @@ public class GUI {
 		frmProjectLegion = new JFrame();
 		frmProjectLegion.setTitle("Project Legion");
 		frmProjectLegion.setBounds(100, 100, DIMENSION_WIDTH_INITIAL, DIMENSION_HEIGHT_INITIAL);
-		frmProjectLegion.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frmProjectLegion.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		frmProjectLegion.setLayout(null);
+		frmProjectLegion.addWindowListener(
+			new WindowAdapter() {
+				@Override
+				public void windowClosing(WindowEvent event) {
+					if(timerActive) {
+						toggleTimer();
+					}
+					
+					if(exportData) {
+						try {
+							writerData.close();
+							
+							if(modeAutomatic) {
+								outputAveragePolarityData();
+							}
+						}
+						catch (IOException e) {
+							e.printStackTrace();
+						}
+					}
+					
+					event.getWindow().dispose();
+					System.exit(0);
+				}
+			}
+		);
 
-		timerStarted = false;
+		timer = new Timer();
+		timerReady = false;
+		timerActive = false;
+		indexStep = 0;
 
 		propertyCommands = new HashMap<Object, Command>();
 		propertyCommands.put(PROPERTY_BOARD_SIZE, new CommandBoardSize());
@@ -296,7 +326,7 @@ public class GUI {
 				String timestamp = FORMATTER_TIMESTAMP.format(LocalDateTime.now());
 				SELECTOR_FILEPATH.setSelectedFile(new File("Simulation_" + timestamp + FILETYPE_PROPERTIES));
 				if(SELECTOR_FILEPATH.showSaveDialog(frmProjectLegion) == JFileChooser.APPROVE_OPTION) {
-					storeProperties(SELECTOR_FILEPATH.getSelectedFile());
+					outputProperties(SELECTOR_FILEPATH.getSelectedFile());
 				}
 			}
 		});
@@ -947,7 +977,7 @@ public class GUI {
 
 		// ************************************************************ Slider for the
 		// user to change how fast the board will step
-		sliderSwarmSpeed = new JSlider(1, 2 * Board.RATE_STEPS_MAXIMUM);
+		sliderSwarmSpeed = new JSlider(1, 2 * RATE_STEPS_MAXIMUM);
 		sliderSwarmSpeed.setBounds(340, 900, 470, 30);
 		sliderSwarmSpeed.setMajorTickSpacing(13);
 		sliderSwarmSpeed.setPaintLabels(true);
@@ -955,14 +985,16 @@ public class GUI {
 		// slider to change the speed of the agents in board.agents[]
 		sliderSwarmSpeed.addChangeListener(new ChangeListener() {
 			@Override
-			public void stateChanged(ChangeEvent e) {
-				JSlider src = (JSlider)e.getSource();
-				agentSliderRate = src.getValue();
-				if(board != null) {
-					board.setAgentRate(agentSliderRate);
+			public void stateChanged(ChangeEvent event) {
+				int agentRate = ((JSlider)event.getSource()).getValue();
+				rateExecute = Math.max(2000 / agentRate, 2000 / RATE_STEPS_MAXIMUM);
+				
+				if(timerActive) {
+					toggleTimer();
+					toggleTimer();
 				}
 
-				settings.setProperty(PROPERTY_AGENTS_RATE, Integer.toString(agentSliderRate));
+				settings.setProperty(PROPERTY_AGENTS_RATE, Integer.toString(agentRate));
 			}
 		});
 		frmProjectLegion.getContentPane().add(sliderSwarmSpeed);
@@ -988,11 +1020,7 @@ public class GUI {
 				new ActionListener() {
 					@Override
 					public void actionPerformed(ActionEvent event) {
-						if(board != null) {
-							board.toggleTimer();
-						}
-
-						if(timerStarted = buttonSwarm.isSelected()) {
+						if(timerReady = buttonSwarm.isSelected()) {
 							buttonSwarm.setText("Swarm: Active");
 						}
 						else {
@@ -1000,7 +1028,9 @@ public class GUI {
 							buttonSwarm.setBackground(colorDisabled);
 						}
 
-						settings.setProperty(PROPERTY_AGENTS_ACTIVE, Boolean.toString(timerStarted));
+						toggleTimer();
+						
+						settings.setProperty(PROPERTY_AGENTS_ACTIVE, Boolean.toString(timerReady));
 					}
 				}
 				);
@@ -1015,8 +1045,8 @@ public class GUI {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				if(board != null) {
-					if(timerStarted) {
-						board.toggleTimer();
+					if(timerReady) {
+						toggleTimer();
 					}
 
 					BufferedImage capture = board.capture();
@@ -1031,8 +1061,8 @@ public class GUI {
 						}
 					}
 
-					if(timerStarted) {
-						board.toggleTimer();
+					if(timerReady) {
+						toggleTimer();
 					}
 				}
 			}
@@ -1081,7 +1111,7 @@ public class GUI {
 				
 				private void scaleComponentFonts(ComponentEvent event) {
 					JFrame frame = (JFrame)event.getComponent();
-					setComponentFonts(frame.getContentPane(), Math.min(frame.getWidth(), frame.getHeight()) / 32);
+					setComponentFonts(frame.getContentPane(), Math.min(frame.getWidth(), frame.getHeight()) / 34);
 				}
 			}
 		);
@@ -1274,7 +1304,8 @@ public class GUI {
 						menuDropDownGoal.setSelectedIndex(menuDropDownOptionsStrategy.getSelectedIndex());
 						
 						frameOptions.setVisible(false);
-						run();
+						
+						setBoard(generateBoard());
 					}
 				}
 		);
@@ -1352,10 +1383,20 @@ public class GUI {
 
 	public void setBoard(Board board) {
 		if(this.board != null) {
-			if(timerStarted) {
-				this.board.toggleTimer();
+			if(timerActive) {
+				toggleTimer();
 			}
 
+			if(exportData) {
+				try {
+					System.out.println("Closing writer");
+					writerData.close();
+				}
+				catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+			
 			frmProjectLegion.remove(this.board);
 		}
 
@@ -1382,154 +1423,46 @@ public class GUI {
 		board.setBounds(10, 10, SIZE_BOARD_MAXIMUM, SIZE_BOARD_MAXIMUM);
 		
 		frmProjectLegion.getContentPane().add(board);
-		board.scheduleRepaint();
+		board.repaint();
 
 		for(int indexLabel = 0; indexLabel < labelsFrequencyColorsInitial.length; indexLabel++) {
 			labelsFrequencyColorsInitial[indexLabel].setText(Integer.toString(frequencyColorsInitial[indexLabel]));
 		}
+		
+		indexStep = 0;
+		
+		if(exportData) {
+			try {
+				writerData = new BufferedWriter(new FileWriter(pathFrequencies + "\\Swarm-Frequencies_" + FORMATTER_TIMESTAMP.format(LocalDateTime.now()) + ".csv"));
+				addDataColumnHeaders(writerData);
+			}
+			catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		
+		if(timerReady) {
+			toggleTimer();
+		}
 	}
-
-	// ************************************************************ OTHER *************************************************************
-	// ************************************************************ OTHER *************************************************************	
-
-	//	public void setLblBoardSizeInt(int boardSize) {
-	//		lblBoardSizeInt.setText(String.valueOf(boardSize));
-	//	}
-
-	//	public void setLblSwarmSizeInt(int swarmSize) {
-	//		lblSwarmCountInt.setText(String.valueOf(swarmSize));
-	//	}
-
-	//MODIFICATION
-	//Added 5/22 by Morgan Might
-	public void setSplitPolarity(boolean selected) {
-		splitPolarity = selected;
-	}
-
+	
 	//MODIFICATION
 	//Added 5/22 by Morgan Might
 	public boolean getSplitPolarity() {
 		return splitPolarity;
 	}
 
-	//	//MODIFICATION #4:
-	//	//
-	//	//Added 6/4 by Morgan Might
-	//	//Comparison methods will compare the number of cells with different polarities and
-	//	//return "True" or "False" to be displayed in GUI
-	//	//
-	//	//MODIFICATION #4: compares Red < Yellow
-	//	//MODIFICATION #10 
-	//	//updated 7/19 bby Morgan Might
-	//	//Consider which polarity is the current dominant one
-	//	public String getBooleanCompareOne() {
-	//		if(newDominantPolarity.equalsIgnoreCase("YELLOW")) {
-	//			if(getPolOneCount() < getPolThreeCount()) { //Red < Yellow
-	//				return "True";
-	//			}
-	//
-	//			return "False";
-	//		}
-	//		else if(newDominantPolarity.equalsIgnoreCase("BLUE")) {
-	//			if(getPolOneCount() < getPolTwoCount()) { //Red < Blue
-	//				return "True";
-	//			}
-	//
-	//			return "False";
-	//		}
-	//		else if(newDominantPolarity.equalsIgnoreCase("RED")) {
-	//			if(getPolTwoCount() < getPolOneCount()) { //Blue < Red
-	//				return "True";
-	//			}
-	//
-	//			return "False";
-	//		}
-	//
-	//		return "Error";
-	//	}
-	//
-	//	//MODIFICATION #4: compares Blue < Yellow
-	//	//MODIFICATION #10 
-	//	//updated 7/19 bby Morgan Might
-	//	//Consider which polarity is the current dominant one
-	//	public String getBooleanCompareTwo() {
-	//		if(newDominantPolarity.equalsIgnoreCase("YELLOW")) {
-	//			if(getPolTwoCount() < getPolThreeCount()) { //Blue < Yellow
-	//				return "True";
-	//			}
-	//
-	//			return "False";
-	//		}
-	//		else if(newDominantPolarity.equalsIgnoreCase("BLUE")) {
-	//			if(getPolThreeCount() < getPolTwoCount()) { //Yellow < Blue
-	//				return "True";
-	//			}
-	//
-	//			return "False";
-	//		}
-	//		else if(newDominantPolarity.equalsIgnoreCase("RED")) {
-	//			if(getPolThreeCount() < getPolOneCount()) { //Yellow < Red
-	//				return "True";
-	//			}
-	//
-	//			return "False";
-	//		}
-	//
-	//		return "Error";
-	//	}
-	//
-	//	//MODIFICATION #4: compares Red+Blue > Yellow
-	//	//MODIFICATION #10 
-	//	//updated 7/19 bby Morgan Might
-	//	//Consider which polarity is the current dominant one
-	//	public String getBooleanCompareThree() {
-	//		if(newDominantPolarity.equalsIgnoreCase("YELLOW")) {
-	//			if(getPolOneCount() + getPolTwoCount() > getPolThreeCount()) { //R + B > Yellow
-	//				return "True";
-	//			}
-	//
-	//			return "False";
-	//		}
-	//		else if(newDominantPolarity.equalsIgnoreCase("BLUE")) {
-	//			if(getPolOneCount() + getPolThreeCount() > getPolTwoCount()) { //R + Y < Blue
-	//				return "True";
-	//			}
-	//
-	//			return "False";
-	//		}
-	//		else if(newDominantPolarity.equalsIgnoreCase("RED")) {
-	//			if(getPolTwoCount() + getPolThreeCount() > getPolOneCount()) { //B + Y < Red
-	//				return "True";
-	//			}
-	//
-	//			return "False";
-	//		}
-	//
-	//		return "Error";
-	//	}
-
-	//	//MODIFICATION #4: displays in the labels where the statements are "True" or "False"
-	//	public void setLblComparisons() {
-	//		lblBooleanCompare1.setText(getBooleanCompareOne());
-	//		lblBooleanCompare2.setText(getBooleanCompareTwo());
-	//		lblBooleanCompare3.setText(getBooleanCompareThree());
-	//	}
-
+	public boolean getTimerActive() {
+		return timerActive;
+	}
+	
 	//MODIFICATION #5:
 	//Added 6/12 by Morgan Might
 	//
 	//Return the boolean that relates to the toggle button that determines if the agents
 	//should solve for a single polarity or three balanced polarities
-	public boolean getTogglePolarity() {
+	public boolean getEquilibriumMode() {
 		return modeEquilibrium;
-	}
-
-	public boolean getToggleAgents() {
-		return timerStarted;
-	}
-
-	public int getAgentRate() {
-		return agentSliderRate;
 	}
 
 	public Color getAgentColor() {
@@ -1543,6 +1476,10 @@ public class GUI {
 	public AbstractStrategy getStrategy() {
 		return goalStrategy;
 	}
+	
+	public Board getBoard() {
+		return board;
+	}
 
 	private void setPolarityColor(int indexPolarity, Color colorPolarity) {
 		colorsPolarity[indexPolarity] = colorPolarity;
@@ -1554,6 +1491,21 @@ public class GUI {
 		}
 
 		settings.setProperty(PROPERTY_COLOR_POLARITY + (indexPolarity + 1), getColorName(colorsPolarity[indexPolarity]));
+	}
+
+	//MODIFICATION #10
+	//Added 7/18/2018
+	//By Morgan Might
+	//This method updates the label and goal of the constraints
+	private void setDominantPolarity(int indexPolarityDominant) {
+		this.indexPolarityDominant = indexPolarityDominant;
+		settings.setProperty(PROPERTY_RULE_POLARITY_DOMINANT, Integer.toString(indexPolarityDominant + 1));
+
+		if(board != null) {
+			board.updateCorrectnessCells();
+		}
+
+		updateEquilibriumLabelsText();
 	}
 
 	private void updatePolarityCount() {
@@ -1583,22 +1535,7 @@ public class GUI {
 
 		tglbtnRulesApply.setVisible(countPolarities > 2);
 	}
-
-	//MODIFICATION #10
-	//Added 7/18/2018
-	//By Morgan Might
-	//This method updates the label and goal of the constraints
-	private void setDominantPolarity(int indexPolarityDominant) {
-		this.indexPolarityDominant = indexPolarityDominant;
-		settings.setProperty(PROPERTY_RULE_POLARITY_DOMINANT, Integer.toString(indexPolarityDominant + 1));
-
-		if(board != null) {
-			board.updateCorrectnessCells();
-		}
-
-		updateEquilibriumLabelsText();
-	}
-
+	
 	private void updateEquilibriumLabelsText() {
 		int countPolarities = goalStrategy.getPolarityCount();
 		if(countPolarities > 2 && modeEquilibrium) {
@@ -1637,64 +1574,61 @@ public class GUI {
 	public void updateStepCountLabel(String count) {
 		lblStepDisplay.setText(count);
 	}
-
-	public Board getBoard() {
-		return board;
-	}
-
-	public void run() {
-		for(indexRepetition = 0; indexRepetition < countRepetitionsMaximum; indexRepetition++) {
-			setBoard(generateBoard());
-		}
-
-		try {
-			BufferedWriter writer = new BufferedWriter(new FileWriter(pathFrequencies + "\\Swarm_" + FORMATTER_TIMESTAMP.format(LocalDateTime.now()) + ".csv"));
-
-			List<String> headersColumn = new ArrayList<String>(1 + COUNT_POLARITIES_MAXIMUM);
-
-			headersColumn.add("Step");
-
-			int indexPolarity;
-			for(indexPolarity = 1; indexPolarity <= COUNT_POLARITIES_MAXIMUM; indexPolarity++) {
-				headersColumn.add("Polarity " + indexPolarity);
-			}
-
-			writer.write(String.join(", ", headersColumn));
-			writer.newLine();
-
-			StringBuilder line;
-			for(double[] frequencyPolaritiesAverage : frequenciesPolaritiesAverage) {
-				line = new StringBuilder();
-
-				for(indexPolarity = 0; indexPolarity < frequencyPolaritiesAverage.length - 1; indexPolarity++) {
-					line.append(frequencyPolaritiesAverage[indexPolarity]);
-					line.append(", ");
+	
+	private void applyProperties() {
+		Properties settings = (Properties)this.settings.clone();
+		for(String[] groupProperties : PROPERTIES) {
+			for(String property : groupProperties) {
+				if(propertyCommands.containsKey(property)) {
+					propertyCommands.get(property).execute(settings.getProperty(property));
 				}
-				line.append(frequencyPolaritiesAverage[indexPolarity]);
-
-				writer.append(line);
-				writer.newLine();
+				else {
+					System.out.println("'" + property + "' is not a valid property.");
+				}
 			}
-
-			writer.close();
-		}
-		catch (IOException e) {
-			e.printStackTrace();
 		}
 	}
-
+	
 	public Board generateBoard() {
 		return new Board(SIZE_BOARD_MAXIMUM, SIZE_BOARD_MAXIMUM, sizeBoard, countAgents, countAgentsSpecial, this);
 	}
+	
+	public void toggleTimer() {
+		if(board != null) {
+			if(timerActive) {
+				task.cancel();
+				timer.purge();
+			}
+			else {
+				task = new TimerTask() {
+					@Override
+					public void run() {
+						step();
+						board.repaint();
+					}
+				};
+				
+				timer.scheduleAtFixedRate(task, rateExecute, rateExecute);
+			}
+			
+			timerActive = !timerActive;
+		}
+	}
 
-	public void step(int indexStep) {
-		if(intervalExportPolarities > 0 && indexStep % intervalExportPolarities == 0) {
-			storePolarities(indexStep);
+	public void step() {
+		board.step();
+		
+		if(exportData && indexStep % intervalExportPolarities == 0) {
+			outputPolarityData(writerData);
+			
+			if(modeAutomatic) {
+				storeAveragePolarityData(indexStep);
+			}
 		}
 
-		if(intervalExportScreenshot > 0 && indexStep % intervalExportScreenshot == 0) {
-			if(timerStarted) {
-				board.toggleTimer();
+		if(exportScreenshot && indexStep % intervalExportScreenshot == 0) {
+			if(timerReady) {
+				toggleTimer();
 			}
 
 			try {
@@ -1704,8 +1638,8 @@ public class GUI {
 				e.printStackTrace();
 			}
 
-			if(timerStarted) {
-				board.toggleTimer();
+			if(timerReady) {
+				toggleTimer();
 			}
 		}
 
@@ -1738,9 +1672,95 @@ public class GUI {
 		if(labelComparisonSum.isVisible()) {
 			labelsPolarityComparison[indexLabelComparisonSum].setText(Boolean.toString(frequencyPolarityDominant < frequencyPolaritiesSum));
 		}
+		
+		indexStep++;
+		
+		if(modeAutomatic) {
+			if(indexStep >= countStepsMaximum) {
+				indexRepetition++;
+				
+				if(indexRepetition >= countRepetitionsMaximum) {
+					toggleTimer();
+					
+					if(exportData) {
+						outputAveragePolarityData();
+					}
+				}
+				else {
+					setBoard(generateBoard());
+				}
+			}
+		}
 	}
+	
+	private void storeAveragePolarityData(int index) {
+		double[] frequencyPolaritiesAverage = new double[COUNT_POLARITIES_MAXIMUM + 1];
+		frequencyPolaritiesAverage[0] = indexStep + 1;
 
-	private void storeProperties(File fileOutput) {
+		if(index < frequenciesPolaritiesAverage.size()) {
+			for(int indexPolarity = 1; indexPolarity < frequencyPolaritiesAverage.length; indexPolarity++) {
+				frequencyPolaritiesAverage[indexPolarity] = (frequenciesPolaritiesAverage.get(index)[indexPolarity] * (indexRepetition - 1) + frequencyPolarities[indexPolarity - 1]) / indexRepetition;
+			}
+
+			frequenciesPolaritiesAverage.set(index, frequencyPolaritiesAverage);
+		}
+		else {
+			for(int indexPolarity = 1; indexPolarity < frequencyPolaritiesAverage.length; indexPolarity++) {
+				frequencyPolaritiesAverage[indexPolarity] = frequencyPolarities[indexPolarity - 1];
+			}
+
+			frequenciesPolaritiesAverage.add(frequencyPolaritiesAverage);
+		}
+	}
+	
+	private static String concatenatePolarityData(double[] frequencyPolarities) {
+		StringBuilder line = new StringBuilder();
+
+		int indexPolarity;
+		for(indexPolarity = 0; indexPolarity < frequencyPolarities.length - 1; indexPolarity++) {
+			line.append(frequencyPolarities[indexPolarity]);
+			line.append(", ");
+		}
+		line.append(frequencyPolarities[indexPolarity]);
+		
+		return line.toString();
+	}
+	
+	private void outputPolarityData(BufferedWriter writer) {
+		double[] frequencyPolaritiesTagged = new double[frequencyPolarities.length + 1];
+		frequencyPolaritiesTagged[0] = indexStep;
+		for(int indexPolarity = 0; indexPolarity < frequencyPolarities.length; indexPolarity++) {
+			frequencyPolaritiesTagged[indexPolarity + 1] = frequencyPolarities[indexPolarity];
+		}
+		
+		try {
+			writer.append(concatenatePolarityData(frequencyPolaritiesTagged));
+			writer.newLine();
+		}
+		catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	private void outputAveragePolarityData() {
+		try {
+			BufferedWriter writer = new BufferedWriter(new FileWriter(pathFrequencies + "\\Swarm-Frequencies-Averages_" + FORMATTER_TIMESTAMP.format(LocalDateTime.now()) + ".csv"));
+
+			addDataColumnHeaders(writer);
+
+			for(double[] frequencyPolaritiesAverage : frequenciesPolaritiesAverage) {
+				writer.append(concatenatePolarityData(frequencyPolaritiesAverage));
+				writer.newLine();
+			}
+
+			writer.close();
+		}
+		catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	private void outputProperties(File fileOutput) {
 		try {
 			BufferedWriter writer = new BufferedWriter(new FileWriter(fileOutput));
 
@@ -1759,39 +1779,25 @@ public class GUI {
 			exceptionOutput.printStackTrace();
 		}
 	}
+	
+	private static void addDataColumnHeaders(BufferedWriter writer) {
+		List<String> headersColumn = new ArrayList<String>(1 + COUNT_POLARITIES_MAXIMUM);
 
-	private void applyProperties() {
-		Properties settings = (Properties)this.settings.clone();
-		for(String[] groupProperties : PROPERTIES) {
-			for(String property : groupProperties) {
-				if(propertyCommands.containsKey(property)) {
-					propertyCommands.get(property).execute(settings.getProperty(property));
-				}
-				else {
-					System.out.println("'" + property + "' is not a valid property.");
-				}
-			}
+		headersColumn.add("Step");
+
+		int indexPolarity;
+		for(indexPolarity = 1; indexPolarity <= COUNT_POLARITIES_MAXIMUM; indexPolarity++) {
+			headersColumn.add("Polarity " + indexPolarity);
 		}
-	}
 
-	private void storePolarities(int index) {
-		double[] frequencyPolaritiesAverage = new double[COUNT_POLARITIES_MAXIMUM + 1];
-		frequencyPolaritiesAverage[0] = board.getStepCount() + 1;
-
-		if(index < frequenciesPolaritiesAverage.size()) {
-			for(int indexPolarity = 1; indexPolarity < frequencyPolaritiesAverage.length; indexPolarity++) {
-				frequencyPolaritiesAverage[indexPolarity] = (frequenciesPolaritiesAverage.get(index)[indexPolarity] * (indexRepetition - 1) + frequencyPolarities[indexPolarity - 1]) / indexRepetition;
-			}
-
-			frequenciesPolaritiesAverage.set(index, frequencyPolaritiesAverage);
+		try {
+			writer.write(String.join(", ", headersColumn));
+			writer.newLine();
 		}
-		else {
-			for(int indexPolarity = 1; indexPolarity < frequencyPolaritiesAverage.length; indexPolarity++) {
-				frequencyPolaritiesAverage[indexPolarity] = frequencyPolarities[indexPolarity - 1];
-			}
-
-			frequenciesPolaritiesAverage.add(frequencyPolaritiesAverage);
+		catch (IOException e) {
+			e.printStackTrace();
 		}
+		
 	}
 	
 	private static NumberFormatter getIntegerFormatter(int minimum) {

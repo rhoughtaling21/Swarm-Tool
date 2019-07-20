@@ -1,9 +1,6 @@
 package strategies;
 
-import java.awt.Color;
-
 import cells.CellDisplayBase;
-import cells.CellDisplayPolarity;
 import cells.Cell;
 import cells.CellDisplay;
 import gui.Board;

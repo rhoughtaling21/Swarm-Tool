@@ -3,9 +3,7 @@ package strategies;
 import java.util.Random;
 
 import cells.CellDisplayBase;
-import cells.CellDisplayPolarity;
 import cells.Cell;
-import cells.CellDisplay;
 import gui.Board;		//MODIFICATION #7 
 import other.SwarmAgent;
 
