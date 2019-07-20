@@ -60,6 +60,7 @@ import javax.swing.JToggleButton;
 import javax.swing.SpringLayout;
 import javax.swing.SwingConstants;
 import javax.swing.UIManager;
+import javax.swing.border.Border;
 import javax.swing.border.LineBorder;
 import javax.swing.border.TitledBorder;
 import javax.swing.event.ChangeEvent;
@@ -108,8 +109,10 @@ public class GUI {
 	private static final String PROPERTY_COLOR_AGENT = "color.agents";
 	private static final String PROPERTY_COLOR_AGENT_SPECIAL = "color.agents.special";
 	private static final String PROPERTY_COLOR_POLARITY = "color.polarity.";
+	private static final String PROPERTY_EXPORT_POLARITIES = "export.polarities";
 	private static final String PROPERTY_EXPORT_POLARITIES_INTERVAL = "export.polarities.interval";
 	private static final String PROPERTY_EXPORT_POLARITIES_DIRECTORY = "export.polarities.directory";
+	private static final String PROPERTY_EXPORT_SCREENSHOT = "export.screenshot";
 	private static final String PROPERTY_EXPORT_SCREENSHOT_INTERVAL = "export.screenshot.interval";
 	private static final String PROPERTY_EXPORT_SCREENSHOT_DIRECTORY = "export.screenshot.directory";
 	private static final DateTimeFormatter FORMATTER_TIMESTAMP = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss-SSS");
@@ -121,7 +124,7 @@ public class GUI {
 	private static final String[] PROPERTIES_AGENTS = {PROPERTY_AGENTS_COUNT, PROPERTY_AGENTS_COUNT_SPECIAL, PROPERTY_AGENTS_RATE, PROPERTY_AGENTS_ACTIVE, PROPERTY_AGENTS_VISIBLE};
 	private static final String[] PROPERTIES_RULES = {PROPERTY_RULE_GOAL, PROPERTY_RULE_POLARITY_DOMINANT, PROPERTY_RULE_EQUILIBRIUM, PROPERTY_RULE_AUTOMATIC, PROPERTY_RULE_AUTOMATIC_REPETITITONS, PROPERTY_RULE_AUTOMATIC_STEPS};
 	private static final String[] PROPERTIES_COLORS = generateColorProperties();
-	private static final String[] PROPERTIES_EXPORT = {PROPERTY_EXPORT_POLARITIES_INTERVAL, PROPERTY_EXPORT_POLARITIES_DIRECTORY, PROPERTY_EXPORT_SCREENSHOT_INTERVAL, PROPERTY_EXPORT_SCREENSHOT_DIRECTORY};
+	private static final String[] PROPERTIES_EXPORT = {PROPERTY_EXPORT_POLARITIES, PROPERTY_EXPORT_POLARITIES_INTERVAL, PROPERTY_EXPORT_POLARITIES_DIRECTORY, PROPERTY_EXPORT_SCREENSHOT, PROPERTY_EXPORT_SCREENSHOT_INTERVAL, PROPERTY_EXPORT_SCREENSHOT_DIRECTORY};
 	private static final AbstractStrategy[] OPTIONS_STRATEGIES = {new AllBlack(), new CheckerBoard(), new DiagonalLines(), new Lines()};
 	private static final String[][] PROPERTIES = {PROPERTIES_BOARD, PROPERTIES_AGENTS, PROPERTIES_RULES, PROPERTIES_COLORS, PROPERTIES_EXPORT};
 	private static final HashMap<Color, String> MAP_COLORS_NAMES = generateMapColorsNames();
@@ -136,6 +139,7 @@ public class GUI {
 	private boolean modeAutomatic;
 	private boolean whetherAgentsVisible;
 	public boolean threePol; //MODIFICATION #3   needs fixed
+	private boolean exportData, exportScreenshot;
 	public int layer2Draw = 1;// which cell array in board to display
 	public int agentSliderRate;
 	private int indexPolarityDominant;
@@ -229,22 +233,18 @@ public class GUI {
 		for(int indexPolarity = 0; indexPolarity < COUNT_POLARITIES_MAXIMUM; indexPolarity++) {
 			propertyCommands.put(PROPERTY_COLOR_POLARITY + (indexPolarity + 1), new CommandColorPolarity(indexPolarity));
 		}
+		propertyCommands.put(PROPERTY_EXPORT_POLARITIES, new CommandExportPolarities());
 		propertyCommands.put(PROPERTY_EXPORT_POLARITIES_INTERVAL, new CommandExportPolaritiesInterval());
 		propertyCommands.put(PROPERTY_EXPORT_POLARITIES_DIRECTORY, new CommandExportPolaritiesDirectory());
+		propertyCommands.put(PROPERTY_EXPORT_SCREENSHOT, new CommandExportScreenshot());
 		propertyCommands.put(PROPERTY_EXPORT_SCREENSHOT_INTERVAL, new CommandExportScreenshotInterval());
 		propertyCommands.put(PROPERTY_EXPORT_SCREENSHOT_DIRECTORY, new CommandExportScreenshotDirectory());
 		
 		String directoryHome = FileSystemView.getFileSystemView().getDefaultDirectory().getPath();
 		String directorySwarm = "Swarm";
+		
 		pathFrequencies = Paths.get(directoryHome, File.separator, directorySwarm, File.separator, "Data");
-		if(Files.notExists(pathFrequencies)) {
-			pathFrequencies.toFile().mkdirs();
-		}
-
 		pathScreenshot = Paths.get(directoryHome, File.separator, directorySwarm, File.separator, "Captures");
-		if(Files.notExists(pathScreenshot)) {
-			pathScreenshot.toFile().mkdirs();
-		}
 
 		settings = new Properties();
 
@@ -979,6 +979,9 @@ public class GUI {
 		// ************************************************************ Buttons that
 		// start stop and do other things that they are clearly labeled for.
 		// button to freeze swarm agents
+		
+		Color colorDisabled = new Color(255, 200, 200);
+		
 		buttonSwarm = new JToggleButton();
 		buttonSwarm.setBounds(150, 900, 160, 30);
 		buttonSwarm.addActionListener(
@@ -994,7 +997,7 @@ public class GUI {
 						}
 						else {
 							buttonSwarm.setText("Swarm: Inactive");
-							buttonSwarm.setBackground(new Color(255, 200, 200));
+							buttonSwarm.setBackground(colorDisabled);
 						}
 
 						settings.setProperty(PROPERTY_AGENTS_ACTIVE, Boolean.toString(timerStarted));
@@ -1042,187 +1045,233 @@ public class GUI {
 		frameOptions.setAlwaysOnTop(true);
 		frameOptions.setLayout(new GridBagLayout());
 		frameOptions.setMinimumSize(new Dimension(1000, 1000));
+		frameOptions.addComponentListener(
+			new ComponentListener() {
+				@Override
+				public void componentResized(ComponentEvent event) {
+					scaleComponentFonts(event);
+				}
+				
+				@Override
+				public void componentMoved(ComponentEvent event) {
+					scaleComponentFonts(event);
+				}
+				
+				@Override
+				public void componentShown(ComponentEvent event) {
+					scaleComponentFonts(event);
+				}
+
+				@Override
+				public void componentHidden(ComponentEvent event) {
+					scaleComponentFonts(event);
+				}
+				
+				private void setComponentFonts(Container container, int sizeFont) {
+					Font font = new Font("sans-serif", Font.PLAIN, sizeFont);
+					
+					for(Component component : container.getComponents()) {
+						if(component instanceof Container) {
+							setComponentFonts((Container)component, (int)(sizeFont * 0.78));
+						}
+						
+						component.setFont(font);
+					}
+				}
+				
+				private void scaleComponentFonts(ComponentEvent event) {
+					JFrame frame = (JFrame)event.getComponent();
+					setComponentFonts(frame.getContentPane(), Math.min(frame.getWidth(), frame.getHeight()) / 32);
+				}
+			}
+		);
 		
-		HashMap<Component, TitledBorder> mapBordersTitled = new HashMap<Component, TitledBorder>();
-		TitledBorder borderTitled;
+		GridBagConstraints constraintsHeader = new GridBagConstraints();
+		constraintsHeader.fill = GridBagConstraints.BOTH;
+		constraintsHeader.gridx = 0;
+		constraintsHeader.weightx = 1.0;
+		constraintsHeader.weighty = 0.2;
+		constraintsHeader.insets = new Insets(24, 20, 0, 20);
+		
+		GridBagConstraints constraintsHeaderInternal = (GridBagConstraints)constraintsHeader.clone();
+		constraintsHeaderInternal.insets = new Insets(12, 8, 0, 8);
+		
+		GridBagConstraints constraintsPanel = new GridBagConstraints();
+		constraintsPanel.fill = GridBagConstraints.BOTH;
+		constraintsPanel.gridx = 0;
+		constraintsPanel.weightx = 1.0;
+		constraintsPanel.weighty = 1.0;
+		constraintsPanel.insets = new Insets(0, 20, 0, 20);
+		
+		GridBagConstraints constraintsPanelInternal = (GridBagConstraints)constraintsPanel.clone();
+		constraintsPanelInternal.insets = new Insets(0, 8, 0, 8);
+		
+		GridBagConstraints constraintsLabel = new GridBagConstraints();
+		constraintsLabel.fill = GridBagConstraints.BOTH;
+		constraintsLabel.gridx = 0;
+		constraintsLabel.weightx = 0.03;
+		constraintsLabel.weighty = 1.0;
+		
+		GridBagConstraints constraintsField = new GridBagConstraints();
+		constraintsField.fill = GridBagConstraints.BOTH;
+		constraintsField.gridx = 1;
+		constraintsField.weightx = 1.0;
+		constraintsField.weighty = 1.0;
+		constraintsField.insets = new Insets(10, 10, 10, 10);
+		
+		GridBagConstraints constraintsButton = new GridBagConstraints();
+		constraintsButton.fill = GridBagConstraints.BOTH;
+		constraintsButton.gridy = 10;
+		constraintsButton.weightx = 1.0;
+		constraintsButton.weighty = 0.5;
+		constraintsButton.insets = new Insets(30, 20, 20, 20);
+		
+		JToggleButton headerOptionsGeneral = new JToggleButton("General");
+		headerOptionsGeneral.setSelected(true);
+		headerOptionsGeneral.setEnabled(false);
+		headerOptionsGeneral.setHorizontalAlignment(SwingConstants.LEADING);
+		
+		frameOptions.add(headerOptionsGeneral, constraintsHeader);
+		
+		Border borderPadding = BorderFactory.createEmptyBorder(5, 5, 5, 5);
+		Border borderLined = BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(new Color(200, 200, 255), 3), borderPadding);
 		
 		JPanel panelOptionsGeneral = new JPanel(new GridBagLayout());
-		borderTitled = BorderFactory.createTitledBorder("General");
-		mapBordersTitled.put(panelOptionsGeneral, borderTitled);
-		panelOptionsGeneral.setBorder(BorderFactory.createCompoundBorder(borderTitled, BorderFactory.createEmptyBorder(5, 5, 5, 5)));
+		panelOptionsGeneral.setBorder(borderLined);
 		
-		GridBagConstraints constraints;
+		frameOptions.add(panelOptionsGeneral, constraintsPanel);
 		
-		constraints = new GridBagConstraints();
-		constraints.fill = GridBagConstraints.BOTH;
-		constraints.gridy = 1;
-		constraints.weightx = 1.0;
-		constraints.weighty = 1.0;
-		constraints.insets = new Insets(30, 30, 30, 30);
-		
-		frameOptions.add(panelOptionsGeneral, constraints);
-		
-		JLabel labelSizeBoard = new JLabel("Board Size:");
-		JLabel labelCountAgents = new JLabel("Standard Agents:");
-		JLabel labelCountAgentsSpecial = new JLabel("Special Agents:");
-		JLabel labelStrategy = new JLabel("Strategy:");
-		
-		panelOptionsGeneral.add(labelStrategy);
+		JLabel labelOptionsSizeBoard = new JLabel("Board Size:");
+		JLabel labelOptionsCountAgents = new JLabel("Standard Agents:");
+		JLabel labelOptionsCountAgentsSpecial = new JLabel("Special Agents:");
+		JLabel labelOptionsStrategy = new JLabel("Strategy:");
 
-		JTextField fieldSizeBoard = new JFormattedTextField(getIntegerFormatter(Board.BREADTH_MINIMUM));
+		JTextField fieldOptionsSizeBoard = new JFormattedTextField(getIntegerFormatter(Board.BREADTH_MINIMUM));
 		
 		NumberFormatter formatterInteger = getIntegerFormatter(0);
 		
-		JTextField fieldCountAgents = new JFormattedTextField(formatterInteger);
+		JTextField fieldOptionsCountAgents = new JFormattedTextField(formatterInteger);
+		JTextField fieldOptionsCountAgentsSpecial = new JFormattedTextField(formatterInteger);
 		
-		JTextField fieldCountAgentsSpecial = new JFormattedTextField(formatterInteger);
+		JComboBox<String> menuDropDownOptionsStrategy = new JComboBox<String>(new DefaultComboBoxModel<String>(OPTIONS_STRATEGIES_NAMES));
+		menuDropDownOptionsStrategy.setBackground(fieldOptionsSizeBoard.getBackground());
 		
-		JComboBox<String> menuDropDownStrategy = new JComboBox<String>(new DefaultComboBoxModel<String>(OPTIONS_STRATEGIES_NAMES));
+		JPanel panelOptionsAutomatic = new JPanel(new GridBagLayout());
+		panelOptionsAutomatic.setBorder(borderLined);
 		
-		JLabel[] labelsOptions = {labelSizeBoard, labelCountAgents, labelCountAgentsSpecial, labelStrategy};
-		JComponent[] componentsOptions = {fieldSizeBoard, fieldCountAgents, fieldCountAgentsSpecial, menuDropDownStrategy};
+		JLabel labelOptionsCountRepetitions = new JLabel("Repetitions:");
+		JLabel labelOptionsCountSteps = new JLabel("Steps:");
 		
-		ComponentListener listenerFont = new ComponentListener() {
-			@Override
-			public void componentResized(ComponentEvent event) {
-				Container container = (Container)event.getComponent();
-				Font font = new Font("sans-serif", Font.PLAIN, Math.min(container.getWidth(), container.getHeight()) / 20);
-				
-				if(mapBordersTitled.containsKey(container)) {
-					mapBordersTitled.get(container).setTitleFont(font);
-				}
-				
-				for(Component component : container.getComponents()) {
-					component.setFont(font);
-				}
-			}
-
-			@Override
-			public void componentMoved(ComponentEvent event) {
-				
-			}
-
-			@Override
-			public void componentShown(ComponentEvent event) {
-				
-			}
-
-			@Override
-			public void componentHidden(ComponentEvent event) {
-				
-			}
-		};
+		JTextField fieldOptionsCountRepetitions = new JFormattedTextField(getIntegerFormatter(1));
+		JTextField fieldOptionsCountSteps = new JFormattedTextField(getIntegerFormatter(1));
 		
-		panelOptionsGeneral.addComponentListener(listenerFont);
+		JToggleButton headerOptionsAutomatic = new JToggleButton("Automatic Run");
+		headerOptionsAutomatic.setBackground(colorDisabled);
+		headerOptionsAutomatic.setHorizontalAlignment(SwingConstants.LEADING);
+		headerOptionsAutomatic.addActionListener(new ActionListenerVisibility(panelOptionsAutomatic));
 		
+		frameOptions.add(headerOptionsAutomatic, constraintsHeader);
+		frameOptions.add(panelOptionsAutomatic, constraintsPanel);
+		
+		JPanel panelOptionsExport = new JPanel(new GridBagLayout());
+		panelOptionsExport.setBorder(borderLined);
+		
+		JPanel panelOptionsExportData = new JPanel(new GridBagLayout());
+		panelOptionsExportData.setBorder(borderLined);
+		
+		JLabel labelOptionsExportDataInterval = new JLabel("Interval:");
+		JLabel labelOptionsExportDataPath = new JLabel("Path:");
+		
+		JTextField fieldOptionsExportDataInterval = new JFormattedTextField(getIntegerFormatter(1));
+		JTextField fieldOptionsExportDataPath = new JTextField();
+		
+		JToggleButton headerOptionsExportData = new JToggleButton("Data");
+		headerOptionsExportData.setBackground(colorDisabled);
+		headerOptionsExportData.setHorizontalAlignment(SwingConstants.LEADING);
+		headerOptionsExportData.addActionListener(new ActionListenerVisibility(panelOptionsExportData));
+		
+		panelOptionsExport.add(headerOptionsExportData, constraintsHeaderInternal);
+		panelOptionsExport.add(panelOptionsExportData, constraintsPanelInternal);
+		
+		JPanel panelOptionsExportScreenshot = new JPanel(new GridBagLayout());
+		panelOptionsExportScreenshot.setBorder(borderLined);
+		
+		JLabel labelOptionsExportScreenshotInterval = new JLabel("Interval:");
+		JLabel labelOptionsExportScreenshotPath = new JLabel("Path:");
+		
+		JTextField fieldOptionsExportScreenshotInterval = new JFormattedTextField(getIntegerFormatter(1));
+		JTextField fieldOptionsExportScreenshotPath = new JTextField();
+		
+		JToggleButton headerOptionsExportScreenshot = new JToggleButton("Screenshot");
+		headerOptionsExportScreenshot.setBackground(colorDisabled);
+		headerOptionsExportScreenshot.setHorizontalAlignment(SwingConstants.LEADING);
+		headerOptionsExportScreenshot.addActionListener(new ActionListenerVisibility(panelOptionsExportScreenshot));
+		
+		panelOptionsExport.add(headerOptionsExportScreenshot, constraintsHeaderInternal);
+		panelOptionsExport.add(panelOptionsExportScreenshot, constraintsPanelInternal);
+		
+		JToggleButton headerOptionsExport = new JToggleButton("Export");
+		headerOptionsExport.setBackground(colorDisabled);
+		headerOptionsExport.setHorizontalAlignment(SwingConstants.LEADING);
+		headerOptionsExport.addActionListener(new ActionListenerVisibility(panelOptionsExport));
+		
+		frameOptions.add(headerOptionsExport, constraintsHeader);
+		frameOptions.add(panelOptionsExport, constraintsPanel);
+		
+		JPanel[] panelsOptions = {panelOptionsGeneral, panelOptionsAutomatic, panelOptionsExportData, panelOptionsExportScreenshot};
+		JLabel[][] labelsOptions = {{labelOptionsSizeBoard, labelOptionsCountAgents, labelOptionsCountAgentsSpecial, labelOptionsStrategy}, {labelOptionsCountRepetitions, labelOptionsCountSteps}, {labelOptionsExportDataInterval, labelOptionsExportDataPath}, {labelOptionsExportScreenshotInterval, labelOptionsExportScreenshotPath}};
+		Component[][] componentsOptions = {{fieldOptionsSizeBoard, fieldOptionsCountAgents, fieldOptionsCountAgentsSpecial, menuDropDownOptionsStrategy}, {fieldOptionsCountRepetitions, fieldOptionsCountSteps}, {fieldOptionsExportDataInterval, fieldOptionsExportDataPath}, {fieldOptionsExportScreenshotInterval, fieldOptionsExportScreenshotPath}};
+		
+		JPanel panel;
 		JLabel label;
-		JComponent component;
-		for(int indexComponent = 0; indexComponent < componentsOptions.length; indexComponent++) {
-			label = labelsOptions[indexComponent];
-			component = componentsOptions[indexComponent];
-			
-			label.setHorizontalAlignment(SwingConstants.RIGHT);
-			label.setLabelFor(component);
-			
-			constraints = new GridBagConstraints();
-			constraints.fill = GridBagConstraints.BOTH;
-			constraints.gridx = 0;
-			constraints.weightx = 0.1;
-			constraints.weighty = 1.0;
-			
-			panelOptionsGeneral.add(label, constraints);
-			
-			constraints = new GridBagConstraints();
-			constraints.fill = GridBagConstraints.BOTH;
-			constraints.gridy = indexComponent;
-			constraints.weightx = 1.0;
-			constraints.weighty = 1.0;
-			constraints.insets = new Insets(20, 20, 20, 20);
-			
-			panelOptionsGeneral.add(component, constraints);
-		}
+		Component component;
 		
-		JPanel panelOptionsBatch = new JPanel(new GridBagLayout());
-		panelOptionsBatch.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY), BorderFactory.createEmptyBorder(5, 5, 5, 5)));
-		panelOptionsBatch.addComponentListener(listenerFont);
-		
-		GridBagConstraints constraintsOptionsBatch = new GridBagConstraints();
-		constraintsOptionsBatch.fill = GridBagConstraints.BOTH;
-		constraintsOptionsBatch.gridy = 3;
-		constraintsOptionsBatch.weightx = 1.0;
-		constraintsOptionsBatch.weighty = 1.0;
-		constraintsOptionsBatch.insets = new Insets(0, 30, 30, 30);
-		
-		JLabel labelCountRepetitions = new JLabel("Repetitions:");
-		JLabel labelCountSteps = new JLabel("Steps:");
-		
-		JFormattedTextField fieldCountRepetitions = new JFormattedTextField(getIntegerFormatter(1));
-		JFormattedTextField fieldCountSteps = new JFormattedTextField(getIntegerFormatter(1));
-		
-		labelsOptions = new JLabel[]{labelCountRepetitions, labelCountSteps};
-		componentsOptions = new JComponent[]{fieldCountRepetitions, fieldCountSteps};
-		for(int indexComponent = 0; indexComponent < componentsOptions.length; indexComponent++) {
-			label = labelsOptions[indexComponent];
-			component = componentsOptions[indexComponent];
+		for(int indexPanel = 0; indexPanel < panelsOptions.length; indexPanel++) {
+			panel = panelsOptions[indexPanel];
 			
-			label.setHorizontalAlignment(SwingConstants.RIGHT);
-			label.setLabelFor(component);
-			
-			constraints = new GridBagConstraints();
-			constraints.fill = GridBagConstraints.BOTH;
-			constraints.gridx = 0;
-			constraints.weightx = 0.1;
-			constraints.weighty = 1.0;
-			
-			panelOptionsBatch.add(label, constraints);
-			
-			constraints = new GridBagConstraints();
-			constraints.fill = GridBagConstraints.BOTH;
-			constraints.gridy = indexComponent;
-			constraints.weightx = 1.0;
-			constraints.weighty = 1.0;
-			constraints.insets = new Insets(20, 20, 20, 20);
-			
-			panelOptionsBatch.add(component, constraints);
-		}
-		
-		JToggleButton buttonAutomatic = new JToggleButton("Automatic Run");
-		buttonAutomatic.addActionListener(
-				new ActionListener() {
-					@Override
-					public void actionPerformed(ActionEvent e) {
-						if(buttonAutomatic.isSelected()) {
-							frameOptions.add(panelOptionsBatch, constraintsOptionsBatch);
-						}
-						else {
-							frameOptions.remove(panelOptionsBatch);
-						}
-						
-						frameOptions.revalidate();
-					}
+			for(int indexComponent = 0; indexComponent < componentsOptions[indexPanel].length; indexComponent++) {
+				component = componentsOptions[indexPanel][indexComponent];
+				
+				if(indexComponent < labelsOptions[indexPanel].length) {
+					label = labelsOptions[indexPanel][indexComponent];
+					
+					label.setHorizontalAlignment(SwingConstants.RIGHT);
+					label.setLabelFor(component);
+					
+					panel.add(label, constraintsLabel);
 				}
-		);
-		constraints = new GridBagConstraints();
-		constraints.fill = GridBagConstraints.BOTH;
-		constraints.gridy = 2;
-		constraints.weightx = 1.0;
-		constraints.weighty = 0.2;
-		constraints.insets = new Insets(30, 30, 0, 30);
-		frameOptions.add(buttonAutomatic, constraints);
+				
+				constraintsField.gridy = indexComponent;
+				panel.add(component, constraintsField);
+			}
+		}
 		
-		JButton buttonRun = new JButton("Run Simulation");
-		buttonRun.addActionListener(
+		JButton buttonOptionsRun = new JButton("Run Simulation");
+		buttonOptionsRun.addActionListener(
 				new ActionListener() {
 					@Override
 					public void actionPerformed(ActionEvent event) {
-						sizeBoard = Integer.parseInt(fieldSizeBoard.getText());
-						countAgents = Integer.parseInt(fieldCountAgents.getText());
-						countAgentsSpecial = Integer.parseInt(fieldCountAgentsSpecial.getText());
-						if(modeAutomatic = buttonAutomatic.isSelected()) {
-							countRepetitionsMaximum = Integer.parseInt(fieldCountRepetitions.getText());
-							countStepsMaximum = Integer.parseInt(fieldCountSteps.getText());
+						sizeBoard = Integer.parseInt(fieldOptionsSizeBoard.getText());
+						countAgents = Integer.parseInt(fieldOptionsCountAgents.getText());
+						countAgentsSpecial = Integer.parseInt(fieldOptionsCountAgentsSpecial.getText());
+						if(modeAutomatic = headerOptionsAutomatic.isSelected()) {
+							countRepetitionsMaximum = Integer.parseInt(fieldOptionsCountRepetitions.getText());
+							countStepsMaximum = Integer.parseInt(fieldOptionsCountSteps.getText());
 						}
-						menuDropDownGoal.setSelectedIndex(menuDropDownStrategy.getSelectedIndex());
+						
+						if(exportData = (headerOptionsExport.isSelected() && headerOptionsExportData.isSelected())) {
+							intervalExportPolarities = Integer.parseInt(fieldOptionsExportDataInterval.getText());
+							pathFrequencies = Paths.get(fieldOptionsExportDataPath.getText());
+							pathFrequencies.toFile().mkdirs();
+						}
+						
+						if(exportScreenshot = (headerOptionsExport.isSelected() && headerOptionsExportScreenshot.isSelected())) {
+							intervalExportScreenshot = Integer.parseInt(fieldOptionsExportScreenshotInterval.getText());
+							pathScreenshot = Paths.get(fieldOptionsExportScreenshotPath.getText());
+							pathScreenshot.toFile().mkdirs();
+						}
+						
+						menuDropDownGoal.setSelectedIndex(menuDropDownOptionsStrategy.getSelectedIndex());
 						
 						frameOptions.setVisible(false);
 						run();
@@ -1230,13 +1279,7 @@ public class GUI {
 				}
 		);
 		
-		constraints = new GridBagConstraints();
-		constraints.fill = GridBagConstraints.BOTH;
-		constraints.gridy = 4;
-		constraints.weightx = 1.0;
-		constraints.weighty = 0.5;
-		constraints.insets = new Insets(30, 30, 30, 30);
-		frameOptions.add(buttonRun, constraints);
+		frameOptions.add(buttonOptionsRun, constraintsButton);
 		
 		frameOptions.pack();
 		
@@ -1246,14 +1289,24 @@ public class GUI {
 			new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
-					fieldSizeBoard.setText(Integer.toString(sizeBoard));
-					fieldCountAgents.setText(Integer.toString(countAgents));
-					fieldCountAgentsSpecial.setText(Integer.toString(countAgentsSpecial));
-					fieldCountRepetitions.setText(Integer.toString(countRepetitionsMaximum));
-					fieldCountSteps.setText(Integer.toString(countStepsMaximum));
-					menuDropDownStrategy.setSelectedIndex(menuDropDownGoal.getSelectedIndex());
-					buttonAutomatic.setSelected(!modeAutomatic);
-					buttonAutomatic.doClick();
+					fieldOptionsSizeBoard.setText(Integer.toString(sizeBoard));
+					fieldOptionsCountAgents.setText(Integer.toString(countAgents));
+					fieldOptionsCountAgentsSpecial.setText(Integer.toString(countAgentsSpecial));
+					fieldOptionsCountRepetitions.setText(Integer.toString(countRepetitionsMaximum));
+					fieldOptionsCountSteps.setText(Integer.toString(countStepsMaximum));
+					fieldOptionsExportDataInterval.setText(Integer.toString(intervalExportPolarities));
+					fieldOptionsExportDataPath.setText(pathFrequencies.toString());
+					fieldOptionsExportScreenshotInterval.setText(Integer.toString(intervalExportScreenshot));
+					fieldOptionsExportScreenshotPath.setText(pathScreenshot.toString());
+					menuDropDownOptionsStrategy.setSelectedIndex(menuDropDownGoal.getSelectedIndex());
+					headerOptionsAutomatic.setSelected(!modeAutomatic);
+					headerOptionsAutomatic.doClick();
+					headerOptionsExport.setSelected(!(exportData || exportScreenshot));
+					headerOptionsExport.doClick();
+					headerOptionsExportData.setSelected(!exportData);
+					headerOptionsExportData.doClick();
+					headerOptionsExportScreenshot.setSelected(!exportScreenshot);
+					headerOptionsExportScreenshot.doClick();
 					frameOptions.setVisible(true);
 				}
 			}
@@ -1696,7 +1749,7 @@ public class GUI {
 
 			for(String[] properties : PROPERTIES) {
 				for(String property : properties) {
-					writer.write(property + '=' + settings.getProperty(property));
+					writer.write(property + '=' + settings.getProperty(property).replace('\\', '/'));
 					writer.newLine();
 				}
 			}
@@ -1839,6 +1892,20 @@ public class GUI {
 
 		return mapStrategies;
 	}
+	
+	private class ActionListenerVisibility implements ActionListener {
+		private Component component;
+		
+		public ActionListenerVisibility(Component component) {
+			this.component = component;
+		}
+		
+		@Override
+		public void actionPerformed(ActionEvent event) {
+			component.setVisible(((JToggleButton)event.getSource()).isSelected());
+			component.revalidate();
+		}
+	}
 
 	private abstract class Command {
 		public abstract void execute(String value);
@@ -1967,6 +2034,14 @@ public class GUI {
 			menusDropDownPolarity[indexPolarity].setSelectedItem(value);
 		}
 	}
+	
+	private class CommandExportPolarities extends Command {
+		@Override
+		public void execute(String value) {
+			exportData = Boolean.parseBoolean(value);
+		}
+	}
+
 
 	private class CommandExportPolaritiesInterval extends Command {
 		@Override
@@ -1979,6 +2054,13 @@ public class GUI {
 		@Override
 		public void execute(String value) {
 			pathFrequencies = Paths.get(value);
+		}
+	}
+	
+	private class CommandExportScreenshot extends Command {
+		@Override
+		public void execute(String value) {
+			exportScreenshot = Boolean.parseBoolean(value);
 		}
 	}
 
