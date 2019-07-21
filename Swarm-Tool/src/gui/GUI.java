@@ -105,9 +105,9 @@ public class GUI {
 	private static final String PROPERTY_COLOR_AGENT = "color.agents";
 	private static final String PROPERTY_COLOR_AGENT_SPECIAL = "color.agents.special";
 	private static final String PROPERTY_COLOR_POLARITY = "color.polarity.";
-	private static final String PROPERTY_EXPORT_POLARITIES = "export.polarities";
-	private static final String PROPERTY_EXPORT_POLARITIES_INTERVAL = "export.polarities.interval";
-	private static final String PROPERTY_EXPORT_POLARITIES_DIRECTORY = "export.polarities.directory";
+	private static final String PROPERTY_EXPORT_DATA = "export.polarities";
+	private static final String PROPERTY_EXPORT_DATA_INTERVAL = "export.polarities.interval";
+	private static final String PROPERTY_EXPORT_DATA_DIRECTORY = "export.polarities.directory";
 	private static final String PROPERTY_EXPORT_SCREENSHOT = "export.screenshot";
 	private static final String PROPERTY_EXPORT_SCREENSHOT_INTERVAL = "export.screenshot.interval";
 	private static final String PROPERTY_EXPORT_SCREENSHOT_DIRECTORY = "export.screenshot.directory";
@@ -120,7 +120,7 @@ public class GUI {
 	private static final String[] PROPERTIES_AGENTS = {PROPERTY_AGENTS_COUNT, PROPERTY_AGENTS_COUNT_SPECIAL, PROPERTY_AGENTS_RATE, PROPERTY_AGENTS_ACTIVE, PROPERTY_AGENTS_VISIBLE};
 	private static final String[] PROPERTIES_RULES = {PROPERTY_RULE_GOAL, PROPERTY_RULE_POLARITY_DOMINANT, PROPERTY_RULE_EQUILIBRIUM, PROPERTY_RULE_AUTOMATIC, PROPERTY_RULE_AUTOMATIC_REPETITITONS, PROPERTY_RULE_AUTOMATIC_STEPS};
 	private static final String[] PROPERTIES_COLORS = generateColorProperties();
-	private static final String[] PROPERTIES_EXPORT = {PROPERTY_EXPORT_POLARITIES, PROPERTY_EXPORT_POLARITIES_INTERVAL, PROPERTY_EXPORT_POLARITIES_DIRECTORY, PROPERTY_EXPORT_SCREENSHOT, PROPERTY_EXPORT_SCREENSHOT_INTERVAL, PROPERTY_EXPORT_SCREENSHOT_DIRECTORY};
+	private static final String[] PROPERTIES_EXPORT = {PROPERTY_EXPORT_DATA, PROPERTY_EXPORT_DATA_INTERVAL, PROPERTY_EXPORT_DATA_DIRECTORY, PROPERTY_EXPORT_SCREENSHOT, PROPERTY_EXPORT_SCREENSHOT_INTERVAL, PROPERTY_EXPORT_SCREENSHOT_DIRECTORY};
 	private static final AbstractStrategy[] OPTIONS_STRATEGIES = {new AllBlack(), new CheckerBoard(), new DiagonalLines(), new Lines()};
 	private static final String[][] PROPERTIES = {PROPERTIES_BOARD, PROPERTIES_AGENTS, PROPERTIES_RULES, PROPERTIES_COLORS, PROPERTIES_EXPORT};
 	private static final HashMap<Color, String> MAP_COLORS_NAMES = generateMapColorsNames();
@@ -145,10 +145,10 @@ public class GUI {
 	private int indexStep;
 	private int countStepsMaximum;
 	private int countAgents, countAgentsSpecial;
-	private int intervalExportPolarities;
+	private int intervalExportData;
 	private int intervalExportScreenshot;
 	private long rateExecute;
-	private Path pathFrequencies, pathScreenshot;
+	private Path pathData, pathScreenshot;
 	private Properties settings;
 	private Timer timer;
 	private TimerTask task;
@@ -220,7 +220,7 @@ public class GUI {
 						toggleTimer();
 					}
 					
-					if(exportData) {
+					if(writerData != null) {
 						try {
 							writerData.close();
 							
@@ -263,9 +263,9 @@ public class GUI {
 		for(int indexPolarity = 0; indexPolarity < COUNT_POLARITIES_MAXIMUM; indexPolarity++) {
 			propertyCommands.put(PROPERTY_COLOR_POLARITY + (indexPolarity + 1), new CommandColorPolarity(indexPolarity));
 		}
-		propertyCommands.put(PROPERTY_EXPORT_POLARITIES, new CommandExportPolarities());
-		propertyCommands.put(PROPERTY_EXPORT_POLARITIES_INTERVAL, new CommandExportPolaritiesInterval());
-		propertyCommands.put(PROPERTY_EXPORT_POLARITIES_DIRECTORY, new CommandExportPolaritiesDirectory());
+		propertyCommands.put(PROPERTY_EXPORT_DATA, new CommandExportPolarities());
+		propertyCommands.put(PROPERTY_EXPORT_DATA_INTERVAL, new CommandExportPolaritiesInterval());
+		propertyCommands.put(PROPERTY_EXPORT_DATA_DIRECTORY, new CommandExportPolaritiesDirectory());
 		propertyCommands.put(PROPERTY_EXPORT_SCREENSHOT, new CommandExportScreenshot());
 		propertyCommands.put(PROPERTY_EXPORT_SCREENSHOT_INTERVAL, new CommandExportScreenshotInterval());
 		propertyCommands.put(PROPERTY_EXPORT_SCREENSHOT_DIRECTORY, new CommandExportScreenshotDirectory());
@@ -273,12 +273,12 @@ public class GUI {
 		String directoryHome = FileSystemView.getFileSystemView().getDefaultDirectory().getPath();
 		String directorySwarm = "Swarm";
 		
-		pathFrequencies = Paths.get(directoryHome, File.separator, directorySwarm, File.separator, "Data");
+		pathData = Paths.get(directoryHome, File.separator, directorySwarm, File.separator, "Data");
 		pathScreenshot = Paths.get(directoryHome, File.separator, directorySwarm, File.separator, "Captures");
 
 		settings = new Properties();
 
-		settings.setProperty(PROPERTY_EXPORT_POLARITIES_DIRECTORY, pathFrequencies.toString());
+		settings.setProperty(PROPERTY_EXPORT_DATA_DIRECTORY, pathData.toString());
 		settings.setProperty(PROPERTY_EXPORT_SCREENSHOT_DIRECTORY, pathScreenshot.toString());
 
 		try {
@@ -1284,24 +1284,42 @@ public class GUI {
 						sizeBoard = Integer.parseInt(fieldOptionsSizeBoard.getText());
 						countAgents = Integer.parseInt(fieldOptionsCountAgents.getText());
 						countAgentsSpecial = Integer.parseInt(fieldOptionsCountAgentsSpecial.getText());
+						menuDropDownGoal.setSelectedIndex(menuDropDownOptionsStrategy.getSelectedIndex());
+						
 						if(modeAutomatic = headerOptionsAutomatic.isSelected()) {
-							countRepetitionsMaximum = Integer.parseInt(fieldOptionsCountRepetitions.getText());
-							countStepsMaximum = Integer.parseInt(fieldOptionsCountSteps.getText());
+							String countRepetitionsMaximumString = fieldOptionsCountRepetitions.getText();
+							countRepetitionsMaximum = Integer.parseInt(countRepetitionsMaximumString);
+							settings.setProperty(PROPERTY_RULE_AUTOMATIC_REPETITITONS, countRepetitionsMaximumString);
+							
+							String countStepsMaximumString = fieldOptionsCountSteps.getText();
+							countStepsMaximum = Integer.parseInt(countStepsMaximumString);
+							settings.setProperty(PROPERTY_RULE_AUTOMATIC_STEPS, countStepsMaximumString);
 						}
+						settings.setProperty(PROPERTY_RULE_AUTOMATIC, Boolean.toString(modeAutomatic));
 						
 						if(exportData = (headerOptionsExport.isSelected() && headerOptionsExportData.isSelected())) {
-							intervalExportPolarities = Integer.parseInt(fieldOptionsExportDataInterval.getText());
-							pathFrequencies = Paths.get(fieldOptionsExportDataPath.getText());
-							pathFrequencies.toFile().mkdirs();
+							String intervalExportDataString = fieldOptionsExportDataInterval.getText();
+							intervalExportData = Integer.parseInt(intervalExportDataString);
+							settings.setProperty(PROPERTY_EXPORT_DATA_INTERVAL, intervalExportDataString);
+							
+							String pathDataString = fieldOptionsExportDataPath.getText();
+							pathData = Paths.get(fieldOptionsExportDataPath.getText());
+							pathData.toFile().mkdirs();
+							settings.setProperty(PROPERTY_EXPORT_DATA_DIRECTORY, pathDataString);
 						}
+						settings.setProperty(PROPERTY_EXPORT_DATA, Boolean.toString(exportData));
 						
 						if(exportScreenshot = (headerOptionsExport.isSelected() && headerOptionsExportScreenshot.isSelected())) {
-							intervalExportScreenshot = Integer.parseInt(fieldOptionsExportScreenshotInterval.getText());
-							pathScreenshot = Paths.get(fieldOptionsExportScreenshotPath.getText());
+							String intervalExportScreenshotString = fieldOptionsExportScreenshotInterval.getText();
+							intervalExportScreenshot = Integer.parseInt(intervalExportScreenshotString);
+							settings.setProperty(PROPERTY_EXPORT_SCREENSHOT_INTERVAL, intervalExportScreenshotString);
+							
+							String pathScreenshotString = fieldOptionsExportScreenshotPath.getText();
+							pathScreenshot = Paths.get(pathScreenshotString);
 							pathScreenshot.toFile().mkdirs();
+							settings.setProperty(PROPERTY_EXPORT_SCREENSHOT_DIRECTORY, pathScreenshotString);
 						}
-						
-						menuDropDownGoal.setSelectedIndex(menuDropDownOptionsStrategy.getSelectedIndex());
+						settings.setProperty(PROPERTY_EXPORT_SCREENSHOT, Boolean.toString(exportScreenshot));
 						
 						frameOptions.setVisible(false);
 						
@@ -1325,8 +1343,8 @@ public class GUI {
 					fieldOptionsCountAgentsSpecial.setText(Integer.toString(countAgentsSpecial));
 					fieldOptionsCountRepetitions.setText(Integer.toString(countRepetitionsMaximum));
 					fieldOptionsCountSteps.setText(Integer.toString(countStepsMaximum));
-					fieldOptionsExportDataInterval.setText(Integer.toString(intervalExportPolarities));
-					fieldOptionsExportDataPath.setText(pathFrequencies.toString());
+					fieldOptionsExportDataInterval.setText(Integer.toString(intervalExportData));
+					fieldOptionsExportDataPath.setText(pathData.toString());
 					fieldOptionsExportScreenshotInterval.setText(Integer.toString(intervalExportScreenshot));
 					fieldOptionsExportScreenshotPath.setText(pathScreenshot.toString());
 					menuDropDownOptionsStrategy.setSelectedIndex(menuDropDownGoal.getSelectedIndex());
@@ -1387,9 +1405,8 @@ public class GUI {
 				toggleTimer();
 			}
 
-			if(exportData) {
+			if(writerData != null) {
 				try {
-					System.out.println("Closing writer");
 					writerData.close();
 				}
 				catch (IOException e) {
@@ -1433,7 +1450,7 @@ public class GUI {
 		
 		if(exportData) {
 			try {
-				writerData = new BufferedWriter(new FileWriter(pathFrequencies + "\\Swarm-Frequencies_" + FORMATTER_TIMESTAMP.format(LocalDateTime.now()) + ".csv"));
+				writerData = new BufferedWriter(new FileWriter(pathData + "\\Swarm-Frequencies_" + FORMATTER_TIMESTAMP.format(LocalDateTime.now()) + ".csv"));
 				addDataColumnHeaders(writerData);
 			}
 			catch (IOException e) {
@@ -1485,6 +1502,7 @@ public class GUI {
 		colorsPolarity[indexPolarity] = colorPolarity;
 
 		if(optionsPolarityDominant.getSize() > indexPolarity) {
+			int indexPolarityDominant = this.indexPolarityDominant;
 			optionsPolarityDominant.removeElementAt(indexPolarity);
 			optionsPolarityDominant.insertElementAt("(" + (indexPolarity + 1) + ") " + getColorName(colorPolarity), indexPolarity);
 			menuDropDownPolarityDominant.setSelectedIndex(indexPolarityDominant);
@@ -1618,7 +1636,7 @@ public class GUI {
 	public void step() {
 		board.step();
 		
-		if(exportData && indexStep % intervalExportPolarities == 0) {
+		if(exportData && indexStep % intervalExportData == 0) {
 			outputPolarityData(writerData);
 			
 			if(modeAutomatic) {
@@ -1744,7 +1762,7 @@ public class GUI {
 	
 	private void outputAveragePolarityData() {
 		try {
-			BufferedWriter writer = new BufferedWriter(new FileWriter(pathFrequencies + "\\Swarm-Frequencies-Averages_" + FORMATTER_TIMESTAMP.format(LocalDateTime.now()) + ".csv"));
+			BufferedWriter writer = new BufferedWriter(new FileWriter(pathData + "\\Swarm-Frequencies-Averages_" + FORMATTER_TIMESTAMP.format(LocalDateTime.now()) + ".csv"));
 
 			addDataColumnHeaders(writer);
 
@@ -1981,7 +1999,7 @@ public class GUI {
 		public void execute(String value) {
 			int valueInteger = Math.min(Math.max(Integer.parseInt(value), 1), goalStrategy.getPolarityCount());
 
-			menuDropDownPolarityDominant.setSelectedItem("(" + valueInteger + ") " + getColorName(colorsPolarity[valueInteger - 1]));
+			menuDropDownPolarityDominant.setSelectedIndex(valueInteger - 1);
 		}
 	}
 
@@ -2052,14 +2070,14 @@ public class GUI {
 	private class CommandExportPolaritiesInterval extends Command {
 		@Override
 		public void execute(String value) {
-			intervalExportPolarities = Integer.parseInt(value);
+			intervalExportData = Integer.parseInt(value);
 		}
 	}
 
 	private class CommandExportPolaritiesDirectory extends Command {
 		@Override
 		public void execute(String value) {
-			pathFrequencies = Paths.get(value);
+			pathData = Paths.get(value);
 		}
 	}
 	

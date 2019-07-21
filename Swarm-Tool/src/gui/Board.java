@@ -172,7 +172,7 @@ public class Board extends JPanel implements MouseInputListener {
 			agents[indexAgent++] = agentsSpecial[indexAgentSpecial];
 		}
 		
-		agentsNormal = new SwarmAgent[countAgents - countAgentsSpecial];
+		agentsNormal = new SwarmAgent[countAgents];
 		colorAgents = gui.getAgentColor();
 		for(int indexAgentNormal = 0; indexAgentNormal < agentsNormal.length; indexAgentNormal++) {
 			agentsNormal[indexAgentNormal] = new SwarmAgent(Math.random() * width, Math.random() * height, agentSize, colorAgents, false, this);
