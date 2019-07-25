@@ -414,7 +414,7 @@ public class DiagonalLines extends AbstractStrategy {
 		//DETERMINE NEW POLARITY	
 		//
 			//If the agent's memory array is not yet filled or the goal is a single polarity
-			if(!agent.isMemoryFull() || !board.getGui().getEquilibriumMode()) {
+			if(!agent.getMemoryFilled() || !board.getGui().getEquilibriumMode()) {
 				//RULE #1
 				//If the cell is surrounded by one color
 				if(redPolCount == neighborCount) {	//Surrounded by RED

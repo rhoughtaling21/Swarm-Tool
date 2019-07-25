@@ -8,16 +8,13 @@ package gui;
  */
 
 import java.awt.Color;
-import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.event.MouseEvent;
-import java.awt.geom.Point2D;
+import java.awt.event.MouseMotionListener;
 import java.awt.image.BufferedImage;
 import java.util.Random;
 import javax.swing.JPanel;
-import javax.swing.event.MouseInputListener;
-
 import cells.CellDisplayBase;
 import cells.CellDisplayCorrectness;
 import cells.CellDisplay;
@@ -34,34 +31,34 @@ import strategies.AbstractStrategy;
  * Parameters: width of board in pixels, height of board in pixels, number of cells on a side, and number of Agents
  */
 @SuppressWarnings("serial")
-public class Board extends JPanel implements MouseInputListener {
+public class Board extends JPanel implements MouseMotionListener {
 	public static final int BREADTH_MINIMUM = 1;
+	private static final double SCALE_BOARD = 800;
 	
-	public int numCellsOnSide; //these are the numbers of cells in the board, NOT the graphical dimensions of the board
-	private boolean wraparound; //whether the walls of the Board wrap or not; by default, they don't
-	private double cellSize; //pixel dimensions of each cell
-	private double attractorStrength = 1;
-	private double attractorMaxDistance; //distance in cells, not pixels
-	private int attractOrRepel = 1; //1 if attract, -1 if repel
-	private int indexDisplay;
-	private Color colorAgents, colorAgentsSpecial;
 	private boolean showAgents;
-	private AbstractStrategy strategy;//strategy that the agents and layer 2 use for their calculations given the current goal
+	private boolean wraparound; //whether the walls of the Board wrap or not; by default, they don't
+	private boolean modeAttractor;
+	public int numCellsOnSide; //these are the numbers of cells in the board, NOT the graphical dimensions of the board
 	private int countAgents, countAgentsSpecial; //MODIFICATION
-	String exportInfoString = "Red,Blue,Yellow\n";
+	private int indexDisplay;
+	private double sizeCell; //pixel dimensions of each cell
+	private double attractorStrength = 1;
+	private double rangeAttractor; //distance in cells, not pixels
+	private Color colorAgents, colorAgentsSpecial;
+	private AbstractStrategy strategy;//strategy that the agents and layer 2 use for their calculations given the current goal
 	private GUI gui;
 	private int[] frequencyColorsInitial;
 	private int[] frequencyColors;
 	private int[] frequencyPolarities;
 	private SwarmAgent[] agents, agentsNormal, agentsSpecial;
-	private CellDisplayBase[][] layer1;
-	private CellDisplayPolarity[][] layer2;
-	private CellDisplayPersistence[][] layer4;  //MODIFICATION #7: new layer of cells for persistency
-	private CellDisplayCorrectness[][] layer5;
+	private CellDisplayBase[][] layerBase;
+	private CellDisplayPolarity[][] layerPolarity;
+	private CellDisplayPersistence[][] layerPersistence;  //MODIFICATION #7: new layer of cells for persistency
+	private CellDisplayCorrectness[][] layerCorrectness;
 	private CellDisplay[][] layerDisplay; //layer to paint
 	private CellDisplay[][][] layers;
 
-	public Board(int width, int height, int numCellsOnSide, int countAgents, int countAgentsSpecial, GUI gui) {
+	public Board(int numCellsOnSide, int countAgents, int countAgentsSpecial, GUI gui) {
 		this.countAgents = countAgents;
 		this.countAgentsSpecial = countAgentsSpecial;
 		this.gui = gui;
@@ -73,25 +70,24 @@ public class Board extends JPanel implements MouseInputListener {
 		frequencyColors = new int[frequencyColorsInitial.length];
 		frequencyPolarities = new int[GUI.COUNT_POLARITIES_MAXIMUM];
 
-		//set preferred graphical dimensions of the board
-		setPreferredSize(new Dimension(width, height));
 		this.numCellsOnSide = numCellsOnSide;
-		this.wraparound = gui.getBoardWraparound();
+		wraparound = gui.getBoardWraparound();
+		modeAttractor = gui.getAttractorMode();
 		
 		//set the graphical dimensions of the cells themselves. the cells are always square, but the
 		//space they take up is constrained by the width and height of the board and by the number of cells.
-		cellSize = (width / numCellsOnSide);
-		double agentSize = (cellSize * 0.7);
+		sizeCell = (SCALE_BOARD / numCellsOnSide);
+		double sizeAgent = (sizeCell * 0.7);
 
-		attractorMaxDistance = cellSize * 5; //the attractor affects everything in a five cell block radius
+		rangeAttractor = sizeCell * 5; //the attractor affects everything in a five cell block radius
 
 		//layer 1
-		layer1 = new CellDisplayBase[numCellsOnSide][numCellsOnSide];
+		layerBase = new CellDisplayBase[numCellsOnSide][numCellsOnSide];
 
 		if (!gui.getSplitPolarity()) {
-			for (int indexRow = 0; indexRow < layer1.length; indexRow++) {
-				for (int indexColumn = 0; indexColumn < layer1[indexRow].length; indexColumn++) {
-					layer1[indexRow][indexColumn] = new CellDisplayBase(indexRow * cellSize, indexColumn * cellSize, cellSize, (int)(strategy.getStateCount() * Math.random()), this);
+			for (int indexRow = 0; indexRow < layerBase.length; indexRow++) {
+				for (int indexColumn = 0; indexColumn < layerBase[indexRow].length; indexColumn++) {
+					layerBase[indexRow][indexColumn] = new CellDisplayBase(indexRow * sizeCell, indexColumn * sizeCell, sizeCell, (int)(strategy.getStateCount() * Math.random()), this);
 				}
 			}
 		}
@@ -99,8 +95,8 @@ public class Board extends JPanel implements MouseInputListener {
 		else if(gui.getStrategy().getPolarityCount() == 2){
 			int pos;
 			int stateInitial;
-			for (int indexRow = 0; indexRow < layer1.length; indexRow++) {
-				for (int indexColumn = 0; indexColumn < layer1[indexRow].length; indexColumn++) {
+			for (int indexRow = 0; indexRow < layerBase.length; indexRow++) {
+				for (int indexColumn = 0; indexColumn < layerBase[indexRow].length; indexColumn++) {
 					if(Math.random() < 0.5) {  
 						pos = indexRow;
 					}
@@ -125,15 +121,15 @@ public class Board extends JPanel implements MouseInputListener {
 						}
 					}
 					
-					layer1[indexRow][indexColumn] = new CellDisplayBase(indexRow * cellSize, indexColumn * cellSize, cellSize, stateInitial, this);
+					layerBase[indexRow][indexColumn] = new CellDisplayBase(indexRow * sizeCell, indexColumn * sizeCell, sizeCell, stateInitial, this);
 				}
 			}
 		}
 
-		layer2 = new CellDisplayPolarity[numCellsOnSide][numCellsOnSide];
-		for (int row = 0; row < layer2.length; row++) {
-			for (int col = 0; col < layer2[row].length; col++) {
-				layer2[row][col] = strategy.createPolarityCell(this, row, col);
+		layerPolarity = new CellDisplayPolarity[numCellsOnSide][numCellsOnSide];
+		for (int row = 0; row < layerPolarity.length; row++) {
+			for (int col = 0; col < layerPolarity[row].length; col++) {
+				layerPolarity[row][col] = strategy.createPolarityCell(this, row, col);
 			}
 		}
 
@@ -142,21 +138,21 @@ public class Board extends JPanel implements MouseInputListener {
 		//July 5, 2018
 		//Layer 4 cells start as white
 		//
-		layer4 = new CellDisplayPersistence[numCellsOnSide][numCellsOnSide];
-		for (int row = 0; row < layer4.length; row++) {
-			for (int indexColumn = 0; indexColumn < layer4[row].length; indexColumn++) {
-				layer4[row][indexColumn] = new CellDisplayPersistence(row * cellSize, indexColumn * cellSize, cellSize, this);
+		layerPersistence = new CellDisplayPersistence[numCellsOnSide][numCellsOnSide];
+		for (int row = 0; row < layerPersistence.length; row++) {
+			for (int indexColumn = 0; indexColumn < layerPersistence[row].length; indexColumn++) {
+				layerPersistence[row][indexColumn] = new CellDisplayPersistence(row * sizeCell, indexColumn * sizeCell, sizeCell, this);
 			}
 		}
 		
-		layer5 = new CellDisplayCorrectness[numCellsOnSide][numCellsOnSide];
-		for (int indexRow = 0; indexRow < layer5.length; indexRow++) {
-			for (int indexColumn = 0; indexColumn < layer5[indexRow].length; indexColumn++) {
-				layer5[indexRow][indexColumn] = strategy.createCorrectnessCell(this, indexRow, indexColumn);
+		layerCorrectness = new CellDisplayCorrectness[numCellsOnSide][numCellsOnSide];
+		for (int indexRow = 0; indexRow < layerCorrectness.length; indexRow++) {
+			for (int indexColumn = 0; indexColumn < layerCorrectness[indexRow].length; indexColumn++) {
+				layerCorrectness[indexRow][indexColumn] = strategy.createCorrectnessCell(this, indexRow, indexColumn);
 			}
 		}
 		
-		layers = new CellDisplay[][][]{null, layer1, layer2, null, layer4, layer5};
+		layers = new CellDisplay[][][]{null, layerBase, layerPolarity, null, layerPersistence, layerCorrectness};
 		
 		//********************************************************************************************************	
 		//*************************MODIFICATION******************************************************************
@@ -168,19 +164,18 @@ public class Board extends JPanel implements MouseInputListener {
 		colorAgentsSpecial = gui.getSpecialAgentColor();
 		int indexAgent = 0;
 		for(int indexAgentSpecial = 0; indexAgentSpecial < agentsSpecial.length; indexAgentSpecial++) {
-			agentsSpecial[indexAgentSpecial] = new SwarmAgent(Math.random() * width, Math.random() * height, agentSize, colorAgentsSpecial, true, this);
+			agentsSpecial[indexAgentSpecial] = new SwarmAgent(Math.random() * SCALE_BOARD, Math.random() * SCALE_BOARD, sizeAgent, colorAgentsSpecial, true, this);
 			agents[indexAgent++] = agentsSpecial[indexAgentSpecial];
 		}
 		
 		agentsNormal = new SwarmAgent[countAgents];
 		colorAgents = gui.getAgentColor();
 		for(int indexAgentNormal = 0; indexAgentNormal < agentsNormal.length; indexAgentNormal++) {
-			agentsNormal[indexAgentNormal] = new SwarmAgent(Math.random() * width, Math.random() * height, agentSize, colorAgents, false, this);
+			agentsNormal[indexAgentNormal] = new SwarmAgent(Math.random() * SCALE_BOARD, Math.random() * SCALE_BOARD, sizeAgent, colorAgents, false, this);
 			agents[indexAgent++] = agentsNormal[indexAgentNormal];
 		}
 		
-		this.addMouseListener(this);
-		this.addMouseMotionListener(this);
+		addMouseMotionListener(this);
 
 		if (gui.layer2Draw == 3) {
 			gui.layer2Draw = 1;
@@ -196,7 +191,7 @@ public class Board extends JPanel implements MouseInputListener {
 	}
 	
 	public double getCellSize() {
-		return cellSize;
+		return sizeCell;
 	}
 	
 	public AbstractStrategy getActiveStrategy() {
@@ -216,27 +211,31 @@ public class Board extends JPanel implements MouseInputListener {
 	}
 	
 	public CellDisplayBase[][] getBaseLayer() {
-		return layer1;
+		return layerBase;
 	}
 	
 	public CellDisplayPolarity[][] getPolarityLayer() {
-		return layer2;
+		return layerPolarity;
 	}
 	
 	public CellDisplayPersistence[][] getPersistenceLayer() {
-		return layer4;
+		return layerPersistence;
 	}
 	
 	public CellDisplayCorrectness[][] getCorrectnessLayer(){
-		return layer5;
+		return layerCorrectness;
 	}
 	
 	public int getAgentRow(SwarmAgent agent) {
-		return (int)(agent.getCenterX() / cellSize);
+		return (int)(agent.getCenterX() / sizeCell);
 	}
 	
 	public int getAgentColumn(SwarmAgent agent) {
-		return (int)(agent.getCenterY() / cellSize);
+		return (int)(agent.getCenterY() / sizeCell);
+	}
+	
+	public void setAttractorMode(boolean modeAttractor) {
+		this.modeAttractor = modeAttractor;
 	}
 	
 	public void toggleAgentVisibility() {
@@ -250,6 +249,7 @@ public class Board extends JPanel implements MouseInputListener {
 		super.paintComponent(helperGraphics);
 
 		Graphics2D helperGraphics2D = (Graphics2D)helperGraphics;
+		helperGraphics2D.scale(getWidth() / SCALE_BOARD, getHeight() / SCALE_BOARD);
 		
 		//draw boards
 		if(gui.layer2Draw == 3) {
@@ -306,16 +306,16 @@ public class Board extends JPanel implements MouseInputListener {
 			indexRow = getAgentRow(agent);
 			indexColumn = getAgentColumn(agent);
 			
-			if(indexRow >= 0 && indexRow < layer1.length && indexColumn >= 0 && indexColumn < layer1[indexRow].length) {
+			if(indexRow >= 0 && indexRow < layerBase.length && indexColumn >= 0 && indexColumn < layerBase[indexRow].length) {
 				strategy.logic(this, agent);
-				for (int row = 0; row < layer2.length; row++) {
-					for (int col = 0; col < layer2[row].length; col++) {
+				for (int row = 0; row < layerPolarity.length; row++) {
+					for (int col = 0; col < layerPolarity[row].length; col++) {
 						strategy.updatePolarityCell(this, row, col);
 					}
 				}
 			}
 
-			agent.step(cellSize);
+			agent.step(sizeCell);
 			
 			if (wraparound) {
 				//since there's no walls, this lets the agents "wrap" to the other side of the screen. this is awesome.		
@@ -337,10 +337,10 @@ public class Board extends JPanel implements MouseInputListener {
 				if (agent.getY() < agent.getHeight() && agent.getVelocity().getY() < 0) {
 					agent.yBounce();
 				}
-				if (agent.getMaxX() > numCellsOnSide*cellSize+agent.getWidth() && agent.getVelocity().getX() > 0) {
+				if (agent.getMaxX() > numCellsOnSide*sizeCell+agent.getWidth() && agent.getVelocity().getX() > 0) {
 					agent.xBounce();
 				}
-				if (agent.getMaxY() > numCellsOnSide*cellSize+agent.getHeight() && agent.getVelocity().getY() > 0) {
+				if (agent.getMaxY() > numCellsOnSide*sizeCell+agent.getHeight() && agent.getVelocity().getY() > 0) {
 					agent.yBounce();
 				}
 			}
@@ -464,59 +464,36 @@ public class Board extends JPanel implements MouseInputListener {
 	}
 
 	@Override
-	public void mouseClicked(MouseEvent arg0) {
+	//if you click in a spot on the board, the agents will be attracted to that spot with decreasing effect
+	//the further away they are
+	public void mouseDragged(MouseEvent event) {
+		/* Offset the cursor's location to account for the Board having been resized */
+		int offsetX = (int)(event.getX() * SCALE_BOARD / (double)getWidth()) - event.getX();
+		int offsetY = (int)(event.getY() * SCALE_BOARD / (double)getHeight()) - event.getY();
+		event.translatePoint(offsetX, offsetY);
 		
-	}
-
-	@Override
-	public void mouseEntered(MouseEvent arg0) {
-
-	}
-
-	@Override
-	public void mouseExited(MouseEvent arg0) {
-
-	}
-
-	@Override
-	public void mousePressed(MouseEvent arg0) {
-
-	}
-
-	@Override
-	public void mouseReleased(MouseEvent arg0) {
-
-	}
-
-	@Override
-	public void mouseDragged(MouseEvent arg0) {
-		double magnitude;
-		Point2D.Double towardMouse;
-
-		//if you click in a spot on the board, the agents will be attracted to that spot with decreasing effect
-		//the further away they are
-		if (gui.attractOrRepel) {
-			attractOrRepel=1;
+		double multiplier = sizeCell;
+		if(!modeAttractor) {
+			multiplier *= -1;
 		}
-		else {
-			attractOrRepel=-1;
-		}
+		
+		double distance, distanceX, distanceY;
+		double multiplierScale;
 		for (SwarmAgent agent : agents) {
-			magnitude = Math.sqrt((agent.getCenterX()-arg0.getX())*(agent.getCenterX()-arg0.getX()) + (agent.getCenterY()-arg0.getY())*(agent.getCenterY()-arg0.getY()));
-			towardMouse = new Point2D.Double(attractOrRepel*cellSize*(arg0.getX()-agent.getCenterX())/magnitude, attractOrRepel*cellSize*(arg0.getY()-agent.getCenterY())/magnitude);
+			distance = Math.hypot(distanceX = (event.getX() - agent.getCenterX()), distanceY = (event.getY() - agent.getCenterY()));
 
-			if (magnitude < attractorMaxDistance) {
+			if (distance < rangeAttractor) {
 				//then the agent is in the specified range
-				//double angle = Math.asin(distance/(agent.getCenterY()-arg0.getY()));
 				if (Math.random() < attractorStrength) {
-					agent.setVelocity(towardMouse);
+					multiplierScale = multiplier / distance;
+					agent.setVelocity(multiplierScale * distanceX, multiplierScale * distanceY);
 				}
 			}
 		}
 	}
 
 	@Override
-	public void mouseMoved(MouseEvent e) {
+	public void mouseMoved(MouseEvent event) {
 
 	}
 
@@ -555,16 +532,16 @@ public class Board extends JPanel implements MouseInputListener {
 	}
 	
 	private void updatePolarityCells() {
-		for (int indexRow = 0; indexRow < layer2.length; indexRow++) {
-			for (int indexColumn = 0; indexColumn < layer2[indexRow].length; indexColumn++) {
+		for (int indexRow = 0; indexRow < layerPolarity.length; indexRow++) {
+			for (int indexColumn = 0; indexColumn < layerPolarity[indexRow].length; indexColumn++) {
 				strategy.updatePolarityCell(this, indexRow, indexColumn);
 			}
 		}
 	}
 	
 	public void updateCorrectnessCells() {
-		for (int indexRow = 0; indexRow < layer5.length; indexRow++) {
-			for (int indexColumn = 0; indexColumn < layer5[indexRow].length; indexColumn++) {
+		for (int indexRow = 0; indexRow < layerCorrectness.length; indexRow++) {
+			for (int indexColumn = 0; indexColumn < layerCorrectness[indexRow].length; indexColumn++) {
 				strategy.updateCorrectnessCell(this, indexRow, indexColumn);
 			}
 		}
@@ -589,10 +566,10 @@ public class Board extends JPanel implements MouseInputListener {
 			}			
 		}
 		count = 0;
-		for (int row = 0; row < layer1.length; row++) {
-			for (int col = 0; col < layer1[row].length; col++) {
+		for (int row = 0; row < layerBase.length; row++) {
+			for (int col = 0; col < layerBase[row].length; col++) {
 				if(flipCell[count]) {
-					layer1[row][col].shiftState();
+					layerBase[row][col].shiftState();
 					strategy.updatePolarityCell(this, row, col);
 					System.out.println("FLIP: " + count);
 				}
@@ -606,45 +583,20 @@ public class Board extends JPanel implements MouseInputListener {
 		return numCellsOnSide * numCellsOnSide;
 	}
 
-	//MODIFICATION #3
-//	public void updateAgents(int numAgents) {
-//		Color[] nullArray = new Color[10];
-//		SwarmAgent[] newAgents = new SwarmAgent[agents.length];
-//		for(int i= 0; i < numAgents; i++) {
-//			newAgents[i] = new SwarmAgent(agents[i].getX(), agents[i].getY(), agents[i].getWidth(), agents[i].getVelocity(), agents[i].getColor(), nullArray);
-//		}
-//	}
-
 	//MODIFICATION #7:
 	//Morgan Might on July 5, 2018
 	//This method will reset the layer 4 cell to white
 	public void resetToWhite(SwarmAgent agent){
-		layer4[getAgentRow(agent)][getAgentColumn(agent)].setState(0);
+		layerPersistence[getAgentRow(agent)][getAgentColumn(agent)].setState(0);
 	}
 
 	public void addPurple(SwarmAgent agent) {
-		layer4[getAgentRow(agent)][getAgentColumn(agent)].shiftState();
+		layerPersistence[getAgentRow(agent)][getAgentColumn(agent)].shiftState();
 	}
 
 	public GUI getGui() {
 		return gui;
 	}
-	
-//	public int getColorFrequencyInitial(Color color) {
-//		if(frequencyColorsInitial.containsKey(color)) {
-//			return frequencyColorsInitial.get(color);
-//		}
-//		
-//		return 0;
-//	}
-//	
-//	public int getColorFrequency(Color color) {
-//		if(frequencyColors.containsKey(color)) {
-//			return frequencyColors.get(color);
-//		}
-//		
-//		return 0;
-//	}
 	
 	public void adjustInitialColorFrequency(int stateAdjust, int adjustment) {
 		frequencyColorsInitial[stateAdjust] += adjustment;
@@ -659,10 +611,13 @@ public class Board extends JPanel implements MouseInputListener {
 	}
 	
 	public BufferedImage capture() {
-		BufferedImage image = new BufferedImage(getWidth(), getHeight(), BufferedImage.TYPE_INT_RGB);
-		paint(image.createGraphics());
+		BufferedImage image = new BufferedImage((int)SCALE_BOARD, (int)SCALE_BOARD, BufferedImage.TYPE_INT_RGB);
+		
+		Graphics2D helperGraphics2D = image.createGraphics();
+		helperGraphics2D.scale(image.getWidth() / (double)getWidth(), image.getHeight() / (double)getHeight());
+		
+		paint(helperGraphics2D);
+		
 		return image;
 	}
 }
-
-
