@@ -1,6 +1,5 @@
 package strategies;
 
-import cells.CellDisplayBase;
 import gui.Board;
 import other.SwarmAgent;
 /*
@@ -21,6 +20,14 @@ public class AllBlack extends AbstractStrategy {
 		return COUNT_POLARITIES;
 	}
 
+	protected int determineState(Board board, int indexRow, int indexColumn) {
+		if(board.getPolarityLayer()[indexRow][indexColumn].getState() == 0) {
+			return 0;
+		}
+		
+		return 1;
+	}
+	
 	@Override
 	public int determinePolarity(Board board, int row, int col) {
 		if(board.getBaseLayer()[row][col].getState() == 0) { //if the layer 1 cell is black
@@ -33,19 +40,10 @@ public class AllBlack extends AbstractStrategy {
 
 	@Override
 	public void logic(Board board, SwarmAgent agent) {
-		int indexRow = board.getAgentRow(agent);
-		int indexColumn = board.getAgentColumn(agent);
-		CellDisplayBase cell = board.getBaseLayer()[indexRow][indexColumn];
+		int indexRow = board.calculateAgentRow(agent);
+		int indexColumn = board.calculateAgentColumn(agent);
 		
-		if(cell.getState() == 0) {
-			board.addPurple(agent); 
-		}
-		else {
-			cell.shiftState();
-			updatePolarityCell(board, indexRow, indexColumn);
-			board.resetToWhite(agent); //needs to be static????
-		}
+		setCellPolarity(board, indexRow, indexColumn, 0);
 	}
-
 }
 

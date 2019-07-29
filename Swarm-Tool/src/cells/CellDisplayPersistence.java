@@ -13,6 +13,8 @@ import gui.Board;
 @SuppressWarnings("serial")
 public class CellDisplayPersistence extends CellDisplay {
 	private static final int COUNT_STATES_PERSISTENCE = 50;
+	private static final Color COLOR_INITIAL = Color.WHITE;
+	private static final Color COLOR_FINAL = new Color(60, 255, 60);
 	
 	public CellDisplayPersistence(double x, double y, double size, Board board) {
 		super(x, y, size, board);
@@ -34,5 +36,9 @@ public class CellDisplayPersistence extends CellDisplay {
 	
 	public void shiftState() {
 		setState(indexState + 1);
+	}
+	
+	public void reset() {
+		setState(0);
 	}
 }

@@ -40,7 +40,11 @@ public class CellDisplayPolarity extends CellDisplay {
 	
 	private void setStateValue(int indexState) {
 		this.indexState = indexState;
-		colorFill = colorsPolarity[indexState];
+		updatePolarityColor();
 		frequenciesPolarities[indexState]++;
+	}
+	
+	public void updatePolarityColor() {
+		colorFill = colorsPolarity[indexState];
 	}
 }

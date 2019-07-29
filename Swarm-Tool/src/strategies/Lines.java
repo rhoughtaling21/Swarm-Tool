@@ -136,8 +136,8 @@ public class Lines extends AbstractStrategy {
 	@Override
 	//this is the exact same logic as the checkerboard, but with edgeCount and cornerCount flipped.
 	public void logic(Board board, SwarmAgent agent) {
-		int indexRow = board.getAgentRow(agent);
-		int indexColumn = board.getAgentColumn(agent);
+		int indexRow = board.calculateAgentRow(agent);
+		int indexColumn = board.calculateAgentColumn(agent);
 		
 		CellDisplayBase[][] layer1 = board.getBaseLayer();
 		CellDisplayBase cell = layer1[indexRow][indexColumn];
@@ -209,11 +209,11 @@ public class Lines extends AbstractStrategy {
 		//MODIFICATION #7:
 		//If the cell was flipped reset the layer 4 cell to white
 		if(adjustCellColor) {
-			board.resetToWhite(agent);
+			board.getPersistenceLayer()[indexRow][indexColumn].reset();
 		}
 		//If the cell does not need changed, darken the purple
 		else {
-			board.addPurple(agent); 
+			board.getPersistenceLayer()[indexRow][indexColumn].shiftState();
 		}
 	}
 }

@@ -46,7 +46,6 @@ public class SwarmAgent extends Ellipse2D.Double {
 	 * @param x
 	 * @param y
 	 * @param size
-	 * @param velocity
 	 * @param colorFill
 	 */
 	public SwarmAgent(double x, double y, double size, Color colorFill, boolean agentSpecial, Board board) {
@@ -74,32 +73,31 @@ public class SwarmAgent extends Ellipse2D.Double {
 		helperGraphics2D.fill(this);
 		
 		if(board.getWraparound()) {
-			int widthBoard = board.getWidth();
-			int heightBoard = board.getHeight();
+			double scaleBoard = Board.SCALE_BOARD;
 			
 			boolean offTop = y < 0;
-			boolean offBottom = getMaxY() > heightBoard;
+			boolean offBottom = getMaxY() > scaleBoard;
 			
 			if(x < 0) {
-				helperGraphics2D.fillOval((int)(x + widthBoard), (int)y, (int)width, (int)height);
+				helperGraphics2D.fillOval((int)(x + scaleBoard), (int)y, (int)width, (int)height);
 				
 				if(offTop) {
-					helperGraphics2D.fillOval((int)(x + widthBoard), (int)(y + heightBoard), (int)width, (int)height);
+					helperGraphics2D.fillOval((int)(x + scaleBoard), (int)(y + scaleBoard), (int)width, (int)height);
 				}
 			}
-			else if(getMaxX() > widthBoard) {
-				helperGraphics2D.fillOval((int)(x - widthBoard), (int)y, (int)width, (int)height);
+			else if(getMaxX() > scaleBoard) {
+				helperGraphics2D.fillOval((int)(x - scaleBoard), (int)y, (int)width, (int)height);
 				
 				if(offBottom) {
-					helperGraphics2D.fillOval((int)(x - widthBoard), (int)(y - heightBoard), (int)width, (int)height);
+					helperGraphics2D.fillOval((int)(x - scaleBoard), (int)(y - scaleBoard), (int)width, (int)height);
 				}
 			}
 			
 			if(offTop) {
-				helperGraphics2D.fillOval((int)x, (int)(y + heightBoard), (int)width, (int)height);
+				helperGraphics2D.fillOval((int)x, (int)(y + scaleBoard), (int)width, (int)height);
 			}
 			else if(offBottom) {
-				helperGraphics2D.fillOval((int)x, (int)(y - heightBoard), (int)width, (int)height);
+				helperGraphics2D.fillOval((int)x, (int)(y - scaleBoard), (int)width, (int)height);
 			}
 		}
 		

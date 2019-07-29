@@ -26,6 +26,7 @@ public abstract class CellDisplay extends Rectangle2D.Double implements Cell {
 		this.board = board;
 	}
 	
+	@Override
 	public int getState() {
 		return indexState;
 	}
