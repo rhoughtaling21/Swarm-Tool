@@ -15,7 +15,9 @@ import java.awt.Graphics2D;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
+import java.util.concurrent.ThreadLocalRandom;
 
+import cells.Cell;
 import gui.Board;
 import gui.GUI;
 
@@ -30,6 +32,8 @@ import gui.GUI;
 @SuppressWarnings("serial")
 public class SwarmAgent extends Ellipse2D.Double {
 	private static final int MEMORY = 20;
+	public static final int THRESHOLD_POLARITY_DOMINANT_MEMORY = 18;
+	public static final int THRESHOLD_POLARITY_DOMINANT_NEIGHBORING = 2;
 	
 	private boolean agentSpecial; //MODIFICATION: one agent will be a different color (when true)
 	private boolean memoryFilled;

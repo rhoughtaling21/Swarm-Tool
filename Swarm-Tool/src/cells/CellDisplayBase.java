@@ -38,6 +38,7 @@ public class CellDisplayBase extends CellDisplay {
 
 	//MODIFICATION #3
 	//change color of Cell
+	@Override
 	public void setState(int indexState) {
 		frequenciesBase[this.indexState]--;
 		setStateValue(indexState);

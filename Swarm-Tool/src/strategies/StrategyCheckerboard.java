@@ -1,11 +1,14 @@
 package strategies;
 
 import cells.CellDisplayBase;
+
+import java.util.concurrent.ThreadLocalRandom;
+
 import cells.Cell;
 import gui.Board;		//MODIFICATION #7 
 import other.SwarmAgent;
 
-public class CheckerBoard extends AbstractStrategy {
+public class StrategyCheckerboard extends Strategy {
 	private static final int COUNT_STATES = 2;
 	private static final int COUNT_POLARITIES = 2;
 
@@ -20,12 +23,7 @@ public class CheckerBoard extends AbstractStrategy {
 	}
 	
 	@Override
-	protected int determineState(Board board, int indexRow, int indexColumn) {
-		return 0;
-	}
-	
-	@Override
-	public int determinePolarity(Board board, int row, int col) {
+	public int determineStatePolarity(Board board, int row, int col) {
 		if(board.getBaseLayer()[row][col].getState() == 1) {
 			if(col % 2 == row % 2) {
 				return 0;
@@ -66,14 +64,14 @@ public class CheckerBoard extends AbstractStrategy {
 		int indexState = board.getPolarityLayer()[indexRow][indexColumn].getState();
 		
 		//MODIFICATION #2: use if statement to lower probability of agents following the rigid rules
-		if((int)(Math.random() * 300) > 0) {
+		if(ThreadLocalRandom.current().nextInt(300) > 0) {
 			if(countCorners > countEdges) { //if more corners are black than edges, you should be black in the center
 				indexState = 0;
 			}
 			else if(countEdges > countCorners) { //if more edges are black than corners, the center should be white
 				indexState = 1;
 			}
-			else if(Math.random() < .5) { //and if tied, flip a coin
+			else if(ThreadLocalRandom.current().nextDouble() < .5) { //and if tied, flip a coin
 				indexState = flip(indexState);
 			}
 		}
@@ -81,7 +79,7 @@ public class CheckerBoard extends AbstractStrategy {
 			indexState = flip(indexState);
 		}
 		
-		setCellState(board, indexRow, indexColumn, indexState);
+		applyCellState(board, indexRow, indexColumn, indexState);
 	}
 	
 	public int flip(int indexState) {

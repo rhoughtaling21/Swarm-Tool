@@ -21,7 +21,7 @@ import cells.CellDisplay;
 import cells.CellDisplayPersistence;
 import cells.CellDisplayPolarity;
 import other.SwarmAgent;
-import strategies.AbstractStrategy;
+import strategies.Strategy;
 /*
  * Authors: Nick, Tim, Zak, Gabriel
  * Description: This is the guts of the program. Two 2x2 Cell arrays of size[size X size] are created to be layers 1 and 2,
@@ -45,7 +45,7 @@ public class Board extends JPanel implements MouseMotionListener {
 	private double attractorStrength = 1;
 	private double rangeAttractor; //distance in cells, not pixels
 	private Color colorAgents, colorAgentsSpecial;
-	private AbstractStrategy strategy;//strategy that the agents and layer 2 use for their calculations given the current goal
+	private Strategy strategy;//strategy that the agents and layer 2 use for their calculations given the current goal
 	private GUI gui;
 	private int[] frequencyColorsInitial;
 	private int[] frequencyColors;
@@ -177,7 +177,7 @@ public class Board extends JPanel implements MouseMotionListener {
 		return sizeCell;
 	}
 	
-	public AbstractStrategy getActiveStrategy() {
+	public Strategy getActiveStrategy() {
 		return strategy;
 	}
 	
@@ -242,7 +242,7 @@ public class Board extends JPanel implements MouseMotionListener {
 		}
 	}
 
-	public void setGoalStrategy(AbstractStrategy strategy) {
+	public void setGoalStrategy(Strategy strategy) {
 		if(!strategy.equals(this.strategy)) {
 			this.strategy = strategy;
 			
@@ -528,8 +528,6 @@ public class Board extends JPanel implements MouseMotionListener {
 				strategy.updatePolarityCell(this, indexRow, indexColumn);
 			}
 		}
-		
-		System.out.print("UPDATE P");
 		
 		gui.updatePolarityPercentageLabels();
 		

@@ -57,6 +57,7 @@ import javax.swing.JSplitPane;
 import javax.swing.JTextField;
 import javax.swing.JToggleButton;
 import javax.swing.SwingConstants;
+import javax.swing.WindowConstants;
 import javax.swing.border.Border;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
@@ -64,11 +65,11 @@ import javax.swing.filechooser.FileSystemView;
 import javax.swing.text.NumberFormatter;
 
 import cells.CellDisplayBase;
-import strategies.AbstractStrategy;
-import strategies.AllBlack;
-import strategies.CheckerBoard;
-import strategies.DiagonalLines;
-import strategies.Lines;
+import strategies.Strategy;
+import strategies.StrategyBlackout;
+import strategies.StrategyCheckerboard;
+import strategies.StrategyDiagonals;
+import strategies.StrategyLines;
 
 /*
  * Authors: Gabriel, Zak
@@ -82,7 +83,7 @@ import strategies.Lines;
  *  */
 public class GUI {
 	public static final int COUNT_POLARITIES_MAXIMUM = 4;
-	public static final int RATE_STEPS_MAXIMUM = 85;
+	public static final int RATE_STEPS_MAXIMUM = 985;
 	private static final String TITLE = "Project Legion";
 	private static final String HEADER_PROPERTIES = "#--- Swarm Simulation Properties ---#";
 	private static final String FILETYPE_SCREENSHOT = ".jpg";
@@ -123,11 +124,11 @@ public class GUI {
 	private static final String[] PROPERTIES_RULES = {PROPERTY_RULE_GOAL, PROPERTY_RULE_POLARITY_DOMINANT, PROPERTY_RULE_EQUILIBRIUM, PROPERTY_RULE_AUTOMATIC, PROPERTY_RULE_AUTOMATIC_REPETITITONS, PROPERTY_RULE_AUTOMATIC_STEPS};
 	private static final String[] PROPERTIES_COLORS = generateColorProperties();
 	private static final String[] PROPERTIES_EXPORT = {PROPERTY_EXPORT_DATA, PROPERTY_EXPORT_DATA_INTERVAL, PROPERTY_EXPORT_DATA_DIRECTORY, PROPERTY_EXPORT_SCREENSHOT, PROPERTY_EXPORT_SCREENSHOT_INTERVAL, PROPERTY_EXPORT_SCREENSHOT_DIRECTORY};
-	private static final AbstractStrategy[] OPTIONS_STRATEGIES = {new AllBlack(), new CheckerBoard(), new DiagonalLines(), new Lines()};
+	private static final Strategy[] OPTIONS_STRATEGIES = {new StrategyBlackout(), new StrategyCheckerboard(), new StrategyDiagonals(), new StrategyLines()};
 	private static final String[][] PROPERTIES = {PROPERTIES_BOARD, PROPERTIES_AGENTS, PROPERTIES_RULES, PROPERTIES_COLORS, PROPERTIES_EXPORT};
 	private static final HashMap<Color, String> MAP_COLORS_NAMES = generateMapColorsNames();
 	private static final HashMap<String, Color> MAP_COLORS = generateMapColors();
-	private static final HashMap<String, AbstractStrategy> MAP_STRATEGIES = generateMapStrategies();
+	private static final HashMap<String, Strategy> MAP_STRATEGIES = generateMapStrategies();
 
 	private boolean splitPolarity; //MODIFICATION: if true set the board to be "stuck"
 	private boolean timerReady;// timer or agent step
@@ -153,7 +154,7 @@ public class GUI {
 	private Properties settings;
 	private Timer timer;
 	private TimerTask task;
-	private AbstractStrategy goalStrategy;
+	private Strategy goalStrategy;
 	private Board board;// board to be drawn
 	private BufferedWriter writerData;
 	public JFrame frmProjectLegion;// main frame
@@ -265,7 +266,7 @@ public class GUI {
 
 		frmProjectLegion = new JFrame(TITLE);
 		frmProjectLegion.setLayout(new GridBagLayout());
-		frmProjectLegion.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+		frmProjectLegion.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
 		frmProjectLegion.addWindowListener(
 			new WindowAdapter() {
 				@Override
@@ -429,7 +430,7 @@ public class GUI {
 		// open a new JFrame that will ask the user the new dimensions for the new
 		// board.
 		JFrame frameOptions = new JFrame("Simulation Settings");
-		frameOptions.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
+		frameOptions.setDefaultCloseOperation(WindowConstants.HIDE_ON_CLOSE);
 		frameOptions.setAlwaysOnTop(true);
 		frameOptions.setLayout(new GridBagLayout());
 		frameOptions.setMinimumSize(new Dimension(1000, 1000));
@@ -792,7 +793,7 @@ public class GUI {
 		paneSplit.setLeftComponent(panelWorkbench);
 		
 		// This is where the tabs for the layer options go.
-		JTabbedPane paneTabbed = new JTabbedPane(JTabbedPane.TOP);
+		JTabbedPane paneTabbed = new JTabbedPane(SwingConstants.TOP);
 		paneTabbed.setMinimumSize(new Dimension(0, 0));
 		paneTabbed.addComponentListener(listenerFonts);
 		paneTabbed.addChangeListener(
@@ -1348,7 +1349,7 @@ public class GUI {
 		return getColor((String)menuDropDownColorAgentsSpecial.getSelectedItem());
 	}
 
-	public AbstractStrategy getStrategy() {
+	public Strategy getStrategy() {
 		return goalStrategy;
 	}
 
@@ -1835,7 +1836,7 @@ public class GUI {
 		return null;
 	}
 
-	private static AbstractStrategy getStrategy(String nameStrategy) {
+	private static Strategy getStrategy(String nameStrategy) {
 		nameStrategy = nameStrategy.toUpperCase();
 
 		if(MAP_STRATEGIES.containsKey(nameStrategy)) {
@@ -1901,8 +1902,8 @@ public class GUI {
 		return mapColors;
 	}
 
-	private static HashMap<String, AbstractStrategy> generateMapStrategies() {
-		HashMap<String, AbstractStrategy> mapStrategies = new HashMap<String, AbstractStrategy>();
+	private static HashMap<String, Strategy> generateMapStrategies() {
+		HashMap<String, Strategy> mapStrategies = new HashMap<String, Strategy>();
 
 		for(int indexStrategy = 0; indexStrategy < OPTIONS_STRATEGIES.length; indexStrategy++) {
 			mapStrategies.put(OPTIONS_STRATEGIES_NAMES[indexStrategy], OPTIONS_STRATEGIES[indexStrategy]);
