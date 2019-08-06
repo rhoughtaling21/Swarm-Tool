@@ -1,4 +1,4 @@
-package other;
+package agents;
 /*		Author: Nick Corrado and Tim Dobeck
  * 		Description: This is the constructor class for the Agents to be created and drawn. Velocity determined the direction each agent will move and
  * 		Color is for determining if the color of the agent will be green or invisible. The rest of the agents are being made because it is extending the
@@ -15,11 +15,9 @@ import java.awt.Graphics2D;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
-import java.util.concurrent.ThreadLocalRandom;
-
-import cells.Cell;
 import gui.Board;
 import gui.GUI;
+import strategies.Strategy;
 
 /**
  * @author Nick
@@ -40,8 +38,10 @@ public class SwarmAgent extends Ellipse2D.Double {
 	private Point2D velocity; //adds direction to our agents
 	private Color colorFill; //only adding a color here so we can make it green or invisible in the board class
 	private Board board;
+	private Strategy strategy;
 	private int[] countsPolaritiesRecent;
 	private ArrayList<Integer> polaritiesRecent;
+	
 	/**
 	 * @author Nick
 	 * Constructor that makes an agent using given coordinates, Color, and velocity vector.
@@ -52,12 +52,13 @@ public class SwarmAgent extends Ellipse2D.Double {
 	 * @param size
 	 * @param colorFill
 	 */
-	public SwarmAgent(double x, double y, double size, Color colorFill, boolean agentSpecial, Board board) {
+	public SwarmAgent(double x, double y, double size, Color colorFill, boolean agentSpecial, Board board, Strategy strategy) {
 		super(x, y, size, size);
 		
 		this.colorFill = colorFill;
 		this.agentSpecial = agentSpecial;
 		this.board = board;
+		this.strategy = strategy;
 		
 		double sizeCell = board.getCellSize();
 		velocity = new Point2D.Double(sizeCell * (Math.random() - 0.5), sizeCell * (Math.random() - 0.5));
@@ -107,12 +108,33 @@ public class SwarmAgent extends Ellipse2D.Double {
 		
 	}
 
+	//MODIFICATION
+	public boolean isSpecial() {
+		return agentSpecial;
+	}
+		
+	//MODIFICATION #3
+	public boolean getMemoryFilled() {
+		return memoryFilled;
+	}
+		
+	public int getPolarityCount(int indexPolarity) {
+		return countsPolaritiesRecent[indexPolarity];
+	}
+	
+	public Point2D getVelocity() {
+		return velocity;
+	}
+	
 	public void setColor(Color color) {
 		this.colorFill = color;
 	}
-
-	public Point2D getVelocity() {
-		return velocity;
+	
+	public void setStrategy(Strategy strategy) {
+		this.strategy = strategy;
+		
+		polaritiesRecent.clear();
+		memoryFilled = false;
 	}
 
 	//determines how much an agent will move in a particular direction
@@ -162,20 +184,6 @@ public class SwarmAgent extends Ellipse2D.Double {
 	public void yBounce() {
 		setVelocity(getVelocity().getX(), -1 * getVelocity().getY());
 	}
-	
-	//MODIFICATION
-	public boolean getAgentStatus() {
-		return agentSpecial;
-	}
-	
-	//MODIFICATION #3
-	public boolean getMemoryFilled() {
-		return memoryFilled;
-	}
-	
-	public int getPolarityCount(int indexPolarity) {
-		return countsPolaritiesRecent[indexPolarity];
-	}
 
 	public void seePolarity(int indexPolarity) {
 		if(memoryFilled = polaritiesRecent.size() >= MEMORY) {
@@ -184,5 +192,9 @@ public class SwarmAgent extends Ellipse2D.Double {
 		
 		polaritiesRecent.add(indexPolarity);
 		countsPolaritiesRecent[indexPolarity]++;
+	}
+	
+	public void logic() {
+		strategy.logic(board, this);
 	}
 }

@@ -65,11 +65,11 @@ import javax.swing.filechooser.FileSystemView;
 import javax.swing.text.NumberFormatter;
 
 import cells.CellDisplayBase;
-import strategies.Strategy;
-import strategies.StrategyBlackout;
-import strategies.StrategyCheckerboard;
-import strategies.StrategyDiagonals;
-import strategies.StrategyLines;
+import planes.Plane;
+import planes.PlaneBlackout;
+import planes.PlaneCheckerboard;
+import planes.PlaneDiagonals;
+import planes.PlaneLines;
 
 /*
  * Authors: Gabriel, Zak
@@ -124,11 +124,11 @@ public class GUI {
 	private static final String[] PROPERTIES_RULES = {PROPERTY_RULE_GOAL, PROPERTY_RULE_POLARITY_DOMINANT, PROPERTY_RULE_EQUILIBRIUM, PROPERTY_RULE_AUTOMATIC, PROPERTY_RULE_AUTOMATIC_REPETITITONS, PROPERTY_RULE_AUTOMATIC_STEPS};
 	private static final String[] PROPERTIES_COLORS = generateColorProperties();
 	private static final String[] PROPERTIES_EXPORT = {PROPERTY_EXPORT_DATA, PROPERTY_EXPORT_DATA_INTERVAL, PROPERTY_EXPORT_DATA_DIRECTORY, PROPERTY_EXPORT_SCREENSHOT, PROPERTY_EXPORT_SCREENSHOT_INTERVAL, PROPERTY_EXPORT_SCREENSHOT_DIRECTORY};
-	private static final Strategy[] OPTIONS_STRATEGIES = {new StrategyBlackout(), new StrategyCheckerboard(), new StrategyDiagonals(), new StrategyLines()};
+	private static final Plane[] OPTIONS_STRATEGIES = {new PlaneBlackout(), new PlaneCheckerboard(), new PlaneDiagonals(), new PlaneLines()};
 	private static final String[][] PROPERTIES = {PROPERTIES_BOARD, PROPERTIES_AGENTS, PROPERTIES_RULES, PROPERTIES_COLORS, PROPERTIES_EXPORT};
 	private static final HashMap<Color, String> MAP_COLORS_NAMES = generateMapColorsNames();
 	private static final HashMap<String, Color> MAP_COLORS = generateMapColors();
-	private static final HashMap<String, Strategy> MAP_STRATEGIES = generateMapStrategies();
+	private static final HashMap<String, Plane> MAP_STRATEGIES = generateMapStrategies();
 
 	private boolean splitPolarity; //MODIFICATION: if true set the board to be "stuck"
 	private boolean timerReady;// timer or agent step
@@ -154,7 +154,7 @@ public class GUI {
 	private Properties settings;
 	private Timer timer;
 	private TimerTask task;
-	private Strategy goalStrategy;
+	private Plane goalStrategy;
 	private Board board;// board to be drawn
 	private BufferedWriter writerData;
 	public JFrame frmProjectLegion;// main frame
@@ -1349,7 +1349,7 @@ public class GUI {
 		return getColor((String)menuDropDownColorAgentsSpecial.getSelectedItem());
 	}
 
-	public Strategy getStrategy() {
+	public Plane getStrategy() {
 		return goalStrategy;
 	}
 
@@ -1836,7 +1836,7 @@ public class GUI {
 		return null;
 	}
 
-	private static Strategy getStrategy(String nameStrategy) {
+	private static Plane getStrategy(String nameStrategy) {
 		nameStrategy = nameStrategy.toUpperCase();
 
 		if(MAP_STRATEGIES.containsKey(nameStrategy)) {
@@ -1902,8 +1902,8 @@ public class GUI {
 		return mapColors;
 	}
 
-	private static HashMap<String, Strategy> generateMapStrategies() {
-		HashMap<String, Strategy> mapStrategies = new HashMap<String, Strategy>();
+	private static HashMap<String, Plane> generateMapStrategies() {
+		HashMap<String, Plane> mapStrategies = new HashMap<String, Plane>();
 
 		for(int indexStrategy = 0; indexStrategy < OPTIONS_STRATEGIES.length; indexStrategy++) {
 			mapStrategies.put(OPTIONS_STRATEGIES_NAMES[indexStrategy], OPTIONS_STRATEGIES[indexStrategy]);

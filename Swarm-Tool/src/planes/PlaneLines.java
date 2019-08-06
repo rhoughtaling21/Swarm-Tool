@@ -1,18 +1,20 @@
-package strategies;
+package planes;
 
-import cells.CellDisplayBase;
 import cells.Cell;
 import cells.CellDisplay;
 import gui.Board;
-import other.SwarmAgent;
+import strategies.Strategy;
+import strategies.StrategyStatePlaneLines;
 
-public class StrategyLines extends Strategy {
-	public static final int COUNT_STATES = 2;
-	public static final int COUNT_POLARITIES = 4;
-	/*
-	 * Author: Zakary Gray
-	 * Description: Agent logic and layer 2 logic for an end goal of all layer 1 cells forming straight lines of black and white. The stable state for this goal is a pyramid.
-	 */
+/*
+ * Author: Zakary Gray
+ * Description: Agent logic and layer 2 logic for an end goal of all layer 1 cells forming straight lines of black and white. The stable state for this goal is a pyramid.
+ */
+public class PlaneLines extends Plane {
+	private static final int COUNT_STATES = 2;
+	private static final int COUNT_POLARITIES = 4;
+	private static final Strategy STRATEGY_DEFAULT = new StrategyStatePlaneLines();
+	
 
 	@Override
 	public int getStateCount() {
@@ -25,7 +27,12 @@ public class StrategyLines extends Strategy {
 	}
 	
 	@Override
-	public int determineStatePolarity(Board board, int indexRow, int indexColumn) {
+	public Strategy getDefaultStrategy() {
+		return STRATEGY_DEFAULT;
+	}
+	
+	@Override
+	public int computeStatePolarity(Board board, int indexRow, int indexColumn) {
 		//Layer 2 in this sense shows 4 colors. one for each variation of straight lines. In the final, solved state,
 		//the 4 colors indicate the 4 faces of the pyramid.
 		CellDisplay[][] layerBase = board.getBaseLayer();
@@ -105,52 +112,25 @@ public class StrategyLines extends Strategy {
 
 		return 3;
 	}
-
+	
+	/**
+	 * I can't even begin to reverse-engineer the formula, so for now this'll just guess until it's found the correct state
+	 */
 	@Override
-	//this is the exact same logic as the checkerboard, but with edgeCount and cornerCount flipped.
-	public void logic(Board board, SwarmAgent agent) {
-		int indexRow = board.calculateAgentRow(agent);
-		int indexColumn = board.calculateAgentColumn(agent);
+	protected int computePolarityState(Board board, int indexRow, int indexColumn) {
+		Cell cell = board.getBaseLayer()[indexRow][indexColumn];
+		int indexStateCurrent = cell.getState();
 		
-		CellDisplayBase[][] layerBase = board.getBaseLayer();
-		CellDisplayBase cellBase = layerBase[indexRow][indexColumn];
+		int indexPolarity = board.getPolarityLayer()[indexRow][indexColumn].getState();
 		
-		Cell[] neighbors = Board.getNeighbors(board.getBaseLayer(), indexRow, indexColumn);
-		
-		int countCornersBlack = 0;
-		int countEdgesBlack = 0;
-		
-		for(int index = 0; index < neighbors.length; index++) {
-			if(neighbors[index] != null) {
-				if(neighbors[index].getState() == 0) {
-					if(index % 2 == 0) {
-						countEdgesBlack++;
-					}
-					else {
-						countCornersBlack++;
-					}
-				}
+		int indexState;
+		for(indexState = 0; indexState < COUNT_STATES; indexState++) {
+			cell.setState(indexState);
+			if(computeStatePolarity(board, indexRow, indexColumn) == indexPolarity) {
+				break;
 			}
 		}
-		
-		//MODIFICATION #2: 99.6% follow rules and 0.3% flip no matter what.
-		int indexState = cellBase.getState();
-		if(countCornersBlack > countEdgesBlack) {
-			if(indexState > 0) {
-				indexState = (indexState + 1) % COUNT_STATES;
-			}
-		}
-		else if(countEdgesBlack > countCornersBlack) {
-			if(indexState == 0) {
-				indexState = (indexState + 1) % COUNT_STATES;
-			}
-		}
-		else {
-			if (Math.random() < .5) {
-				indexState = (indexState + 1) % COUNT_STATES;
-			}
-		}
-
-		applyCellState(board, indexRow, indexColumn, indexState);
+		cell.setState(indexStateCurrent);
+		return indexState;
 	}
 }

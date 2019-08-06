@@ -1,46 +1,15 @@
 package strategies;
 
-import cells.CellDisplayBase;
-
 import java.util.concurrent.ThreadLocalRandom;
 
+import agents.SwarmAgent;
 import cells.Cell;
-import gui.Board;		//MODIFICATION #7 
-import other.SwarmAgent;
+import cells.CellDisplayBase;
+import gui.Board;
 
-public class StrategyCheckerboard extends Strategy {
-	private static final int COUNT_STATES = 2;
-	private static final int COUNT_POLARITIES = 2;
-
+public class StrategyStatePlaneCheckerboard extends StrategyState {
 	@Override
-	public int getStateCount() {
-		return COUNT_STATES;
-	}
-	
-	@Override
-	public int getPolarityCount() {
-		return COUNT_POLARITIES;
-	}
-	
-	@Override
-	public int determineStatePolarity(Board board, int row, int col) {
-		if(board.getBaseLayer()[row][col].getState() == 1) {
-			if(col % 2 == row % 2) {
-				return 0;
-			}
-			
-			return 1;
-		}
-		
-		if(col % 2 == row % 2) {
-			return 1;
-		}
-		
-		return 0;
-	}
-
-	@Override
-	public void logic(Board board, SwarmAgent agent) {
+	public int determineDesiredState(Board board, SwarmAgent agent) {
 		int indexRow = board.calculateAgentRow(agent);
 		int indexColumn = board.calculateAgentColumn(agent);
 		
@@ -79,10 +48,10 @@ public class StrategyCheckerboard extends Strategy {
 			indexState = flip(indexState);
 		}
 		
-		applyCellState(board, indexRow, indexColumn, indexState);
+		return indexState;
 	}
-	
-	public int flip(int indexState) {
+
+	private static int flip(int indexState) {
 		if(indexState == 0) {
 			return 1;
 		}
