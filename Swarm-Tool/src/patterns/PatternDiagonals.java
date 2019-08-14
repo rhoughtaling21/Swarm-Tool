@@ -1,8 +1,8 @@
-package planes;
+package patterns;
 
 import gui.Board;
 import strategies.Strategy;
-import strategies.StrategyPolarityPlaneDiagonals;
+import strategies.StrategyPolarityPatternDiagonals;
 
 /*
  * Author Morgan Might
@@ -11,10 +11,10 @@ import strategies.StrategyPolarityPlaneDiagonals;
  * are involved to keep track of polarities and to change the color of cell rather than just flip
  * since there are now three colors involved.
  */
-public class PlaneDiagonals extends Plane {
+public class PatternDiagonals extends Pattern {
 	private static final int COUNT_STATES = 3;
 	private static final int COUNT_POLARITIES = 3;
-	private static final Strategy STRATEGY_DEFAULT = new StrategyPolarityPlaneDiagonals();
+	private static final Strategy STRATEGY_DEFAULT = new StrategyPolarityPatternDiagonals();
 	private static final int[][] TABLE_STATES = {{0, 2, 1}, {2, 1, 0}, {1, 0, 2}};
 
 	@Override

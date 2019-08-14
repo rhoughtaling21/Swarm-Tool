@@ -8,6 +8,6 @@ public abstract class StrategyPolarity extends Strategy {
 	
 	@Override
 	public void logic(Board board, SwarmAgent agent) {
-		board.getActiveStrategy().applyCellPolarity(board, board.calculateAgentRow(agent), board.calculateAgentColumn(agent), determineDesiredPolarity(board, agent));
+		board.getPattern().applyCellPolarity(board, board.calculateAgentRow(agent), board.calculateAgentColumn(agent), determineDesiredPolarity(board, agent));
 	}
 }

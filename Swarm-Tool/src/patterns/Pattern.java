@@ -1,4 +1,4 @@
-package planes;
+package patterns;
 
 import cells.Cell;
 import cells.CellDisplayCorrectness;
@@ -7,7 +7,7 @@ import gui.Board;
 import strategies.Strategy;
 
 //Goal strategies are children of AbstractStrategy
-public abstract class Plane {
+public abstract class Pattern {
 	public abstract int getStateCount();
 	public abstract int getPolarityCount();
 	

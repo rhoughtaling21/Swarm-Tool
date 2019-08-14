@@ -46,14 +46,12 @@ public class CellDisplayBase extends CellDisplay {
 	
 	//flip color of Cell
 	public void shiftState() {
-		setState((indexState + 1) % board.getActiveStrategy().getStateCount());
+		setState((indexState + 1) % board.getPattern().getStateCount());
 	}
 	
 	private void setStateValue(int indexState) {
 		this.indexState = indexState;
 		colorFill = COLORS_BASE[indexState];
-		frequenciesBase[this.indexState]++;
+		frequenciesBase[indexState]++;
 	}
 }
-
-

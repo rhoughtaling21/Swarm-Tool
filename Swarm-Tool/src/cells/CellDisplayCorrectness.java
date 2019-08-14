@@ -25,5 +25,4 @@ public class CellDisplayCorrectness extends CellDisplay {
 			colorFill = COLOR_INCORRECT;
 		}
 	}
-
 }

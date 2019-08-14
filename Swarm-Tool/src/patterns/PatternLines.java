@@ -1,19 +1,19 @@
-package planes;
+package patterns;
 
 import cells.Cell;
 import cells.CellDisplay;
 import gui.Board;
 import strategies.Strategy;
-import strategies.StrategyStatePlaneLines;
+import strategies.StrategyStatePatternLines;
 
 /*
  * Author: Zakary Gray
  * Description: Agent logic and layer 2 logic for an end goal of all layer 1 cells forming straight lines of black and white. The stable state for this goal is a pyramid.
  */
-public class PlaneLines extends Plane {
+public class PatternLines extends Pattern {
 	private static final int COUNT_STATES = 2;
 	private static final int COUNT_POLARITIES = 4;
-	private static final Strategy STRATEGY_DEFAULT = new StrategyStatePlaneLines();
+	private static final Strategy STRATEGY_DEFAULT = new StrategyStatePatternLines();
 	
 
 	@Override
@@ -37,7 +37,7 @@ public class PlaneLines extends Plane {
 		//the 4 colors indicate the 4 faces of the pyramid.
 		CellDisplay[][] layerBase = board.getBaseLayer();
 
-		Cell[] neighbors = Board.getNeighbors(layerBase, indexRow, indexColumn);
+		Cell[] neighbors = board.getNeighbors(layerBase, indexRow, indexColumn);
 		int indexPolarityApparent = 0, countCornersBlack = 0, countEdgesBlack = 0, vertical = 0, horizontal = 0;
 		for(int index = 0; index < neighbors.length; index++){
 			if(neighbors[index] != null) {
@@ -48,7 +48,7 @@ public class PlaneLines extends Plane {
 					else {
 						countEdgesBlack++;
 						
-						if(index == 1 || index == 5) {
+						if(index == 1 || index == 7) {
 							vertical++;
 						}
 						else {
@@ -124,7 +124,7 @@ public class PlaneLines extends Plane {
 		int indexPolarity = board.getPolarityLayer()[indexRow][indexColumn].getState();
 		
 		int indexState;
-		for(indexState = 0; indexState < COUNT_STATES; indexState++) {
+		for(indexState = 0; indexState < COUNT_STATES - 1; indexState++) {
 			cell.setState(indexState);
 			if(computeStatePolarity(board, indexRow, indexColumn) == indexPolarity) {
 				break;

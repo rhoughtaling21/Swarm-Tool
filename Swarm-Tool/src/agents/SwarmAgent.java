@@ -15,8 +15,10 @@ import java.awt.Graphics2D;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
+import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
+
 import gui.Board;
-import gui.GUI;
 import strategies.Strategy;
 
 /**
@@ -29,18 +31,17 @@ import strategies.Strategy;
  */
 @SuppressWarnings("serial")
 public class SwarmAgent extends Ellipse2D.Double {
-	private static final int MEMORY = 20;
-	public static final int THRESHOLD_POLARITY_DOMINANT_MEMORY = 18;
-	public static final int THRESHOLD_POLARITY_DOMINANT_NEIGHBORING = 2;
+	private static final double SCALE_BOARD = Board.SCALE_BOARD;
 	
-	private boolean agentSpecial; //MODIFICATION: one agent will be a different color (when true)
-	private boolean memoryFilled;
+	private boolean modeMemory;
+	private int capacityMemory;
+	private double sizeCell;
 	private Point2D velocity; //adds direction to our agents
-	private Color colorFill; //only adding a color here so we can make it green or invisible in the board class
+	private Color colorFill;
 	private Board board;
 	private Strategy strategy;
-	private int[] countsPolaritiesRecent;
-	private ArrayList<Integer> polaritiesRecent;
+	protected int[] countsPolaritiesRecent;
+	protected ArrayList<Integer> polaritiesRecent;
 	
 	/**
 	 * @author Nick
@@ -52,20 +53,62 @@ public class SwarmAgent extends Ellipse2D.Double {
 	 * @param size
 	 * @param colorFill
 	 */
-	public SwarmAgent(double x, double y, double size, Color colorFill, boolean agentSpecial, Board board, Strategy strategy) {
+	public SwarmAgent(double x, double y, double size, Color colorFill, Board board, Strategy strategy) {
 		super(x, y, size, size);
 		
 		this.colorFill = colorFill;
-		this.agentSpecial = agentSpecial;
 		this.board = board;
+		
+		setStrategy(strategy);
+		
+		sizeCell = board.getCellSize();
+		
+		velocity = new Point2D.Double();
+		randomizeVelocity();
+	}
+			
+	public int getPolarityCount(int indexPolarity) {
+		if(modeMemory) {
+			return countsPolaritiesRecent[indexPolarity];
+		}
+		
+		return 0;
+	}
+		
+	public Point2D getVelocity() {
+		return velocity;
+	}
+
+	//determines how much an agent will move in a particular direction
+	public void setVelocity(double x, double y) {
+		velocity.setLocation(x, y);
+	}
+	
+	public void setColor(Color color) {
+		this.colorFill = color;
+	}
+		
+	public void setStrategy(Strategy strategy) {
 		this.strategy = strategy;
 		
-		double sizeCell = board.getCellSize();
-		velocity = new Point2D.Double(sizeCell * (Math.random() - 0.5), sizeCell * (Math.random() - 0.5));
+		ArrayList<Integer> polaritiesRecent = null;
+		int[] countsPolaritiesRecent = null;
 		
-		polaritiesRecent = new ArrayList<Integer>(MEMORY);
-		countsPolaritiesRecent = new int[GUI.COUNT_POLARITIES_MAXIMUM];
-		memoryFilled = false;
+		if(modeMemory = ((capacityMemory = strategy.getMemoryCapacity()) > 0)) {
+			polaritiesRecent = new ArrayList<Integer>(capacityMemory);
+			countsPolaritiesRecent = new int[board.getPattern().getPolarityCount()];
+		}
+		
+		this.polaritiesRecent = polaritiesRecent;
+		this.countsPolaritiesRecent = countsPolaritiesRecent;
+	}
+	
+	protected void randomizeVelocity() {
+		setVelocity(generateRandomVelocityVectorComponent(), generateRandomVelocityVectorComponent());
+	}
+	
+	protected double generateRandomVelocityVectorComponent() {
+		return sizeCell * (ThreadLocalRandom.current().nextDouble() - 0.5);
 	}
 
 	/**
@@ -105,49 +148,6 @@ public class SwarmAgent extends Ellipse2D.Double {
 				helperGraphics2D.fillOval((int)x, (int)(y - scaleBoard), (int)width, (int)height);
 			}
 		}
-		
-	}
-
-	//MODIFICATION
-	public boolean isSpecial() {
-		return agentSpecial;
-	}
-		
-	//MODIFICATION #3
-	public boolean getMemoryFilled() {
-		return memoryFilled;
-	}
-		
-	public int getPolarityCount(int indexPolarity) {
-		return countsPolaritiesRecent[indexPolarity];
-	}
-	
-	public Point2D getVelocity() {
-		return velocity;
-	}
-	
-	public void setColor(Color color) {
-		this.colorFill = color;
-	}
-	
-	public void setStrategy(Strategy strategy) {
-		this.strategy = strategy;
-		
-		polaritiesRecent.clear();
-		memoryFilled = false;
-	}
-
-	//determines how much an agent will move in a particular direction
-	public void setVelocity(double x, double y) {
-		velocity.setLocation(x, y);
-	}
-
-	public void setX(double x) {
-		this.x = x;
-	}
-
-	public void setY(double y) {
-		this.y = y;
 	}
 
 	/**
@@ -158,35 +158,56 @@ public class SwarmAgent extends Ellipse2D.Double {
 	 * but not too often. The range of the velocity is between (-5, 5) in both the x
 	 * and y directions so that values will be evenly distributed in each direction.
 	 */
-	public void step(double cellSize) {
-		setX(x + velocity.getX());
-		setY(y + velocity.getY());
+	public void step() {
+		double coordinateX = x + velocity.getX();
+		double coordinateY = y + velocity.getY();
 
-		if (Math.random() < 0.1) {
-			setVelocity(cellSize * (Math.random() - 0.5), cellSize * (Math.random() - 0.5));
+		Random generatorNumbersRandom = ThreadLocalRandom.current();
+		if (generatorNumbersRandom.nextDouble() < 0.1) {
+			randomizeVelocity();
 		}
-	}
-
-	/**
-	 * @author Nick
-	 * This method negates the agent's x component of its vector, as if the agent
-	 * bounced off the wall of the simulation.
-	 */
-	public void xBounce() {
-		setVelocity(-1 * getVelocity().getX(), getVelocity().getY());
-	}
-
-	/**
-	 * @author Nick
-	 * This method negates the agent's y component of its vector, as if the agent
-	 * bounced off the ceiling or floor of the simulation.
-	 */
-	public void yBounce() {
-		setVelocity(getVelocity().getX(), -1 * getVelocity().getY());
+		
+		double offsetCenter = width / 2;
+		double coordinateXCenter = coordinateX + offsetCenter;
+		double coordinateYCenter = coordinateY + offsetCenter;
+		
+		if (board.getWraparound()) {
+			//since there's no walls, this lets the agents "wrap" to the other side of the screen. this is awesome.
+			if(coordinateXCenter < 0 || coordinateXCenter > SCALE_BOARD) {
+				coordinateX = (((coordinateXCenter % SCALE_BOARD) + SCALE_BOARD) % SCALE_BOARD) - offsetCenter;
+			}
+			
+			if(coordinateYCenter < 0 || coordinateYCenter > SCALE_BOARD) {
+				coordinateY = (((coordinateYCenter % SCALE_BOARD) + SCALE_BOARD) % SCALE_BOARD) - offsetCenter;
+			}
+		}
+		else {
+			double velocityX = velocity.getX();
+			double velocityY = velocity.getY();
+			//since there's walls, this checks whether the agent has crossed any of the four bounds of the board:
+			//left, then top, then right, then bottom, and whether the agent's velocity has it headed further off
+			//the board. If it does, then it has the agent "bounce" off the board's wall.
+			boolean bounceX = (velocityX < 0 && coordinateXCenter < 0) || (velocityX > 0 && coordinateXCenter > SCALE_BOARD);
+			if(bounceX) {
+				velocityX *= -1;
+			}
+			
+			boolean bounceY = (velocityY < 0 && coordinateYCenter < 0) || (velocityY > 0 && coordinateYCenter > SCALE_BOARD);
+			if(bounceY) {
+				velocityY *= -1;
+			}
+			
+			if(bounceX || bounceY) {
+				setVelocity(velocityX, velocityY);
+			}
+		}
+		
+		this.x = coordinateX;
+		this.y = coordinateY;
 	}
 
 	public void seePolarity(int indexPolarity) {
-		if(memoryFilled = polaritiesRecent.size() >= MEMORY) {
+		if(polaritiesRecent.size() >= capacityMemory) {
 			countsPolaritiesRecent[polaritiesRecent.remove(0)]--;
 		}
 		

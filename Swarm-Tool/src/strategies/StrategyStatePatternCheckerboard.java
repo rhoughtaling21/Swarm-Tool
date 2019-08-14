@@ -7,7 +7,7 @@ import cells.Cell;
 import cells.CellDisplayBase;
 import gui.Board;
 
-public class StrategyStatePlaneCheckerboard extends StrategyState {
+public class StrategyStatePatternCheckerboard extends StrategyState {
 	@Override
 	public int determineDesiredState(Board board, SwarmAgent agent) {
 		int indexRow = board.calculateAgentRow(agent);
@@ -16,7 +16,7 @@ public class StrategyStatePlaneCheckerboard extends StrategyState {
 		int countCorners = 0;
 		int countEdges = 0;
 		CellDisplayBase[][] layerBase = board.getBaseLayer();
-		Cell[] neighbors = Board.getNeighbors(layerBase, indexRow, indexColumn);
+		Cell[] neighbors = board.getNeighbors(layerBase, indexRow, indexColumn);
 		for(int index = 0; index < neighbors.length; index++)	{
 			if(neighbors[index] != null) {
 				if(neighbors[index].getState() == 0) {

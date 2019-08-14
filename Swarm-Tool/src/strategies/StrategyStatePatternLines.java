@@ -5,18 +5,18 @@ import cells.Cell;
 import cells.CellDisplayBase;
 import gui.Board;
 
-public class StrategyStatePlaneLines extends StrategyState {
+public class StrategyStatePatternLines extends StrategyState {
 	@Override
 	public int determineDesiredState(Board board, SwarmAgent agent) {
 		int indexRow = board.calculateAgentRow(agent);
 		int indexColumn = board.calculateAgentColumn(agent);
 		
-		int countStates = board.getActiveStrategy().getStateCount();
+		int countStates = board.getPattern().getStateCount();
 		
 		CellDisplayBase[][] layerBase = board.getBaseLayer();
 		CellDisplayBase cellBase = layerBase[indexRow][indexColumn];
 		
-		Cell[] neighbors = Board.getNeighbors(board.getBaseLayer(), indexRow, indexColumn);
+		Cell[] neighbors = board.getNeighbors(board.getBaseLayer(), indexRow, indexColumn);
 		
 		int countCornersBlack = 0;
 		int countEdgesBlack = 0;

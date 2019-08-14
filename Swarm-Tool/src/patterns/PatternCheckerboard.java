@@ -1,13 +1,13 @@
-package planes;
+package patterns;
 
 import gui.Board;
 import strategies.Strategy;
-import strategies.StrategyStatePlaneCheckerboard;
+import strategies.StrategyStatePatternCheckerboard;
 
-public class PlaneCheckerboard extends Plane {
+public class PatternCheckerboard extends Pattern {
 	private static final int COUNT_STATES = 2;
 	private static final int COUNT_POLARITIES = 2;
-	private static final Strategy STRATEGY_DEFAULT = new StrategyStatePlaneCheckerboard();
+	private static final Strategy STRATEGY_DEFAULT = new StrategyStatePatternCheckerboard();
 
 	@Override
 	public int getStateCount() {

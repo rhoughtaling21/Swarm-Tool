@@ -7,13 +7,22 @@ import agents.SwarmAgent;
 import cells.Cell;
 import gui.Board;
 
-public class StrategyPolarityPlaneDiagonals extends StrategyPolarity {
+public class StrategyPolarityPatternDiagonals extends StrategyPolarity {
+	private static final int CAPACITY_MEMORY = 20;
+	private static final int THRESHOLD_POLARITY_DOMINANT_MEMORY = 18;
+	private static final int THRESHOLD_POLARITY_DOMINANT_NEIGHBORING = 2;
+	
+	@Override
+	public int getMemoryCapacity() {
+		return CAPACITY_MEMORY;
+	}
+	
 	@Override
 	public int determineDesiredPolarity(Board board, SwarmAgent agent) {
 		int indexRow = board.calculateAgentRow(agent);
 		int indexColumn = board.calculateAgentColumn(agent);
 		
-		int countPolarities = board.getActiveStrategy().getPolarityCount();
+		int countPolarities = board.getPattern().getPolarityCount();
 
 		//	
 		//COLLECT INFO	
@@ -22,7 +31,7 @@ public class StrategyPolarityPlaneDiagonals extends StrategyPolarity {
 		int[] frequenciesPolaritiesNeighboringCross = new int[countPolarities]; //These keep track of how many of each color appear in the cell above, below, left and right
 		int countNeighborsCross = 0;
 		int indexPolarityNeighboring;
-		Cell[] neighbors = Board.getNeighbors(board.getPolarityLayer(), indexRow, indexColumn);
+		Cell[] neighbors = board.getNeighbors(board.getPolarityLayer(), indexRow, indexColumn);
 		for (int indexNeighbor = 0; indexNeighbor < neighbors.length; indexNeighbor++) {
 			if (neighbors[indexNeighbor] != null) {
 				//Get Polarity of Neighbors MODIFICATION #9
@@ -47,10 +56,10 @@ public class StrategyPolarityPlaneDiagonals extends StrategyPolarity {
 		if(board.getGui().getEquilibriumMode()) {
 			LoopRule6:
 			for(indexPolarity = 0; indexPolarity < countPolarities; indexPolarity++) {
-				if(agent.getPolarityCount(indexPolarity) >= SwarmAgent.THRESHOLD_POLARITY_DOMINANT_MEMORY) {
+				if(agent.getPolarityCount(indexPolarity) >= THRESHOLD_POLARITY_DOMINANT_MEMORY) {
 					int indexPolarityDominant = board.getGui().getDominantPolarity();
 					
-					boolean metThresholdNeighboring = frequenciesPolaritiesNeighboring[indexPolarityDominant] >= SwarmAgent.THRESHOLD_POLARITY_DOMINANT_NEIGHBORING;
+					boolean metThresholdNeighboring = frequenciesPolaritiesNeighboring[indexPolarityDominant] >= THRESHOLD_POLARITY_DOMINANT_NEIGHBORING;
 					int countMemoryPolarity;
 					int countMemoryPolarityDominant = agent.getPolarityCount(indexPolarityDominant);
 					int sumMemoryPolarities = 0;
@@ -70,7 +79,7 @@ public class StrategyPolarityPlaneDiagonals extends StrategyPolarity {
 					
 					if(sumMemoryPolarities < countMemoryPolarityDominant) {
 						int frequencyPolarity;
-						int frequencyPolarityMaximum = SwarmAgent.THRESHOLD_POLARITY_DOMINANT_NEIGHBORING;
+						int frequencyPolarityMaximum = THRESHOLD_POLARITY_DOMINANT_NEIGHBORING;
 						ArrayList<Integer> indicesPolaritiesFrequent = new ArrayList<Integer>(countPolarities - 1);
 						for(indexPolarity = 0; indexPolarity < countPolarities; indexPolarity++) {
 							if(indexPolarity != indexPolarityDominant) {
@@ -137,7 +146,7 @@ public class StrategyPolarityPlaneDiagonals extends StrategyPolarity {
 	public void logic(Board board, SwarmAgent agent) {
 		int indexPolarity = determineDesiredPolarity(board, agent);
 		
-		board.getActiveStrategy().applyCellPolarity(board, board.calculateAgentRow(agent), board.calculateAgentColumn(agent), indexPolarity);
+		board.getPattern().applyCellPolarity(board, board.calculateAgentRow(agent), board.calculateAgentColumn(agent), indexPolarity);
 		agent.seePolarity(indexPolarity);
 	}
 }

@@ -8,6 +8,6 @@ public abstract class StrategyState extends Strategy {
 	
 	@Override
 	public void logic(Board board, SwarmAgent agent) {
-		board.getActiveStrategy().applyCellState(board, board.calculateAgentRow(agent), board.calculateAgentColumn(agent), determineDesiredState(board, agent));
+		board.getPattern().applyCellState(board, board.calculateAgentRow(agent), board.calculateAgentColumn(agent), determineDesiredState(board, agent));
 	}
 }

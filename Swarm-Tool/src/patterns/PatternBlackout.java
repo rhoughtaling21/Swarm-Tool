@@ -1,16 +1,16 @@
-package planes;
+package patterns;
 
 import gui.Board;
 import strategies.Strategy;
-import strategies.StrategyStatePlaneBlackout;
+import strategies.StrategyStatePatternBlackout;
 /*
  * Author: Zakary Gray
  * Description: Agent logic and layer 2 logic for an end goal of all layer 1 cells being black
  */
-public class PlaneBlackout extends Plane {
+public class PatternBlackout extends Pattern {
 	private static final int COUNT_STATES = 2;
 	private static final int COUNT_POLARITIES = 2;
-	private static final Strategy STRATEGY_DEFAULT = new StrategyStatePlaneBlackout();
+	private static final Strategy STRATEGY_DEFAULT = new StrategyStatePatternBlackout();
 
 	@Override
 	public int getStateCount() {

@@ -14,15 +14,23 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionListener;
 import java.awt.image.BufferedImage;
 import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
+
 import javax.swing.JPanel;
 
 import agents.SwarmAgent;
+import agents.SwarmAgentOrthogonal;
+import agents.SwarmAgentSignalTransmitter;
 import cells.CellDisplayBase;
 import cells.CellDisplayCorrectness;
+import cells.Cell;
 import cells.CellDisplay;
 import cells.CellDisplayPersistence;
 import cells.CellDisplayPolarity;
-import planes.Plane;
+import patterns.Pattern;
+import strategies.Strategy;
+import strategies.StrategyPolarityAlternator;
+import strategies.StrategyPolaritySignal;
 /*
  * Authors: Nick, Tim, Zak, Gabriel
  * Description: This is the guts of the program. Two 2x2 Cell arrays of size[size X size] are created to be layers 1 and 2,
@@ -36,22 +44,23 @@ public class Board extends JPanel implements MouseMotionListener {
 	public static final int BREADTH_MINIMUM = 1;
 	public static final double SCALE_BOARD = 800;
 	
-	private boolean showAgents;
+	private boolean swarmVisible;
 	private boolean wraparound; //whether the walls of the Board wrap or not; by default, they don't
 	private boolean modeAttractor;
-	public int breadth; //these are the numbers of cells in the board, NOT the graphical dimensions of the board
-	private int countAgents, countAgentsSpecial; //MODIFICATION
-	private int indexDisplay;
+	private int breadth; //these are the numbers of cells in the board, NOT the graphical dimensions of the board
+	private int countCells;
+	private int countAgents, countAgentsNormal, countAgentsSpecial, countAgentsAlternator; //MODIFICATION
+	private int indexLayerDisplay;
 	private double sizeCell; //pixel dimensions of each cell
 	private double attractorStrength = 1;
 	private double rangeAttractor; //distance in cells, not pixels
-	private Color colorAgents, colorAgentsSpecial;
-	private Plane strategy;//strategy that the agents and layer 2 use for their calculations given the current goal
+	private Color colorAgents, colorAgentsSpecial, colorAgentsAlternator;
+	private Pattern pattern;//strategy that the agents and layer 2 use for their calculations given the current goal
 	private GUI gui;
 	private int[] frequencyColorsInitial;
 	private int[] frequencyColors;
 	private int[] frequencyPolarities;
-	private SwarmAgent[] agents, agentsNormal, agentsSpecial;
+	private SwarmAgent[] agents, agentsStrategyPatternDefault, agentsNormal, agentsSpecial, agentsAlternator;
 	private CellDisplayBase[][] layerBase;
 	private CellDisplayPolarity[][] layerPolarity;
 	private CellDisplayPersistence[][] layerPersistence;  //MODIFICATION #7: new layer of cells for persistency
@@ -59,20 +68,23 @@ public class Board extends JPanel implements MouseMotionListener {
 	private CellDisplay[][] layerDisplay; //layer to paint
 	private CellDisplay[][][] layers;
 
-	public Board(int breadth, int countAgents, int countAgentsSpecial, GUI gui) {
+	public Board(int breadth, int countAgentsNormal, int countAgentsSpecial, int countAgentsAlternator, GUI gui) {
 		this.breadth = breadth;
-		this.countAgents = countAgents;
+		this.countAgentsNormal = countAgentsNormal;
 		this.countAgentsSpecial = countAgentsSpecial;
+		this.countAgentsAlternator = countAgentsAlternator;
 		this.gui = gui;
 		
 		wraparound = gui.getBoardWraparound();
-		showAgents = gui.getAgentVisibility();
+		swarmVisible = gui.getAgentVisibility();
 		modeAttractor = gui.getAttractorMode();
-		strategy = gui.getStrategy();
+		pattern = gui.getPattern();
 		
 		frequencyColorsInitial = new int[CellDisplayBase.getMaximumStateCount()];
 		frequencyColors = new int[frequencyColorsInitial.length];
 		frequencyPolarities = new int[GUI.COUNT_POLARITIES_MAXIMUM];
+		
+		countCells = breadth * breadth;
 		
 		//set the graphical dimensions of the cells themselves. the cells are always square, but the
 		//space they take up is constrained by the width and height of the board and by the number of cells.
@@ -83,54 +95,21 @@ public class Board extends JPanel implements MouseMotionListener {
 
 		layers = new CellDisplay[][][]{null, layerBase = new CellDisplayBase[breadth][breadth], layerPolarity = new CellDisplayPolarity[breadth][breadth], null, layerPersistence = new CellDisplayPersistence[breadth][breadth], layerCorrectness = new CellDisplayCorrectness[breadth][breadth]};
 		
+		Random generatorNumbersRandom = ThreadLocalRandom.current();
+		
 		//layer 1
-		if (!gui.getSplitPolarity()) {
-			for (int indexRow = 0; indexRow < layerBase.length; indexRow++) {
-				for (int indexColumn = 0; indexColumn < layerBase[indexRow].length; indexColumn++) {
-					layerBase[indexRow][indexColumn] = new CellDisplayBase(indexRow * sizeCell, indexColumn * sizeCell, sizeCell, (int)(strategy.getStateCount() * Math.random()), this);
-				}
-			}
-		}
-		// MODIFICATION: This will test swarms when the polarity is split and the agents are no longer effective
-		else if(strategy.getPolarityCount() == 2){
-			int pos;
-			int stateInitial;
-			for (int indexRow = 0; indexRow < layerBase.length; indexRow++) {
-				for (int indexColumn = 0; indexColumn < layerBase[indexRow].length; indexColumn++) {
-					if(Math.random() < 0.5) {  
-						pos = indexRow;
-					}
-					else { 
-						pos = indexColumn;
-					}
-						
-					if (pos < (3 + (int)(Math.random() * (breadth - 5)))) {
-						if (indexRow % 2 == indexColumn % 2) {
-							stateInitial = 0;
-						}
-						else {
-							stateInitial = 1;
-						}
-					} 
-					else {
-						if (indexRow % 2 == indexColumn % 2) {
-							stateInitial = 1;
-						}
-						else {
-							stateInitial = 0;
-						}
-					}
-					
-					layerBase[indexRow][indexColumn] = new CellDisplayBase(indexRow * sizeCell, indexColumn * sizeCell, sizeCell, stateInitial, this);
-				}
+		int countStates = pattern.getStateCount();
+		for (int indexRow = 0; indexRow < layerBase.length; indexRow++) {
+			for (int indexColumn = 0; indexColumn < layerBase[indexRow].length; indexColumn++) {
+				layerBase[indexRow][indexColumn] = new CellDisplayBase(indexRow * sizeCell, indexColumn * sizeCell, sizeCell, generatorNumbersRandom.nextInt(countStates), this);
 			}
 		}
 
 		for (int indexRow = 0; indexRow < breadth; indexRow++) {
 			for (int indexColumn = 0; indexColumn < breadth; indexColumn++) {
-				layerPolarity[indexRow][indexColumn] = strategy.createPolarityCell(this, indexRow, indexColumn);
+				layerPolarity[indexRow][indexColumn] = pattern.createPolarityCell(this, indexRow, indexColumn);
 				layerPersistence[indexRow][indexColumn] = new CellDisplayPersistence(indexRow * sizeCell, indexColumn * sizeCell, sizeCell, this);
-				layerCorrectness[indexRow][indexColumn] = strategy.createCorrectnessCell(this, indexRow, indexColumn);
+				layerCorrectness[indexRow][indexColumn] = pattern.createCorrectnessCell(this, indexRow, indexColumn);
 			}
 		}
 		
@@ -138,21 +117,64 @@ public class Board extends JPanel implements MouseMotionListener {
 		//*************************MODIFICATION******************************************************************
 		//********************************************************************************************************		
 		//generates the swarm and adjusts their positions
+		int countAgentsStandard = countAgentsNormal + countAgentsSpecial;
+		countAgents = countAgentsStandard + countAgentsAlternator;
 		
-		agents = new SwarmAgent[countAgents + countAgentsSpecial];
-		agentsSpecial = new SwarmAgent[countAgentsSpecial];
-		colorAgentsSpecial = gui.getSpecialAgentColor();
+		agents = new SwarmAgent[countAgents];
 		int indexAgent = 0;
-		for(int indexAgentSpecial = 0; indexAgentSpecial < agentsSpecial.length; indexAgentSpecial++) {
-			agentsSpecial[indexAgentSpecial] = new SwarmAgent(Math.random() * SCALE_BOARD, Math.random() * SCALE_BOARD, sizeAgent, colorAgentsSpecial, true, this, strategy.getDefaultStrategy());
-			agents[indexAgent++] = agentsSpecial[indexAgentSpecial];
-		}
+		SwarmAgent agent;
 		
-		agentsNormal = new SwarmAgent[countAgents];
+		agentsNormal = new SwarmAgent[countAgentsNormal];
 		colorAgents = gui.getAgentColor();
-		for(int indexAgentNormal = 0; indexAgentNormal < agentsNormal.length; indexAgentNormal++) {
-			agentsNormal[indexAgentNormal] = new SwarmAgent(Math.random() * SCALE_BOARD, Math.random() * SCALE_BOARD, sizeAgent, colorAgents, false, this, strategy.getDefaultStrategy());
-			agents[indexAgent++] = agentsNormal[indexAgentNormal];
+		colorAgentsSpecial = gui.getSpecialAgentColor();
+		colorAgentsAlternator = gui.getAlternatorAgentColor();
+		
+		Strategy strategySwarm;
+		
+		if(gui.getStrategySignalMode()) {
+			SwarmAgentSignalTransmitter[] agentsSignalTransmitter = new SwarmAgentSignalTransmitter[countAgentsSpecial];
+			agentsSpecial = agentsSignalTransmitter;
+			strategySwarm = new StrategyPolaritySignal(agentsSignalTransmitter);
+			
+			SwarmAgentSignalTransmitter agentSignalTransmitter;
+			for(int indexAgentSignalTransmitter = 0; indexAgentSignalTransmitter < agentsSignalTransmitter.length; indexAgentSignalTransmitter++) {
+				agentSignalTransmitter = new SwarmAgentSignalTransmitter(generatorNumbersRandom.nextDouble() * SCALE_BOARD, generatorNumbersRandom.nextDouble() * SCALE_BOARD, sizeAgent, colorAgentsSpecial, this, strategySwarm, 4);
+				agentsSignalTransmitter[indexAgentSignalTransmitter] = agentSignalTransmitter;
+				agents[indexAgent++] = agentSignalTransmitter;
+			}
+			
+			for(int indexAgentSignalReceiver = 0; indexAgentSignalReceiver < agentsNormal.length; indexAgentSignalReceiver++) {
+				agent = new SwarmAgent(generatorNumbersRandom.nextDouble() * SCALE_BOARD, generatorNumbersRandom.nextDouble() * SCALE_BOARD, sizeAgent, colorAgents, this, strategySwarm);
+				agentsNormal[indexAgentSignalReceiver] = agent;
+				agents[indexAgent++] = agent;
+			}
+		}
+		else {
+			agentsStrategyPatternDefault = new SwarmAgent[countAgentsStandard];
+			strategySwarm = pattern.getDefaultStrategy();
+			
+			agentsSpecial = new SwarmAgent[countAgentsSpecial];
+			for(int indexAgentStandardSpecial = 0; indexAgentStandardSpecial < agentsSpecial.length; indexAgentStandardSpecial++) {
+				agent = new SwarmAgent(generatorNumbersRandom.nextDouble() * SCALE_BOARD, generatorNumbersRandom.nextDouble() * SCALE_BOARD, sizeAgent, colorAgentsSpecial, this, strategySwarm);
+				agentsSpecial[indexAgentStandardSpecial] = agent;
+				agentsStrategyPatternDefault[indexAgent] = agent;
+				agents[indexAgent++] = agent;
+			}
+			
+			for(int indexAgentStandardNormal = 0; indexAgentStandardNormal < agentsNormal.length; indexAgentStandardNormal++) {
+				agent = new SwarmAgent(generatorNumbersRandom.nextDouble() * SCALE_BOARD, generatorNumbersRandom.nextDouble() * SCALE_BOARD, sizeAgent, colorAgents, this, strategySwarm);
+				agentsNormal[indexAgentStandardNormal] = agent;
+				agentsStrategyPatternDefault[indexAgent] = agent;
+				agents[indexAgent++] = agent;
+			}
+			
+			strategySwarm = new StrategyPolarityAlternator();
+			agentsAlternator = new SwarmAgent[countAgentsAlternator];
+			for(int indexAgentAlternator = 0; indexAgentAlternator < agentsAlternator.length; indexAgentAlternator++) {
+				agent = new SwarmAgentOrthogonal(generatorNumbersRandom.nextDouble() * SCALE_BOARD, generatorNumbersRandom.nextDouble() * SCALE_BOARD, sizeAgent, colorAgentsAlternator, this, strategySwarm);
+				agentsAlternator[indexAgentAlternator] = agent;
+				agents[indexAgent++] = agent;
+			}
 		}
 		
 		addMouseMotionListener(this);
@@ -166,20 +188,32 @@ public class Board extends JPanel implements MouseMotionListener {
 		return wraparound;
 	}
 	
-	public int getAgentCount() {
-		return countAgents;
+	public int getBreadth() {
+		return breadth;
+	}
+	
+	public int getCellCount() {
+		return countCells;
+	}
+	
+	public int getNormalAgentCount() {
+		return countAgentsNormal;
 	}
 	
 	public int getSpecialAgentCount() {
 		return countAgentsSpecial;
 	}
 	
+	public int getAlternatorAgentCount() {
+		return countAgentsAlternator;
+	}
+	
 	public double getCellSize() {
 		return sizeCell;
 	}
 	
-	public Plane getActiveStrategy() {
-		return strategy;
+	public Pattern getPattern() {
+		return pattern;
 	}
 	
 	public int[] getInitialColorFrequencies() {
@@ -243,22 +277,27 @@ public class Board extends JPanel implements MouseMotionListener {
 		}
 	}
 
-	public void setGoalStrategy(Plane strategy) {
-		if(!strategy.equals(this.strategy)) {
-			this.strategy = strategy;
+	public void setPattern(Pattern pattern) {
+		if(!pattern.equals(this.pattern)) {
+			this.pattern = pattern;
 			
-			for(SwarmAgent agent : agents) {
-				agent.setStrategy(strategy.getDefaultStrategy());
+			if(agentsStrategyPatternDefault != null) {
+				Strategy strategySwarm = pattern.getDefaultStrategy();
+				
+				for(SwarmAgent agent : agentsStrategyPatternDefault) {
+					agent.setStrategy(strategySwarm);
+				}
 			}
-			updatePolarityCells();
+			
 			gui.updatePolarityCount();
+			updatePolarityCells();
 		}
 	}
 	
 	public void toggleAgentVisibility() {
-		showAgents = !showAgents;
+		swarmVisible = !swarmVisible;
 		
-		scheduleRepaint();
+		repaint();
 	}
 	
 	public int calculateAgentRow(SwarmAgent agent) {
@@ -270,7 +309,7 @@ public class Board extends JPanel implements MouseMotionListener {
 	}
 	
 	public void updatePolarityColor(int indexPolarity) {
-		if(indexPolarity < strategy.getPolarityCount()) {
+		if(indexPolarity < pattern.getPolarityCount()) {
 			CellDisplayPolarity cell;
 			for(int indexRow = 0; indexRow < layerPolarity.length; indexRow++) {
 				for(int indexColumn = 0; indexColumn < layerPolarity[indexRow].length; indexColumn++) {
@@ -286,7 +325,7 @@ public class Board extends JPanel implements MouseMotionListener {
 	protected void paintComponent(Graphics helperGraphics) {
 		//draw boards
 		if(gui.indexLayerDisplay == 3) {
-			gui.indexLayerDisplay = indexDisplay;
+			gui.indexLayerDisplay = indexLayerDisplay;
 			repaint();
 		}
 		else {
@@ -295,7 +334,7 @@ public class Board extends JPanel implements MouseMotionListener {
 			Graphics2D helperGraphics2D = (Graphics2D)helperGraphics;
 			helperGraphics2D.scale(getWidth() / SCALE_BOARD, getHeight() / SCALE_BOARD);
 			
-			layerDisplay = layers[indexDisplay = gui.indexLayerDisplay];
+			layerDisplay = layers[indexLayerDisplay = gui.indexLayerDisplay];
 			
 			for(int indexRow = 0; indexRow < layerDisplay.length; indexRow++) {
 				for(int indexColumn = 0; indexColumn < layerDisplay[indexRow].length; indexColumn++) {
@@ -304,17 +343,11 @@ public class Board extends JPanel implements MouseMotionListener {
 			}
 			
 			//draw agents
-			if(showAgents) {
+			if(swarmVisible) {
 				for(SwarmAgent agent : agents) {
 					agent.draw(helperGraphics2D);
 				}
 			}
-		}
-	}
-
-	public void scheduleRepaint() {
-		if(!gui.getTimerActive()) {
-			repaint();
 		}
 	}
 	
@@ -343,40 +376,12 @@ public class Board extends JPanel implements MouseMotionListener {
 				
 				for (int row = 0; row < layerPolarity.length; row++) {
 					for (int col = 0; col < layerPolarity[row].length; col++) {
-						strategy.updatePolarityCell(this, row, col);
+						pattern.updatePolarityCell(this, row, col);
 					}
 				}
 			}
 
-			agent.step(sizeCell);
-			
-			if (wraparound) {
-				//since there's no walls, this lets the agents "wrap" to the other side of the screen. this is awesome.		
-				agent.setX((((agent.getCenterX() % SCALE_BOARD) + SCALE_BOARD) % SCALE_BOARD) - (agent.getWidth() / 2));
-				agent.setY((((agent.getCenterY() % SCALE_BOARD) + SCALE_BOARD) % SCALE_BOARD) - (agent.getHeight() / 2));
-
-				//this is not perfect: what we actually want this to do is draw both, so long as it's sticking a bit
-				//off of the screen. that makes the above operations much uglier. :(
-			}
-			else {
-				//since there's walls, this checks whether the agent has crossed any of the four bounds of the board:
-				//left, then top, then right, then bottom, and whether the agent's velocity has it headed further off
-				//the board. If it does, then it has the agent "bounce" off the board's wall. This is kind of a hack--
-				//the desirable behavior, actually, is actually just always bouncing it, but that will require refactoring
-				//this, and the agent's own step method, at a later date.
-				if (agent.getX() < agent.getWidth() && agent.getVelocity().getX() < 0) {
-					agent.xBounce();
-				}
-				if (agent.getY() < agent.getHeight() && agent.getVelocity().getY() < 0) {
-					agent.yBounce();
-				}
-				if (agent.getMaxX() > breadth*sizeCell+agent.getWidth() && agent.getVelocity().getX() > 0) {
-					agent.xBounce();
-				}
-				if (agent.getMaxY() > breadth*sizeCell+agent.getHeight() && agent.getVelocity().getY() > 0) {
-					agent.yBounce();
-				}
-			}
+			agent.step();
 			
 			updateCorrectnessCells();
 		}
@@ -389,93 +394,50 @@ public class Board extends JPanel implements MouseMotionListener {
 	 * "neighbor" means the eight cells directly and diagonally adjacent to the given cell. In the future,
 	 * that can be restricted by the given user-defined rules to just the cells directly adjacent. This
 	 * must also be revised to take into account whether the Board has wrap or not.
-	 * @param cells
-	 * @param rowNum
-	 * @param colNum
+	 * @param layerPolarity2
+	 * @param indexRow
+	 * @param indexColumn
 	 * @return an array of all of the neighbors of the cell whose row and column number has been provided.
 	 */
-	public static CellDisplay[] getNeighbors(CellDisplay[][] cells, int rowNum, int colNum) {
+	public Cell[] getNeighbors(Cell[][] layerPolarity2, int indexRow, int indexColumn) {
 		//each cell only has 8 neighbors! for now at least.... :(
-		CellDisplay[] neighbors = new CellDisplay[8];
-		int rowMax = cells.length-1;
-		int colMax = cells[rowMax-1].length-1;
+		int indexNeighbor = 0;
+		int indexColumnNeighbor;
+		int indexRowNeighborMaximum = indexRow + 1;
+		int indexColumnNeighborMinimum = indexColumn - 1;
+		int indexColumnNeighborMaximum = indexColumn + 1;
+		Cell[] neighbors = new CellDisplay[9];
+		for(int indexRowNeighbor = indexRow - 1; indexRowNeighbor <= indexRowNeighborMaximum; indexRowNeighbor++) {
+			for(indexColumnNeighbor = indexColumnNeighborMinimum; indexColumnNeighbor <= indexColumnNeighborMaximum; indexColumnNeighbor++) {
+				if(indexRowNeighbor != indexRow || indexColumnNeighbor != indexColumn) {
+					if(indexRowNeighbor >= 0 && indexRowNeighbor < breadth && indexColumnNeighbor >= 0 && indexColumnNeighbor < breadth) {
+						neighbors[indexNeighbor] = layerPolarity2[indexRowNeighbor][indexColumnNeighbor];
+					}
+					else if(wraparound) {
+						int indexRowNeighborWrapped;
+						if(indexRowNeighbor < 0 || indexRowNeighbor >= breadth) {
+							indexRowNeighborWrapped = (((indexRowNeighbor % breadth) + breadth) % breadth);
+						}
+						else {
+							indexRowNeighborWrapped = indexRowNeighbor;
+						}
+						
+						int indexColumnNeighborWrapped;
+						if(indexColumnNeighbor < 0 || indexColumnNeighbor >= breadth) {
+							indexColumnNeighborWrapped = (((indexColumnNeighbor % breadth) + breadth) % breadth);
+						}
+						else {
+							indexColumnNeighborWrapped = indexColumnNeighbor;
+						}
+						
+						neighbors[indexNeighbor] = layerPolarity2[indexRowNeighborWrapped][indexColumnNeighborWrapped];
+					}
+				}
+				
+				indexNeighbor++;
+			}
+		}
 		
-		//top left
-		if (rowNum == 0 && colNum == 0) {
-			neighbors[3] = cells[rowNum][colNum+1];
-			neighbors[4] = cells[rowNum+1][colNum+1];
-			neighbors[5] = cells[rowNum+1][colNum];
-		}
-
-		//bottom left
-		if (rowNum == rowMax && colNum == 0) {
-			neighbors[1] = cells[rowNum-1][colNum];
-			neighbors[2] = cells[rowNum-1][colNum+1];
-			neighbors[3] = cells[rowNum][colNum+1];
-		}
-
-		//top right
-		if (rowNum == 0 && colNum == cells[0].length-1) {
-			neighbors[5] = cells[rowNum+1][colNum];
-			neighbors[6] = cells[rowNum+1][colNum-1];
-			neighbors[7] = cells[rowNum][colNum-1];
-		}
-
-		//bottom right
-		if (rowNum == rowMax && colNum == colMax) {
-			neighbors[0] = cells[rowNum-1][colNum-1];
-			neighbors[1] = cells[rowNum-1][colNum];
-			neighbors[7] = cells[rowNum][colNum-1];
-		}
-
-		//top
-		if (rowNum == 0 && colNum > 0 && colNum < colMax) {
-			neighbors[3] = cells[rowNum][colNum+1];
-			neighbors[4] = cells[rowNum+1][colNum+1];
-			neighbors[5] = cells[rowNum+1][colNum];
-			neighbors[6] = cells[rowNum+1][colNum-1];
-			neighbors[7] = cells[rowNum][colNum-1];
-		}
-
-		//bottom
-		if (rowNum == rowMax && colNum > 0 && colNum < colMax) {
-			neighbors[0] = cells[rowNum-1][colNum-1];
-			neighbors[1] = cells[rowNum-1][colNum];
-			neighbors[2] = cells[rowNum-1][colNum+1];
-			neighbors[3] = cells[rowNum][colNum+1];
-			neighbors[7] = cells[rowNum][colNum-1];
-		}
-
-		//left
-		if (rowNum > 0 && rowNum < rowMax && colNum == 0) {
-			neighbors[1] = cells[rowNum-1][colNum];
-			neighbors[2] = cells[rowNum-1][colNum+1];
-			neighbors[3] = cells[rowNum][colNum+1];
-			neighbors[4] = cells[rowNum+1][colNum+1];
-			neighbors[5] = cells[rowNum+1][colNum];
-		}
-
-		//right
-		if (rowNum > 0 && rowNum < rowMax && colNum == colMax) {
-			neighbors[0] = cells[rowNum-1][colNum-1];
-			neighbors[1] = cells[rowNum-1][colNum];
-			neighbors[5] = cells[rowNum+1][colNum];
-			neighbors[6] = cells[rowNum+1][colNum-1];
-			neighbors[7] = cells[rowNum][colNum-1];
-		}
-
-		//middle cells obviously get everything
-		if (rowNum > 0 && rowNum < rowMax && colNum > 0 && colNum < colMax) {
-			neighbors[0] = cells[rowNum-1][colNum-1];
-			neighbors[1] = cells[rowNum-1][colNum];
-			neighbors[2] = cells[rowNum-1][colNum+1];
-			neighbors[3] = cells[rowNum][colNum+1];
-			neighbors[4] = cells[rowNum+1][colNum+1];
-			neighbors[5] = cells[rowNum+1][colNum];
-			neighbors[6] = cells[rowNum+1][colNum-1];
-			neighbors[7] = cells[rowNum][colNum-1];
-		}
-
 		return neighbors;
 	}
 
@@ -489,7 +451,7 @@ public class Board extends JPanel implements MouseMotionListener {
 	 * @return the cell occupied by a given agent in a given layer
 	 */
 	public CellDisplay getOccupiedCell(SwarmAgent agent, CellDisplay[][] layer) {
-		return layer[(int)(agent.getCenterX()/layer[0][0].width)][(int)(agent.getCenterY()/layer[0][0].height)];
+		return layer[calculateAgentRow(agent)][calculateAgentColumn(agent)];
 	}
 
 	@Override
@@ -508,12 +470,13 @@ public class Board extends JPanel implements MouseMotionListener {
 		
 		double distance, distanceX, distanceY;
 		double multiplierScale;
+		Random generatorNumbersRandom = ThreadLocalRandom.current();
 		for (SwarmAgent agent : agents) {
 			distance = Math.hypot(distanceX = (event.getX() - agent.getCenterX()), distanceY = (event.getY() - agent.getCenterY()));
 
 			if (distance < rangeAttractor) {
 				//then the agent is in the specified range
-				if (Math.random() < attractorStrength) {
+				if (generatorNumbersRandom.nextDouble() < attractorStrength) {
 					multiplierScale = multiplier / distance;
 					agent.setVelocity(multiplierScale * distanceX, multiplierScale * distanceY);
 				}
@@ -526,10 +489,10 @@ public class Board extends JPanel implements MouseMotionListener {
 
 	}
 	
-	private void updatePolarityCells() {
+	public void updatePolarityCells() {
 		for (int indexRow = 0; indexRow < layerPolarity.length; indexRow++) {
 			for (int indexColumn = 0; indexColumn < layerPolarity[indexRow].length; indexColumn++) {
-				strategy.updatePolarityCell(this, indexRow, indexColumn);
+				pattern.updatePolarityCell(this, indexRow, indexColumn);
 			}
 		}
 		
@@ -541,7 +504,7 @@ public class Board extends JPanel implements MouseMotionListener {
 	public void updateCorrectnessCells() {
 		for (int indexRow = 0; indexRow < layerCorrectness.length; indexRow++) {
 			for (int indexColumn = 0; indexColumn < layerCorrectness[indexRow].length; indexColumn++) {
-				strategy.updateCorrectnessCell(this, indexRow, indexColumn);
+				pattern.updateCorrectnessCell(this, indexRow, indexColumn);
 			}
 		}
 		
@@ -553,38 +516,34 @@ public class Board extends JPanel implements MouseMotionListener {
 	}
 
 	//MODIFICATION #2: This method selects random cells to flip
-	public void flipCells(int percentFlipCells) {
-		double percent = percentFlipCells/100.0;
-		int numCells = (int) ((breadth*breadth) * percent);
-		boolean[] flipCell = new boolean[(breadth*breadth)];
-		int count = 0;
-		Random rand = new Random();
-		while(count < numCells) {
-			int num = rand.nextInt(breadth*breadth);
-			if(!flipCell[num]) {
-				flipCell[num] = true;
-				count++;
+	public void flipCells(int percentCellsFlip) {
+		int countCellsFlip = (int)(countCells * (percentCellsFlip / 100d));
+		boolean[] flipCell = new boolean[countCells];
+		
+		Random generatorNumbersRandom = ThreadLocalRandom.current();
+		while(countCellsFlip > 0) {
+			int indexCellFlip = generatorNumbersRandom.nextInt(countCells);
+			if(!flipCell[indexCellFlip]) {
+				flipCell[indexCellFlip] = true;
+				countCellsFlip--;
 			}			
 		}
-		count = 0;
-		for (int row = 0; row < layerBase.length; row++) {
-			for (int col = 0; col < layerBase[row].length; col++) {
-				if(flipCell[count]) {
-					layerBase[row][col].shiftState();
-					strategy.updatePolarityCell(this, row, col);
-					System.out.println("FLIP: " + count);
+		
+		int indexCell = 0;
+		for (int indexRow = 0; indexRow < layerBase.length; indexRow++) {
+			for (int indexColumn = 0; indexColumn < layerBase[indexRow].length; indexColumn++) {
+				if(flipCell[indexCell]) {
+					layerBase[indexRow][indexColumn].shiftState();
+					pattern.updatePolarityCell(this, indexRow, indexColumn);
+					System.out.println("FLIP: " + indexCell);
 				}
-				count++;
+				
+				indexCell++;
 			}
 		}
 		
 		repaint();
 		gui.updateColorFrequencyLabels();
-	}
-
-	//MODIFICATION #3
-	public int getTotalCellCount() {
-		return breadth * breadth;
 	}
 
 	public GUI getGui() {
