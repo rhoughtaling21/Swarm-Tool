@@ -1,7 +1,7 @@
 package strategies;
 
-import agents.SwarmAgent;
 import gui.Board;
+import swarm.SwarmAgent;
 
 public class StrategyStatePatternBlackout extends StrategyState {
 	@Override

@@ -1,13 +1,12 @@
 package strategies;
 
-import agents.SwarmAgent;
-import agents.SwarmAgentSignalTransmitter;
 import gui.Board;
+import swarm.SwarmAgent;
 
 public class StrategyPolaritySignal extends StrategyPolarity {
-	SwarmAgentSignalTransmitter[] agentsSignalTransmitter;
+	SwarmAgent[] agentsSignalTransmitter;
 	
-	public StrategyPolaritySignal(SwarmAgentSignalTransmitter[] agentsSignalTransmitter) {
+	public StrategyPolaritySignal(SwarmAgent[] agentsSignalTransmitter) {
 		this.agentsSignalTransmitter = agentsSignalTransmitter;
 	}
 	
@@ -16,7 +15,7 @@ public class StrategyPolaritySignal extends StrategyPolarity {
 		int indexRowAgent = board.calculateAgentRow(agent);
 		int indexColumnAgent = board.calculateAgentColumn(agent);
 		
-		for(SwarmAgentSignalTransmitter agentSignalTransmitter : agentsSignalTransmitter) {
+		for(SwarmAgent agentSignalTransmitter : agentsSignalTransmitter) {
 			if(Math.hypot(indexRowAgent - board.calculateAgentRow(agentSignalTransmitter), indexColumnAgent - board.calculateAgentColumn(agentSignalTransmitter)) <= agentSignalTransmitter.getSignalRange()) {
 				return 0;
 			}

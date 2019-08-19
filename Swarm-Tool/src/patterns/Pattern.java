@@ -4,6 +4,7 @@ import cells.Cell;
 import cells.CellDisplayCorrectness;
 import cells.CellDisplayPolarity;
 import gui.Board;
+import gui.GUI;
 import strategies.Strategy;
 
 //Goal strategies are children of AbstractStrategy
@@ -60,7 +61,20 @@ public abstract class Pattern {
 	protected abstract int computePolarityState(Board board, int indexRow, int indexColumn);
 	
 	public int computePolarityCorrectness(Board board, int indexRow, int indexColumn) {
-		if(board.getPolarityLayer()[indexRow][indexColumn].getState() == board.getGui().getDominantPolarity()) {
+		int indexPolarityCorrect = 0;
+		
+		GUI gui = board.getGui();
+		
+		if(gui.getStrategySignalMode()) {
+			if(Math.hypot(indexRow - board.getBreadth() / 2d, indexColumn - board.getBreadth() / 2d) > gui.getSignalRange()) {
+				indexPolarityCorrect = 1;
+			}
+		}
+		else {
+			indexPolarityCorrect = gui.getDominantPolarity();
+		}
+		
+		if(board.getPolarityLayer()[indexRow][indexColumn].getState() == indexPolarityCorrect) {
 			return 1;
 		}
 		

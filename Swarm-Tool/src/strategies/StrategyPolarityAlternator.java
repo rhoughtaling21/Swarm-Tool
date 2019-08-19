@@ -2,9 +2,9 @@ package strategies;
 
 import java.awt.geom.Point2D;
 
-import agents.SwarmAgent;
 import cells.Cell;
 import gui.Board;
+import swarm.SwarmAgent;
 
 public class StrategyPolarityAlternator extends StrategyPolarity {
 	@Override

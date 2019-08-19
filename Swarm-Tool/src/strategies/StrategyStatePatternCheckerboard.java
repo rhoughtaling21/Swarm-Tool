@@ -2,10 +2,10 @@ package strategies;
 
 import java.util.concurrent.ThreadLocalRandom;
 
-import agents.SwarmAgent;
 import cells.Cell;
 import cells.CellDisplayBase;
 import gui.Board;
+import swarm.SwarmAgent;
 
 public class StrategyStatePatternCheckerboard extends StrategyState {
 	@Override

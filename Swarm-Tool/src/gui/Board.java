@@ -18,9 +18,6 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import javax.swing.JPanel;
 
-import agents.SwarmAgent;
-import agents.SwarmAgentOrthogonal;
-import agents.SwarmAgentSignalTransmitter;
 import cells.CellDisplayBase;
 import cells.CellDisplayCorrectness;
 import cells.Cell;
@@ -31,6 +28,9 @@ import patterns.Pattern;
 import strategies.Strategy;
 import strategies.StrategyPolarityAlternator;
 import strategies.StrategyPolaritySignal;
+import swarm.SwarmAgent;
+import swarm.SwarmAgentOrthogonal;
+import swarm.SwarmAgentStationary;
 /*
  * Authors: Nick, Tim, Zak, Gabriel
  * Description: This is the guts of the program. Two 2x2 Cell arrays of size[size X size] are created to be layers 1 and 2,
@@ -54,7 +54,7 @@ public class Board extends JPanel implements MouseMotionListener {
 	private double sizeCell; //pixel dimensions of each cell
 	private double attractorStrength = 1;
 	private double rangeAttractor; //distance in cells, not pixels
-	private Color colorAgents, colorAgentsSpecial, colorAgentsAlternator;
+	private Color colorAgentsNormal, colorAgentsSpecial, colorAgentsAlternator;
 	private Pattern pattern;//strategy that the agents and layer 2 use for their calculations given the current goal
 	private GUI gui;
 	private int[] frequencyColorsInitial;
@@ -117,34 +117,33 @@ public class Board extends JPanel implements MouseMotionListener {
 		//*************************MODIFICATION******************************************************************
 		//********************************************************************************************************		
 		//generates the swarm and adjusts their positions
+		colorAgentsNormal = gui.getAgentColor();
+		colorAgentsSpecial = gui.getSpecialAgentColor();
+		colorAgentsAlternator = gui.getAlternatorAgentColor();
+		
 		int countAgentsStandard = countAgentsNormal + countAgentsSpecial;
 		countAgents = countAgentsStandard + countAgentsAlternator;
 		
 		agents = new SwarmAgent[countAgents];
+		agentsNormal = new SwarmAgent[countAgentsNormal];
+		agentsSpecial = new SwarmAgent[countAgentsSpecial];
+		
 		int indexAgent = 0;
 		SwarmAgent agent;
-		
-		agentsNormal = new SwarmAgent[countAgentsNormal];
-		colorAgents = gui.getAgentColor();
-		colorAgentsSpecial = gui.getSpecialAgentColor();
-		colorAgentsAlternator = gui.getAlternatorAgentColor();
-		
 		Strategy strategySwarm;
 		
 		if(gui.getStrategySignalMode()) {
-			SwarmAgentSignalTransmitter[] agentsSignalTransmitter = new SwarmAgentSignalTransmitter[countAgentsSpecial];
-			agentsSpecial = agentsSignalTransmitter;
-			strategySwarm = new StrategyPolaritySignal(agentsSignalTransmitter);
+			strategySwarm = new StrategyPolaritySignal(agentsSpecial);
 			
-			SwarmAgentSignalTransmitter agentSignalTransmitter;
-			for(int indexAgentSignalTransmitter = 0; indexAgentSignalTransmitter < agentsSignalTransmitter.length; indexAgentSignalTransmitter++) {
-				agentSignalTransmitter = new SwarmAgentSignalTransmitter(generatorNumbersRandom.nextDouble() * SCALE_BOARD, generatorNumbersRandom.nextDouble() * SCALE_BOARD, sizeAgent, colorAgentsSpecial, this, strategySwarm, 4);
-				agentsSignalTransmitter[indexAgentSignalTransmitter] = agentSignalTransmitter;
-				agents[indexAgent++] = agentSignalTransmitter;
+			double rangeSignal = gui.getSignalRange();
+			for(int indexAgentSignalTransmitter = 0; indexAgentSignalTransmitter < agentsSpecial.length; indexAgentSignalTransmitter++) {
+				agent = new SwarmAgentStationary(generatorNumbersRandom.nextDouble() * SCALE_BOARD, generatorNumbersRandom.nextDouble() * SCALE_BOARD, sizeAgent, colorAgentsSpecial, this, strategySwarm, rangeSignal);
+				agentsSpecial[indexAgentSignalTransmitter] = agent;
+				agents[indexAgent++] = agent;
 			}
 			
 			for(int indexAgentSignalReceiver = 0; indexAgentSignalReceiver < agentsNormal.length; indexAgentSignalReceiver++) {
-				agent = new SwarmAgent(generatorNumbersRandom.nextDouble() * SCALE_BOARD, generatorNumbersRandom.nextDouble() * SCALE_BOARD, sizeAgent, colorAgents, this, strategySwarm);
+				agent = new SwarmAgent(generatorNumbersRandom.nextDouble() * SCALE_BOARD, generatorNumbersRandom.nextDouble() * SCALE_BOARD, sizeAgent, colorAgentsNormal, this, strategySwarm);
 				agentsNormal[indexAgentSignalReceiver] = agent;
 				agents[indexAgent++] = agent;
 			}
@@ -162,7 +161,7 @@ public class Board extends JPanel implements MouseMotionListener {
 			}
 			
 			for(int indexAgentStandardNormal = 0; indexAgentStandardNormal < agentsNormal.length; indexAgentStandardNormal++) {
-				agent = new SwarmAgent(generatorNumbersRandom.nextDouble() * SCALE_BOARD, generatorNumbersRandom.nextDouble() * SCALE_BOARD, sizeAgent, colorAgents, this, strategySwarm);
+				agent = new SwarmAgent(generatorNumbersRandom.nextDouble() * SCALE_BOARD, generatorNumbersRandom.nextDouble() * SCALE_BOARD, sizeAgent, colorAgentsNormal, this, strategySwarm);
 				agentsNormal[indexAgentStandardNormal] = agent;
 				agentsStrategyPatternDefault[indexAgent] = agent;
 				agents[indexAgent++] = agent;
@@ -248,32 +247,34 @@ public class Board extends JPanel implements MouseMotionListener {
 		this.modeAttractor = modeAttractor;
 	}
 	
+	public void setAgentColor(SwarmAgent[] agents, Color colorAgents) {
+		for (SwarmAgent agent : agents) {
+			agent.setColor(colorAgents);
+		}
+		
+		repaint();
+	}
+	
 	/**
 	 * @author zgray17
 	 * This method updates the color of the agents. Blah blah blah.
-	 * @param colorAgents
+	 * @param colorAgentsNormal
 	 */
-	public void setAgentColor(Color colorAgents) {
-		if(!this.colorAgents.equals(colorAgents)) {
-			this.colorAgents = colorAgents;
-			
-			for (SwarmAgent agent : agentsNormal) {
-				agent.setColor(colorAgents);
-			}
-			
-			repaint();
+	public void setNormalAgentColor(Color colorAgentsNormal) {
+		if(!this.colorAgentsNormal.equals(colorAgentsNormal)) {
+			setAgentColor(agentsNormal, this.colorAgentsNormal = colorAgentsNormal);
 		}
 	}
 
 	public void setSpecialAgentColor(Color colorAgentsSpecial) {
 		if(!this.colorAgentsSpecial.equals(colorAgentsSpecial)) {
-			this.colorAgentsSpecial = colorAgentsSpecial;
-			
-			for (SwarmAgent agent : agentsSpecial) {
-				agent.setColor(colorAgentsSpecial);
-			}
-			
-			repaint();
+			setAgentColor(agentsSpecial, this.colorAgentsSpecial = colorAgentsSpecial);
+		}
+	}
+	
+	public void setAlternatorAgentColor(Color colorAgentsAlternator) {
+		if(!this.colorAgentsAlternator.equals(colorAgentsAlternator)) {
+			setAgentColor(agentsAlternator, this.colorAgentsAlternator = colorAgentsAlternator);
 		}
 	}
 

@@ -3,9 +3,9 @@ package strategies;
 import java.util.ArrayList;
 import java.util.concurrent.ThreadLocalRandom;
 
-import agents.SwarmAgent;
 import cells.Cell;
 import gui.Board;
+import swarm.SwarmAgent;
 
 public class StrategyPolarityPatternDiagonals extends StrategyPolarity {
 	private static final int CAPACITY_MEMORY = 20;

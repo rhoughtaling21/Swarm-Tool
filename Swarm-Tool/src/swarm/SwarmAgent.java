@@ -1,4 +1,4 @@
-package agents;
+package swarm;
 /*		Author: Nick Corrado and Tim Dobeck
  * 		Description: This is the constructor class for the Agents to be created and drawn. Velocity determined the direction each agent will move and
  * 		Color is for determining if the color of the agent will be green or invisible. The rest of the agents are being made because it is extending the
@@ -36,6 +36,7 @@ public class SwarmAgent extends Ellipse2D.Double {
 	private boolean modeMemory;
 	private int capacityMemory;
 	private double sizeCell;
+	private double rangeSignal;
 	private Point2D velocity; //adds direction to our agents
 	private Color colorFill;
 	private Board board;
@@ -54,19 +55,24 @@ public class SwarmAgent extends Ellipse2D.Double {
 	 * @param colorFill
 	 */
 	public SwarmAgent(double x, double y, double size, Color colorFill, Board board, Strategy strategy) {
+		this(x, y, size, colorFill, board, strategy, 0);
+	}
+	
+	public SwarmAgent(double x, double y, double size, Color colorFill, Board board, Strategy strategy, double rangeSignal) {
 		super(x, y, size, size);
 		
-		this.colorFill = colorFill;
 		this.board = board;
 		
+		setColor(colorFill);
 		setStrategy(strategy);
+		setSignalRange(rangeSignal);
 		
 		sizeCell = board.getCellSize();
 		
 		velocity = new Point2D.Double();
-		randomizeVelocity();
+		randomizeVelocityVector();
 	}
-			
+	
 	public int getPolarityCount(int indexPolarity) {
 		if(modeMemory) {
 			return countsPolaritiesRecent[indexPolarity];
@@ -74,9 +80,17 @@ public class SwarmAgent extends Ellipse2D.Double {
 		
 		return 0;
 	}
+	
+	public double getSignalRange() {
+		return rangeSignal;
+	}
 		
 	public Point2D getVelocity() {
 		return velocity;
+	}
+	
+	public void setSignalRange(double rangeSignal) {
+		this.rangeSignal = rangeSignal;
 	}
 
 	//determines how much an agent will move in a particular direction
@@ -103,7 +117,7 @@ public class SwarmAgent extends Ellipse2D.Double {
 		this.countsPolaritiesRecent = countsPolaritiesRecent;
 	}
 	
-	protected void randomizeVelocity() {
+	protected void randomizeVelocityVector() {
 		setVelocity(generateRandomVelocityVectorComponent(), generateRandomVelocityVectorComponent());
 	}
 	
@@ -164,7 +178,7 @@ public class SwarmAgent extends Ellipse2D.Double {
 
 		Random generatorNumbersRandom = ThreadLocalRandom.current();
 		if (generatorNumbersRandom.nextDouble() < 0.1) {
-			randomizeVelocity();
+			randomizeVelocityVector();
 		}
 		
 		double offsetCenter = width / 2;

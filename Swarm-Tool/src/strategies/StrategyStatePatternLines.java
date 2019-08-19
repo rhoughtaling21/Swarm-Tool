@@ -1,9 +1,9 @@
 package strategies;
 
-import agents.SwarmAgent;
 import cells.Cell;
 import cells.CellDisplayBase;
 import gui.Board;
+import swarm.SwarmAgent;
 
 public class StrategyStatePatternLines extends StrategyState {
 	@Override

@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -84,7 +85,7 @@ import patterns.PatternLines;
  *  */
 public class GUI {
 	public static final int COUNT_POLARITIES_MAXIMUM = 4;
-	private static final int RATE_STEPS_MAXIMUM = 985;
+	private static final int RATE_STEPS_MAXIMUM = 85;
 	private static final String TITLE = "Project Legion";
 	private static final String HEADER_PROPERTIES = "#--- Swarm Simulation Properties ---#";
 	private static final String FILETYPE_SCREENSHOT = ".jpg";
@@ -99,6 +100,7 @@ public class GUI {
 	private static final String PROPERTY_AGENTS_VISIBLE = "agents.visible";
 	private static final String PROPERTY_RULE_PATTERN = "rule.pattern";
 	private static final String PROPERTY_RULE_STRATEGY_SIGNAL = "rule.strategy.signal";
+	private static final String PROPERTY_RULE_STRATEGY_SIGNAL_RANGE = "rule.strategy.signal.range";
 	private static final String PROPERTY_RULE_POLARITY_DOMINANT = "rule.polarity.dominant";
 	private static final String PROPERTY_RULE_EQUILIBRIUM = "rule.equilibrium";
 	private static final String PROPERTY_RULE_AUTOMATIC = "rule.automatic";
@@ -125,7 +127,7 @@ public class GUI {
 	private static final String[] OPTIONS_PATTERNS_NAMES = {"BLACKOUT", "CHECKERBOARD", "DIAGONALS", "LINES"};
 	private static final String[] PROPERTIES_BOARD = {PROPERTY_BOARD_SIZE, PROPERTY_BOARD_WRAPAROUND};
 	private static final String[] PROPERTIES_AGENTS = {PROPERTY_AGENTS_COUNT_NORMAL, PROPERTY_AGENTS_COUNT_SPECIAL, PROPERTY_AGENTS_COUNT_ALTERNATOR, PROPERTY_AGENTS_RATE, PROPERTY_AGENTS_ACTIVE, PROPERTY_AGENTS_VISIBLE};
-	private static final String[] PROPERTIES_RULES = {PROPERTY_RULE_PATTERN, PROPERTY_RULE_STRATEGY_SIGNAL, PROPERTY_RULE_POLARITY_DOMINANT, PROPERTY_RULE_EQUILIBRIUM, PROPERTY_RULE_AUTOMATIC, PROPERTY_RULE_AUTOMATIC_REPETITITONS, PROPERTY_RULE_AUTOMATIC_STEPS};
+	private static final String[] PROPERTIES_RULES = {PROPERTY_RULE_PATTERN, PROPERTY_RULE_STRATEGY_SIGNAL, PROPERTY_RULE_STRATEGY_SIGNAL_RANGE, PROPERTY_RULE_POLARITY_DOMINANT, PROPERTY_RULE_EQUILIBRIUM, PROPERTY_RULE_AUTOMATIC, PROPERTY_RULE_AUTOMATIC_REPETITITONS, PROPERTY_RULE_AUTOMATIC_STEPS};
 	private static final String[] PROPERTIES_COLORS = generateColorProperties();
 	private static final String[] PROPERTIES_EXPORT = {PROPERTY_EXPORT_DATA, PROPERTY_EXPORT_DATA_INTERVAL, PROPERTY_EXPORT_DATA_DIRECTORY, PROPERTY_EXPORT_SCREENSHOT, PROPERTY_EXPORT_SCREENSHOT_INTERVAL, PROPERTY_EXPORT_SCREENSHOT_DIRECTORY};
 	private static final Pattern[] OPTIONS_STRATEGIES = {new PatternBlackout(), new PatternCheckerboard(), new PatternDiagonals(), new PatternLines()};
@@ -154,6 +156,7 @@ public class GUI {
 	private int intervalExportData;
 	private int intervalExportScreenshot;
 	private long rateExecute;
+	private double rangeSignal;
 	private Path pathData, pathScreenshot;
 	private Properties settings;
 	private Timer timer;
@@ -175,7 +178,7 @@ public class GUI {
 	private JSlider sliderRateSwarm;
 	private JPanel panelBoard;
 	private DefaultComboBoxModel<String> optionsPolarityDominant;
-	private JComboBox<String> menuDropDownGoal, menuDropDownPolarityDominant, menuDropDownColorAgents, menuDropDownColorAgentsSpecial;
+	private JComboBox<String> menuDropDownPattern, menuDropDownPolarityDominant, menuDropDownColorAgents, menuDropDownColorAgentsSpecial, menuDropDownColorAgentsAlternator;
 	private int[] frequencyColorsInitial;
 	private int[] frequencyColors;
 	private int[] frequencyPolarities;
@@ -234,6 +237,7 @@ public class GUI {
 		propertyCommands.put(PROPERTY_AGENTS_VISIBLE, new CommandAgentVisible());
 		propertyCommands.put(PROPERTY_RULE_PATTERN, new CommandRuleGoal());
 		propertyCommands.put(PROPERTY_RULE_STRATEGY_SIGNAL, new CommandRuleStrategySignal());
+		propertyCommands.put(PROPERTY_RULE_STRATEGY_SIGNAL_RANGE, new CommandRuleStrategySignalRange());
 		propertyCommands.put(PROPERTY_RULE_POLARITY_DOMINANT, new CommandRuleDominantPolarity());
 		propertyCommands.put(PROPERTY_RULE_EQUILIBRIUM, new CommandRuleEquilibrium());
 		propertyCommands.put(PROPERTY_RULE_AUTOMATIC, new CommandRuleAutomatic());
@@ -503,18 +507,22 @@ public class GUI {
 		JLabel labelOptionsCountAgents = new JLabel("Standard Agents:");
 		JLabel labelOptionsCountAgentsSpecial = new JLabel("Special Agents:");
 		JLabel labelOptionsCountAgentsAlternator = new JLabel("Alternator Agents:");
+		JLabel labelOptionsRangeSignal = new JLabel("Signal Range:");
 		JLabel labelOptionsPattern = new JLabel("Pattern:");
 
 		JTextField fieldOptionsSizeBoard = new JFormattedTextField(getIntegerFormatter(Board.BREADTH_MINIMUM));
-
-		JToggleButton buttonModeSignal = new JToggleButton("Signal Transmission");
 		
 		NumberFormatter formatterInteger = getIntegerFormatter(0);
 
-		JTextField fieldOptionsCountAgents = new JFormattedTextField(formatterInteger);
+		JTextField fieldOptionsCountAgentsNormal = new JFormattedTextField(formatterInteger);
 		JTextField fieldOptionsCountAgentsSpecial = new JFormattedTextField(formatterInteger);
 		JTextField fieldOptionsCountAgentsAlternator = new JFormattedTextField(formatterInteger);
 
+		NumberFormat formatDouble = new DecimalFormat();
+		NumberFormatter formatterDouble = new NumberFormatter(formatDouble);
+		
+		JTextField fieldOptionsRangeSignal = new JFormattedTextField(formatterDouble);
+		
 		JComboBox<String> menuDropDownOptionsStrategy = new JComboBox<String>(new DefaultComboBoxModel<String>(OPTIONS_PATTERNS_NAMES));
 		menuDropDownOptionsStrategy.setBackground(fieldOptionsSizeBoard.getBackground());
 
@@ -565,6 +573,27 @@ public class GUI {
 
 		JTextField fieldOptionsExportScreenshotInterval = new JFormattedTextField(getIntegerFormatter(1));
 		JTextField fieldOptionsExportScreenshotPath = new JTextField();
+		
+		JToggleButton buttonModeSignal = new JToggleButton("Signal Transmission");
+		buttonModeSignal.addActionListener(
+			new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent event) {
+					if(buttonModeSignal.isSelected()) {
+						fieldOptionsCountAgentsAlternator.setVisible(false);
+						labelOptionsCountAgentsAlternator.setVisible(false);
+						labelOptionsRangeSignal.setVisible(true);
+						fieldOptionsRangeSignal.setVisible(true);
+					}
+					else {
+						fieldOptionsCountAgentsAlternator.setVisible(true);
+						labelOptionsCountAgentsAlternator.setVisible(true);
+						labelOptionsRangeSignal.setVisible(false);
+						fieldOptionsRangeSignal.setVisible(false);
+					}
+				}
+			}
+		);
 
 		JToggleButton headerOptionsExportScreenshot = new JToggleButton("Screenshot");
 		headerOptionsExportScreenshot.setBackground(colorDisabled);
@@ -583,8 +612,8 @@ public class GUI {
 		frameOptions.add(panelOptionsExport, constraintsPanel);
 
 		JPanel[] panelsOptions = {panelOptionsGeneral, panelOptionsAutomatic, panelOptionsExportData, panelOptionsExportScreenshot};
-		JLabel[][] labelsOptions = {{labelOptionsSizeBoard, labelOptionsStrategy, labelOptionsCountAgents, labelOptionsCountAgentsSpecial, labelOptionsCountAgentsAlternator, labelOptionsPattern}, {labelOptionsCountRepetitions, labelOptionsCountSteps}, {labelOptionsExportDataInterval, labelOptionsExportDataPath}, {labelOptionsExportScreenshotInterval, labelOptionsExportScreenshotPath}};
-		Component[][] componentsOptions = {{fieldOptionsSizeBoard, buttonModeSignal, fieldOptionsCountAgents, fieldOptionsCountAgentsSpecial, fieldOptionsCountAgentsAlternator, menuDropDownOptionsStrategy}, {fieldOptionsCountRepetitions, fieldOptionsCountSteps}, {fieldOptionsExportDataInterval, fieldOptionsExportDataPath}, {fieldOptionsExportScreenshotInterval, fieldOptionsExportScreenshotPath}};
+		JLabel[][] labelsOptions = {{labelOptionsSizeBoard, labelOptionsStrategy, labelOptionsCountAgents, labelOptionsCountAgentsSpecial, labelOptionsCountAgentsAlternator, labelOptionsRangeSignal, labelOptionsPattern}, {labelOptionsCountRepetitions, labelOptionsCountSteps}, {labelOptionsExportDataInterval, labelOptionsExportDataPath}, {labelOptionsExportScreenshotInterval, labelOptionsExportScreenshotPath}};
+		Component[][] componentsOptions = {{fieldOptionsSizeBoard, buttonModeSignal, fieldOptionsCountAgentsNormal, fieldOptionsCountAgentsSpecial, fieldOptionsCountAgentsAlternator, fieldOptionsRangeSignal, menuDropDownOptionsStrategy}, {fieldOptionsCountRepetitions, fieldOptionsCountSteps}, {fieldOptionsExportDataInterval, fieldOptionsExportDataPath}, {fieldOptionsExportScreenshotInterval, fieldOptionsExportScreenshotPath}};
 
 		JPanel panel;
 		JLabel label;
@@ -597,6 +626,7 @@ public class GUI {
 				component = componentsOptions[indexPanel][indexComponent];
 
 				if(indexComponent < labelsOptions[indexPanel].length) {
+					constraintsLabel.gridy = indexComponent;
 					label = labelsOptions[indexPanel][indexComponent];
 
 					label.setHorizontalAlignment(SwingConstants.RIGHT);
@@ -616,12 +646,24 @@ public class GUI {
 				@Override
 				public void actionPerformed(ActionEvent event) {
 					sizeBoard = Integer.parseInt(fieldOptionsSizeBoard.getText());
-					countAgentsNormal = Integer.parseInt(fieldOptionsCountAgents.getText());
+					countAgentsNormal = Integer.parseInt(fieldOptionsCountAgentsNormal.getText());
 					countAgentsSpecial = Integer.parseInt(fieldOptionsCountAgentsSpecial.getText());
-					countAgentsAlternator = Integer.parseInt(fieldOptionsCountAgentsAlternator.getText());
-					menuDropDownGoal.setSelectedIndex(menuDropDownOptionsStrategy.getSelectedIndex());
-
-					settings.setProperty(PROPERTY_RULE_STRATEGY_SIGNAL, Boolean.toString(modeSignal = buttonModeSignal.isSelected()));
+					
+					menuDropDownPattern.setSelectedIndex(menuDropDownOptionsStrategy.getSelectedIndex());
+					
+					if(modeSignal = buttonModeSignal.isSelected()) {
+						String rangeSignalString = fieldOptionsRangeSignal.getText();
+						rangeSignal = Double.parseDouble(rangeSignalString);
+						settings.setProperty(PROPERTY_RULE_STRATEGY_SIGNAL_RANGE, rangeSignalString);
+						
+						countAgentsAlternator = 0;
+					}
+					else {
+						String countAgentsAlternatorString = fieldOptionsCountAgentsAlternator.getText();
+						countAgentsAlternator = Integer.parseInt(countAgentsAlternatorString);
+						settings.setProperty(PROPERTY_AGENTS_COUNT_ALTERNATOR, countAgentsAlternatorString);
+					}
+					settings.setProperty(PROPERTY_RULE_STRATEGY_SIGNAL, Boolean.toString(modeSignal));
 					
 					if(modeAutomatic = headerOptionsAutomatic.isSelected()) {
 						String countRepetitionsMaximumString = fieldOptionsCountRepetitions.getText();
@@ -676,19 +718,21 @@ public class GUI {
 				@Override
 				public void actionPerformed(ActionEvent e) {
 					fieldOptionsSizeBoard.setText(Integer.toString(sizeBoard));
-					fieldOptionsCountAgents.setText(Integer.toString(countAgentsNormal));
-					fieldOptionsCountAgentsSpecial.setText(Integer.toString(countAgentsSpecial));
-					fieldOptionsCountAgentsAlternator.setText(Integer.toString(countAgentsAlternator));
+					fieldOptionsCountAgentsNormal.setText(settings.getProperty(PROPERTY_AGENTS_COUNT_NORMAL));
+					fieldOptionsCountAgentsSpecial.setText(settings.getProperty(PROPERTY_AGENTS_COUNT_SPECIAL));
+					fieldOptionsCountAgentsAlternator.setText(settings.getProperty(PROPERTY_AGENTS_COUNT_ALTERNATOR));
 					
-					fieldOptionsCountRepetitions.setText(Integer.toString(countRepetitionsMaximum));
-					fieldOptionsCountSteps.setText(Integer.toString(countStepsMaximum));
+					fieldOptionsRangeSignal.setText(settings.getProperty(PROPERTY_RULE_STRATEGY_SIGNAL_RANGE));
+					
+					fieldOptionsCountRepetitions.setText(settings.getProperty(PROPERTY_RULE_AUTOMATIC_REPETITITONS));
+					fieldOptionsCountSteps.setText(settings.getProperty(PROPERTY_RULE_AUTOMATIC_STEPS));
 							
-					fieldOptionsExportDataInterval.setText(Integer.toString(intervalExportData));
+					fieldOptionsExportDataInterval.setText(settings.getProperty(PROPERTY_EXPORT_DATA_INTERVAL));
 					fieldOptionsExportDataPath.setText(pathData.toString());
-					fieldOptionsExportScreenshotInterval.setText(Integer.toString(intervalExportScreenshot));
+					fieldOptionsExportScreenshotInterval.setText(settings.getProperty(PROPERTY_EXPORT_SCREENSHOT_INTERVAL));
 					fieldOptionsExportScreenshotPath.setText(pathScreenshot.toString());
 					
-					menuDropDownOptionsStrategy.setSelectedIndex(menuDropDownGoal.getSelectedIndex());
+					menuDropDownOptionsStrategy.setSelectedIndex(menuDropDownPattern.getSelectedIndex());
 					
 					setButtonSelected(buttonModeSignal, modeSignal);
 					setButtonSelected(headerOptionsAutomatic, modeAutomatic);
@@ -957,8 +1001,8 @@ public class GUI {
 		
 		// ************************************************************ Updates the
 		// polarity to what is entered on the radio buttons
-		menuDropDownGoal = new JComboBox<String>(new DefaultComboBoxModel<String>(OPTIONS_PATTERNS_NAMES));
-		menuDropDownGoal.addActionListener(
+		menuDropDownPattern = new JComboBox<String>(new DefaultComboBoxModel<String>(OPTIONS_PATTERNS_NAMES));
+		menuDropDownPattern.addActionListener(
 			new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
@@ -976,11 +1020,11 @@ public class GUI {
 				}
 			}
 		);
-		tabLayerPolarity.add(menuDropDownGoal, createConstraints(1, COUNT_POLARITIES_MAXIMUM, 1, 1.0, 1.0, INSETS_SLIM));
+		tabLayerPolarity.add(menuDropDownPattern, createConstraints(1, COUNT_POLARITIES_MAXIMUM, 1, 1.0, 1.0, INSETS_SLIM));
 
 		JLabel labelGoal = new JLabel("Goal:");
 		labelGoal.setHorizontalAlignment(SwingConstants.RIGHT);
-		labelGoal.setLabelFor(menuDropDownGoal);
+		labelGoal.setLabelFor(menuDropDownPattern);
 		tabLayerPolarity.add(labelGoal, createConstraints(0, COUNT_POLARITIES_MAXIMUM, 1, 0.02, 1.0, INSETS_NONE));
 
 		//MODIFICATION #5:
@@ -1155,7 +1199,7 @@ public class GUI {
 				String nameColor = (String)((JComboBox<String>)e.getSource()).getSelectedItem();
 
 				if(board != null) {
-					board.setAgentColor(getColor(nameColor));
+					board.setNormalAgentColor(getColor(nameColor));
 				}
 
 				settings.setProperty(PROPERTY_COLOR_AGENT_NORMAL, nameColor);
@@ -1351,9 +1395,9 @@ public class GUI {
 	public int getDominantPolarity() {
 		return indexPolarityDominant;
 	}
-
-	public Color[] getPolarityColors() {
-		return colorsPolarity;
+	
+	public double getSignalRange() {
+		return rangeSignal;
 	}
 
 	public Color getAgentColor() {
@@ -1375,6 +1419,10 @@ public class GUI {
 
 	public Board getBoard() {
 		return board;
+	}
+	
+	public Color[] getPolarityColors() {
+		return colorsPolarity;
 	}
 
 	public void setBoard(Board board) {
@@ -2018,7 +2066,7 @@ public class GUI {
 	private class CommandRuleGoal extends Command {
 		@Override
 		public void execute(String value) {
-			menuDropDownGoal.setSelectedItem(value);
+			menuDropDownPattern.setSelectedItem(value);
 		}
 	}
 	
@@ -2026,6 +2074,13 @@ public class GUI {
 		@Override
 		public void execute(String value) {
 			modeSignal = Boolean.parseBoolean(value);
+		}
+	}
+	
+	private class CommandRuleStrategySignalRange extends Command {
+		@Override
+		public void execute(String value) {
+			rangeSignal = Double.parseDouble(value);
 		}
 	}
 

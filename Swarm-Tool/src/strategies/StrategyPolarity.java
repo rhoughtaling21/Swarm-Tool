@@ -1,7 +1,7 @@
 package strategies;
 
-import agents.SwarmAgent;
 import gui.Board;
+import swarm.SwarmAgent;
 
 public abstract class StrategyPolarity extends Strategy {
 	public abstract int determineDesiredPolarity(Board board, SwarmAgent agent);
