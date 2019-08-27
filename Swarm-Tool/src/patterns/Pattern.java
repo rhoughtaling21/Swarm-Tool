@@ -66,7 +66,7 @@ public abstract class Pattern {
 		GUI gui = board.getGui();
 		
 		if(gui.getStrategySignalMode()) {
-			if(Math.hypot(indexRow - board.getBreadth() / 2d, indexColumn - board.getBreadth() / 2d) > gui.getSignalRange()) {
+			if(Math.hypot(indexRow - board.getBreadth() / 2, indexColumn - board.getBreadth() / 2) > gui.getSignalRange()) {
 				indexPolarityCorrect = 1;
 			}
 		}

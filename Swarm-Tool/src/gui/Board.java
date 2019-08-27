@@ -27,8 +27,10 @@ import cells.CellDisplayPolarity;
 import patterns.Pattern;
 import strategies.Strategy;
 import strategies.StrategyPolarityAlternator;
+import strategies.StrategyPolarityEdges;
 import strategies.StrategyPolaritySignal;
 import swarm.SwarmAgent;
+import swarm.SwarmAgentEdge;
 import swarm.SwarmAgentOrthogonal;
 import swarm.SwarmAgentStationary;
 /*
@@ -54,13 +56,13 @@ public class Board extends JPanel implements MouseMotionListener {
 	private double sizeCell; //pixel dimensions of each cell
 	private double attractorStrength = 1;
 	private double rangeAttractor; //distance in cells, not pixels
-	private Color colorAgentsNormal, colorAgentsSpecial, colorAgentsAlternator;
+	private Color colorAgentsNormal, colorAgentsSpecial, colorAgentsAlternator, colorAgentsEdger;
 	private Pattern pattern;//strategy that the agents and layer 2 use for their calculations given the current goal
 	private GUI gui;
 	private int[] frequencyColorsInitial;
 	private int[] frequencyColors;
 	private int[] frequencyPolarities;
-	private SwarmAgent[] agents, agentsStrategyPatternDefault, agentsNormal, agentsSpecial, agentsAlternator;
+	private SwarmAgent[] agents, agentsStrategyPatternDefault, agentsNormal, agentsSpecial, agentsAlternator, agentsEdger;
 	private CellDisplayBase[][] layerBase;
 	private CellDisplayPolarity[][] layerPolarity;
 	private CellDisplayPersistence[][] layerPersistence;  //MODIFICATION #7: new layer of cells for persistency
@@ -68,7 +70,7 @@ public class Board extends JPanel implements MouseMotionListener {
 	private CellDisplay[][] layerDisplay; //layer to paint
 	private CellDisplay[][][] layers;
 
-	public Board(int breadth, int countAgentsNormal, int countAgentsSpecial, int countAgentsAlternator, GUI gui) {
+	public Board(int breadth, int countAgentsNormal, int countAgentsSpecial, int countAgentsAlternator, int countAgentsEdger, GUI gui) {
 		this.breadth = breadth;
 		this.countAgentsNormal = countAgentsNormal;
 		this.countAgentsSpecial = countAgentsSpecial;
@@ -120,9 +122,10 @@ public class Board extends JPanel implements MouseMotionListener {
 		colorAgentsNormal = gui.getAgentColor();
 		colorAgentsSpecial = gui.getSpecialAgentColor();
 		colorAgentsAlternator = gui.getAlternatorAgentColor();
+		colorAgentsEdger = gui.getEdgerAgentColor();
 		
 		int countAgentsStandard = countAgentsNormal + countAgentsSpecial;
-		countAgents = countAgentsStandard + countAgentsAlternator;
+		countAgents = countAgentsStandard + countAgentsAlternator + countAgentsEdger;
 		
 		agents = new SwarmAgent[countAgents];
 		agentsNormal = new SwarmAgent[countAgentsNormal];
@@ -172,6 +175,14 @@ public class Board extends JPanel implements MouseMotionListener {
 			for(int indexAgentAlternator = 0; indexAgentAlternator < agentsAlternator.length; indexAgentAlternator++) {
 				agent = new SwarmAgentOrthogonal(generatorNumbersRandom.nextDouble() * SCALE_BOARD, generatorNumbersRandom.nextDouble() * SCALE_BOARD, sizeAgent, colorAgentsAlternator, this, strategySwarm);
 				agentsAlternator[indexAgentAlternator] = agent;
+				agents[indexAgent++] = agent;
+			}
+			
+			strategySwarm = new StrategyPolarityEdges();
+			agentsEdger = new SwarmAgent[countAgentsEdger];
+			for(int indexAgentEdger = 0; indexAgentEdger < agentsEdger.length; indexAgentEdger++) {
+				agent = new SwarmAgentEdge(generatorNumbersRandom.nextDouble() * SCALE_BOARD, generatorNumbersRandom.nextDouble() * SCALE_BOARD, sizeAgent, colorAgentsEdger, this, strategySwarm);
+				agentsEdger[indexAgentEdger] = agent;
 				agents[indexAgent++] = agent;
 			}
 		}

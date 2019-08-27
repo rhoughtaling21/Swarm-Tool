@@ -39,7 +39,7 @@ public class SwarmAgent extends Ellipse2D.Double {
 	private double rangeSignal;
 	private Point2D velocity; //adds direction to our agents
 	private Color colorFill;
-	private Board board;
+	protected Board board;
 	private Strategy strategy;
 	protected int[] countsPolaritiesRecent;
 	protected ArrayList<Integer> polaritiesRecent;
@@ -122,6 +122,10 @@ public class SwarmAgent extends Ellipse2D.Double {
 	}
 	
 	protected double generateRandomVelocityVectorComponent() {
+		if(colorFill.equals(Color.CYAN)) {
+			return sizeCell * (ThreadLocalRandom.current().nextDouble(0.2) - 0.1);
+		}
+		
 		return sizeCell * (ThreadLocalRandom.current().nextDouble() - 0.5);
 	}
 
