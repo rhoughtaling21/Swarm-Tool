@@ -1,9 +1,8 @@
 package swarm;
 
-public class MotionStationary {
-
-	public MotionStationary() {
-		// TODO Auto-generated constructor stub
+public class MotionStationary extends Motion {
+	@Override
+	protected void randomizeVelocityVector(SwarmAgent agent, double[] componentsVectorVelocity) {
+		
 	}
-
 }

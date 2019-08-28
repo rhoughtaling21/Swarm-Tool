@@ -29,10 +29,12 @@ import strategies.Strategy;
 import strategies.StrategyPolarityAlternator;
 import strategies.StrategyPolarityEdges;
 import strategies.StrategyPolaritySignal;
+import swarm.Motion;
+import swarm.MotionEdge;
+import swarm.MotionFree;
+import swarm.MotionOrthogonal;
+import swarm.MotionStationary;
 import swarm.SwarmAgent;
-import swarm.SwarmAgentEdge;
-import swarm.SwarmAgentOrthogonal;
-import swarm.SwarmAgentStationary;
 /*
  * Authors: Nick, Tim, Zak, Gabriel
  * Description: This is the guts of the program. Two 2x2 Cell arrays of size[size X size] are created to be layers 1 and 2,
@@ -45,6 +47,7 @@ import swarm.SwarmAgentStationary;
 public class Board extends JPanel implements MouseMotionListener {
 	public static final int BREADTH_MINIMUM = 1;
 	public static final double SCALE_BOARD = 800;
+	private static final double STRENGTH_ATTRACTOR = 1.0;
 	
 	private boolean swarmVisible;
 	private boolean wraparound; //whether the walls of the Board wrap or not; by default, they don't
@@ -54,7 +57,6 @@ public class Board extends JPanel implements MouseMotionListener {
 	private int countAgents, countAgentsNormal, countAgentsSpecial, countAgentsAlternator; //MODIFICATION
 	private int indexLayerDisplay;
 	private double sizeCell; //pixel dimensions of each cell
-	private double attractorStrength = 1;
 	private double rangeAttractor; //distance in cells, not pixels
 	private Color colorAgentsNormal, colorAgentsSpecial, colorAgentsAlternator, colorAgentsEdger;
 	private Pattern pattern;//strategy that the agents and layer 2 use for their calculations given the current goal
@@ -133,20 +135,22 @@ public class Board extends JPanel implements MouseMotionListener {
 		
 		int indexAgent = 0;
 		SwarmAgent agent;
+		Motion motionSwarm;
 		Strategy strategySwarm;
 		
 		if(gui.getStrategySignalMode()) {
 			strategySwarm = new StrategyPolaritySignal(agentsSpecial);
-			
+			motionSwarm = new MotionStationary();
 			double rangeSignal = gui.getSignalRange();
 			for(int indexAgentSignalTransmitter = 0; indexAgentSignalTransmitter < agentsSpecial.length; indexAgentSignalTransmitter++) {
-				agent = new SwarmAgentStationary(generatorNumbersRandom.nextDouble() * SCALE_BOARD, generatorNumbersRandom.nextDouble() * SCALE_BOARD, sizeAgent, colorAgentsSpecial, this, strategySwarm, rangeSignal);
+				agent = new SwarmAgent(generatorNumbersRandom.nextDouble() * SCALE_BOARD, generatorNumbersRandom.nextDouble() * SCALE_BOARD, sizeAgent, colorAgentsSpecial, this, motionSwarm, true, strategySwarm, rangeSignal);
 				agentsSpecial[indexAgentSignalTransmitter] = agent;
 				agents[indexAgent++] = agent;
 			}
 			
+			motionSwarm = new MotionFree();
 			for(int indexAgentSignalReceiver = 0; indexAgentSignalReceiver < agentsNormal.length; indexAgentSignalReceiver++) {
-				agent = new SwarmAgent(generatorNumbersRandom.nextDouble() * SCALE_BOARD, generatorNumbersRandom.nextDouble() * SCALE_BOARD, sizeAgent, colorAgentsNormal, this, strategySwarm);
+				agent = new SwarmAgent(generatorNumbersRandom.nextDouble() * SCALE_BOARD, generatorNumbersRandom.nextDouble() * SCALE_BOARD, sizeAgent, colorAgentsNormal, this, motionSwarm, false, strategySwarm);
 				agentsNormal[indexAgentSignalReceiver] = agent;
 				agents[indexAgent++] = agent;
 			}
@@ -154,34 +158,37 @@ public class Board extends JPanel implements MouseMotionListener {
 		else {
 			agentsStrategyPatternDefault = new SwarmAgent[countAgentsStandard];
 			strategySwarm = pattern.getDefaultStrategy();
+			motionSwarm = new MotionFree();
 			
 			agentsSpecial = new SwarmAgent[countAgentsSpecial];
 			for(int indexAgentStandardSpecial = 0; indexAgentStandardSpecial < agentsSpecial.length; indexAgentStandardSpecial++) {
-				agent = new SwarmAgent(generatorNumbersRandom.nextDouble() * SCALE_BOARD, generatorNumbersRandom.nextDouble() * SCALE_BOARD, sizeAgent, colorAgentsSpecial, this, strategySwarm);
+				agent = new SwarmAgent(generatorNumbersRandom.nextDouble() * SCALE_BOARD, generatorNumbersRandom.nextDouble() * SCALE_BOARD, sizeAgent, colorAgentsSpecial, this, motionSwarm, false, strategySwarm);
 				agentsSpecial[indexAgentStandardSpecial] = agent;
 				agentsStrategyPatternDefault[indexAgent] = agent;
 				agents[indexAgent++] = agent;
 			}
 			
 			for(int indexAgentStandardNormal = 0; indexAgentStandardNormal < agentsNormal.length; indexAgentStandardNormal++) {
-				agent = new SwarmAgent(generatorNumbersRandom.nextDouble() * SCALE_BOARD, generatorNumbersRandom.nextDouble() * SCALE_BOARD, sizeAgent, colorAgentsNormal, this, strategySwarm);
+				agent = new SwarmAgent(generatorNumbersRandom.nextDouble() * SCALE_BOARD, generatorNumbersRandom.nextDouble() * SCALE_BOARD, sizeAgent, colorAgentsNormal, this, motionSwarm, false, strategySwarm);
 				agentsNormal[indexAgentStandardNormal] = agent;
 				agentsStrategyPatternDefault[indexAgent] = agent;
 				agents[indexAgent++] = agent;
 			}
 			
+			motionSwarm = new MotionOrthogonal();
 			strategySwarm = new StrategyPolarityAlternator();
 			agentsAlternator = new SwarmAgent[countAgentsAlternator];
 			for(int indexAgentAlternator = 0; indexAgentAlternator < agentsAlternator.length; indexAgentAlternator++) {
-				agent = new SwarmAgentOrthogonal(generatorNumbersRandom.nextDouble() * SCALE_BOARD, generatorNumbersRandom.nextDouble() * SCALE_BOARD, sizeAgent, colorAgentsAlternator, this, strategySwarm);
+				agent = new SwarmAgent(generatorNumbersRandom.nextDouble() * SCALE_BOARD, generatorNumbersRandom.nextDouble() * SCALE_BOARD, sizeAgent, colorAgentsAlternator, this, motionSwarm, false, strategySwarm);
 				agentsAlternator[indexAgentAlternator] = agent;
 				agents[indexAgent++] = agent;
 			}
 			
+			motionSwarm = new MotionEdge();
 			strategySwarm = new StrategyPolarityEdges();
 			agentsEdger = new SwarmAgent[countAgentsEdger];
 			for(int indexAgentEdger = 0; indexAgentEdger < agentsEdger.length; indexAgentEdger++) {
-				agent = new SwarmAgentEdge(generatorNumbersRandom.nextDouble() * SCALE_BOARD, generatorNumbersRandom.nextDouble() * SCALE_BOARD, sizeAgent, colorAgentsEdger, this, strategySwarm);
+				agent = new SwarmAgent(generatorNumbersRandom.nextDouble() * SCALE_BOARD, generatorNumbersRandom.nextDouble() * SCALE_BOARD, sizeAgent, colorAgentsEdger, this, motionSwarm, false, strategySwarm);
 				agentsEdger[indexAgentEdger] = agent;
 				agents[indexAgent++] = agent;
 			}
@@ -453,19 +460,6 @@ public class Board extends JPanel implements MouseMotionListener {
 		return neighbors;
 	}
 
-
-	/**
-	 * This method returns the Cell occupied by a given agent in a given layer. Static because it's really just
-	 * converting between x and y coordinates and 2D array position. Really, <em>that</em> should be the static method
-	 * and may be coming up next.
-	 * @param agent
-	 * @param layer
-	 * @return the cell occupied by a given agent in a given layer
-	 */
-	public CellDisplay getOccupiedCell(SwarmAgent agent, CellDisplay[][] layer) {
-		return layer[calculateAgentRow(agent)][calculateAgentColumn(agent)];
-	}
-
 	@Override
 	//if you click in a spot on the board, the agents will be attracted to that spot with decreasing effect
 	//the further away they are
@@ -475,7 +469,7 @@ public class Board extends JPanel implements MouseMotionListener {
 		int offsetY = (int)(event.getY() * SCALE_BOARD / getHeight()) - event.getY();
 		event.translatePoint(offsetX, offsetY);
 		
-		double multiplier = sizeCell;
+		double multiplier = 1;
 		if(!modeAttractor) {
 			multiplier *= -1;
 		}
@@ -488,9 +482,12 @@ public class Board extends JPanel implements MouseMotionListener {
 
 			if (distance < rangeAttractor) {
 				//then the agent is in the specified range
-				if (generatorNumbersRandom.nextDouble() < attractorStrength) {
+				if (generatorNumbersRandom.nextDouble() < STRENGTH_ATTRACTOR) {
 					multiplierScale = multiplier / distance;
-					agent.setVelocity(multiplierScale * distanceX, multiplierScale * distanceY);
+					agent.setVelocityCells(multiplierScale * distanceX, multiplierScale * distanceY);
+				}
+				else {
+					System.out.println("failed");
 				}
 			}
 		}

@@ -1,9 +1,10 @@
 package swarm;
 
-public class MotionOrthogonal {
+import java.util.concurrent.ThreadLocalRandom;
 
-	public MotionOrthogonal() {
-		// TODO Auto-generated constructor stub
+public class MotionOrthogonal extends Motion {
+	@Override
+	protected void randomizeVelocityVector(SwarmAgent agent, double[] componentsVectorVelocity) {
+		componentsVectorVelocity[ThreadLocalRandom.current().nextInt(componentsVectorVelocity.length)] = generateRandomVelocityVectorComponent();
 	}
-
 }

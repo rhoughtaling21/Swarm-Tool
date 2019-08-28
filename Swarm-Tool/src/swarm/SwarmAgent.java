@@ -15,9 +15,6 @@ import java.awt.Graphics2D;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
-import java.util.Random;
-import java.util.concurrent.ThreadLocalRandom;
-
 import gui.Board;
 import strategies.Strategy;
 
@@ -32,17 +29,19 @@ import strategies.Strategy;
 @SuppressWarnings("serial")
 public class SwarmAgent extends Ellipse2D.Double {
 	private static final double SCALE_BOARD = Board.SCALE_BOARD;
+	private static final double DIVISOR_MAGNITUDE_COMPONENT_VECTOR_VELOCITY_SLOW = 5;
 	
 	private boolean modeMemory;
 	private int capacityMemory;
-	private double sizeCell;
+	private double multiplierVelocity;
 	private double rangeSignal;
 	private Point2D velocity; //adds direction to our agents
 	private Color colorFill;
-	protected Board board;
+	private Board board;
+	private Motion motion;
 	private Strategy strategy;
-	protected int[] countsPolaritiesRecent;
-	protected ArrayList<Integer> polaritiesRecent;
+	private int[] countsPolaritiesRecent;
+	private ArrayList<Integer> polaritiesRecent;
 	
 	/**
 	 * @author Nick
@@ -54,23 +53,28 @@ public class SwarmAgent extends Ellipse2D.Double {
 	 * @param size
 	 * @param colorFill
 	 */
-	public SwarmAgent(double x, double y, double size, Color colorFill, Board board, Strategy strategy) {
-		this(x, y, size, colorFill, board, strategy, 0);
+	public SwarmAgent(double x, double y, double size, Color colorFill, Board board, Motion motion, boolean slow, Strategy strategy) {
+		this(x, y, size, colorFill, board, motion, slow, strategy, 0);
 	}
 	
-	public SwarmAgent(double x, double y, double size, Color colorFill, Board board, Strategy strategy, double rangeSignal) {
+	public SwarmAgent(double x, double y, double size, Color colorFill, Board board, Motion motion, boolean slow, Strategy strategy, double rangeSignal) {
 		super(x, y, size, size);
 		
 		this.board = board;
+		this.motion = motion;
 		
 		setColor(colorFill);
 		setStrategy(strategy);
 		setSignalRange(rangeSignal);
 		
-		sizeCell = board.getCellSize();
+		multiplierVelocity = board.getCellSize();
+		
+		if(slow) {
+			multiplierVelocity /= DIVISOR_MAGNITUDE_COMPONENT_VECTOR_VELOCITY_SLOW;
+		}
 		
 		velocity = new Point2D.Double();
-		randomizeVelocityVector();
+		motion.initializeVelocityVector(this);
 	}
 	
 	public int getPolarityCount(int indexPolarity) {
@@ -89,13 +93,21 @@ public class SwarmAgent extends Ellipse2D.Double {
 		return velocity;
 	}
 	
+	Board getBoard() {
+		return board;
+	}
+	
 	public void setSignalRange(double rangeSignal) {
 		this.rangeSignal = rangeSignal;
 	}
 
 	//determines how much an agent will move in a particular direction
-	public void setVelocity(double x, double y) {
-		velocity.setLocation(x, y);
+	public void setVelocityCells(double velocityX, double velocityY) {
+		setVelocity(velocityX * multiplierVelocity, velocityY * multiplierVelocity);
+	}
+	
+	private void setVelocity(double velocityX, double velocityY) {
+		velocity.setLocation(velocityX, velocityY);
 	}
 	
 	public void setColor(Color color) {
@@ -115,18 +127,6 @@ public class SwarmAgent extends Ellipse2D.Double {
 		
 		this.polaritiesRecent = polaritiesRecent;
 		this.countsPolaritiesRecent = countsPolaritiesRecent;
-	}
-	
-	protected void randomizeVelocityVector() {
-		setVelocity(generateRandomVelocityVectorComponent(), generateRandomVelocityVectorComponent());
-	}
-	
-	protected double generateRandomVelocityVectorComponent() {
-		if(colorFill.equals(Color.CYAN)) {
-			return sizeCell * (ThreadLocalRandom.current().nextDouble(0.2) - 0.1);
-		}
-		
-		return sizeCell * (ThreadLocalRandom.current().nextDouble() - 0.5);
 	}
 
 	/**
@@ -167,7 +167,7 @@ public class SwarmAgent extends Ellipse2D.Double {
 			}
 		}
 	}
-
+	
 	/**
 	 * @author Nick
 	 * This method is called when the simulation is being "stepped" forward once. It
@@ -180,10 +180,7 @@ public class SwarmAgent extends Ellipse2D.Double {
 		double coordinateX = x + velocity.getX();
 		double coordinateY = y + velocity.getY();
 
-		Random generatorNumbersRandom = ThreadLocalRandom.current();
-		if (generatorNumbersRandom.nextDouble() < 0.1) {
-			randomizeVelocityVector();
-		}
+		motion.questionVelocity(this);
 		
 		double offsetCenter = width / 2;
 		double coordinateXCenter = coordinateX + offsetCenter;
@@ -220,8 +217,8 @@ public class SwarmAgent extends Ellipse2D.Double {
 			}
 		}
 		
-		this.x = coordinateX;
-		this.y = coordinateY;
+		x = coordinateX;
+		y = coordinateY;
 	}
 
 	public void seePolarity(int indexPolarity) {
