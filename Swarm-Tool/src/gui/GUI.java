@@ -99,6 +99,9 @@ public class GUI {
 	private static final String PROPERTY_AGENTS_RATE = "agents.rate";
 	private static final String PROPERTY_AGENTS_ACTIVE = "agents.active";
 	private static final String PROPERTY_AGENTS_VISIBLE = "agents.visible";
+	private static final String PROPERTY_PHEROMONES_MAGNET_STRENGTH = "pheromones.magnet.strength";
+	private static final String PROPERTY_PHEROMONES_MAGNET_RANGE = "pheromones.magnet.range";
+	private static final String PROPERTY_PHEROMONES_MAGNET_ATTRACT = "pheromones.magnet.attract";
 	private static final String PROPERTY_RULE_PATTERN = "rule.pattern";
 	private static final String PROPERTY_RULE_STRATEGY_SIGNAL = "rule.strategy.signal";
 	private static final String PROPERTY_RULE_STRATEGY_SIGNAL_RANGE = "rule.strategy.signal.range";
@@ -110,6 +113,7 @@ public class GUI {
 	private static final String PROPERTY_COLOR_AGENT_NORMAL = "color.agents.normal";
 	private static final String PROPERTY_COLOR_AGENT_SPECIAL = "color.agents.special";
 	private static final String PROPERTY_COLOR_AGENT_ALTERNATOR = "color.agents.alternator";
+	private static final String PROPERTY_COLOR_AGENT_EDGER = "color.agents.edger";
 	private static final String PROPERTY_COLOR_POLARITY = "color.polarity.";
 	private static final String PROPERTY_EXPORT_DATA = "export.polarities";
 	private static final String PROPERTY_EXPORT_DATA_INTERVAL = "export.polarities.interval";
@@ -128,44 +132,47 @@ public class GUI {
 	private static final String[] OPTIONS_PATTERNS_NAMES = {"BLACKOUT", "CHECKERBOARD", "DIAGONALS", "LINES"};
 	private static final String[] PROPERTIES_BOARD = {PROPERTY_BOARD_SIZE, PROPERTY_BOARD_WRAPAROUND};
 	private static final String[] PROPERTIES_AGENTS = {PROPERTY_AGENTS_COUNT_NORMAL, PROPERTY_AGENTS_COUNT_SPECIAL, PROPERTY_AGENTS_COUNT_ALTERNATOR, PROPERTY_AGENTS_COUNT_EDGER, PROPERTY_AGENTS_RATE, PROPERTY_AGENTS_ACTIVE, PROPERTY_AGENTS_VISIBLE};
+	private static final String[] PROPERTIES_PHEROMONES = {PROPERTY_PHEROMONES_MAGNET_STRENGTH, PROPERTY_PHEROMONES_MAGNET_RANGE, PROPERTY_PHEROMONES_MAGNET_ATTRACT};
 	private static final String[] PROPERTIES_RULES = {PROPERTY_RULE_PATTERN, PROPERTY_RULE_STRATEGY_SIGNAL, PROPERTY_RULE_STRATEGY_SIGNAL_RANGE, PROPERTY_RULE_POLARITY_DOMINANT, PROPERTY_RULE_EQUILIBRIUM, PROPERTY_RULE_AUTOMATIC, PROPERTY_RULE_AUTOMATIC_REPETITITONS, PROPERTY_RULE_AUTOMATIC_STEPS};
 	private static final String[] PROPERTIES_COLORS = generateColorProperties();
 	private static final String[] PROPERTIES_EXPORT = {PROPERTY_EXPORT_DATA, PROPERTY_EXPORT_DATA_INTERVAL, PROPERTY_EXPORT_DATA_DIRECTORY, PROPERTY_EXPORT_SCREENSHOT, PROPERTY_EXPORT_SCREENSHOT_INTERVAL, PROPERTY_EXPORT_SCREENSHOT_DIRECTORY};
 	private static final Pattern[] OPTIONS_STRATEGIES = {new PatternBlackout(), new PatternCheckerboard(), new PatternDiagonals(), new PatternLines()};
-	private static final String[][] PROPERTIES = {PROPERTIES_BOARD, PROPERTIES_AGENTS, PROPERTIES_RULES, PROPERTIES_COLORS, PROPERTIES_EXPORT};
+	private static final String[][] PROPERTIES = {PROPERTIES_BOARD, PROPERTIES_AGENTS, PROPERTIES_PHEROMONES, PROPERTIES_RULES, PROPERTIES_COLORS, PROPERTIES_EXPORT};
 	private static final HashMap<Color, String> MAP_COLORS_NAMES = generateMapColorsNames();
 	private static final HashMap<String, Color> MAP_COLORS = generateMapColors();
 	private static final HashMap<String, Pattern> MAP_STRATEGIES = generateMapStrategies();
 
 	private boolean timerReady;// timer or agent step
 	private boolean timerActive;
-	public boolean modeAttractor = true;
+	private boolean modeMagnetAttract;
 	private boolean boardWraparound;
-	private boolean modeSignal;
+	private Value<Boolean> modeSignal;
 	private boolean modeEquilibrium; //MODIFICATION #5 determines if the agents goal is a single polarity or three balanced polarities
-	private boolean modeAutomatic;
+	private Value<Boolean> modeAutomatic;
 	private boolean swarmVisible;
-	private boolean exportData, exportScreenshot;
+	private Value<Boolean> exportData, exportScreenshot;
 	public int indexLayerDisplay = 1;// which cell array in board to display
 	private int indexPolarityDominant;
-	private int sizeBoard;
+	private Value<Integer> sizeBoard;
 	private int indexRepetition;
-	private int countRepetitionsMaximum;
+	private Value<Integer> countRepetitionsMaximum;
 	private int indexStep;
-	private int countStepsMaximum;
-	private int countAgentsNormal, countAgentsSpecial, countAgentsAlternator, countAgentsEdger;
-	private int intervalExportData;
-	private int intervalExportScreenshot;
+	private Value<Integer> countStepsMaximum;
+	private Value<Integer> countAgentsNormal, countAgentsSpecial, countAgentsAlternator, countAgentsEdger;
+	private Value<Integer> intervalExportData;
+	private Value<Integer> intervalExportScreenshot;
 	private long rateExecute;
-	private double rangeSignal;
-	private Path pathData, pathScreenshot;
+	private Value<Double> strengthMagnet;
+	private Value<Double> rangeMagnet;
+	private Value<Double> rangeSignal;
+	private Value<Path> pathData, pathScreenshot;
 	private Properties settings;
 	private Timer timer;
 	private TimerTask task;
 	private Pattern goalStrategy;
 	private Board board;// board to be drawn
 	private BufferedWriter writerData;
-	public JFrame frmProjectLegion;// main frame
+	private JFrame frmProjectLegion;// main frame
 	private JTextField fieldCountAgentsNormal;
 	private JTextField fieldCountModifications;
 	private JTextField fieldAgentCloseness;
@@ -175,7 +182,7 @@ public class GUI {
 	private JLabel labelSizeBoardValue; // updates BoardSize Label
 	private JLabel labelCountAgentsValue; // updates SwarmCount Label
 	private JLabel labelCountStepsValue; //displays the number of steps that have occurred
-	private JToggleButton buttonAgentVisiblity, buttonWraparound, buttonModeEquilibrium, buttonSwarmActive;
+	private JToggleButton buttonAgentVisiblity, buttonWraparound, buttonModeEquilibrium, buttonSwarmActive, buttonModeMagnet;
 	private JSlider sliderRateSwarm;
 	private JPanel panelBoard;
 	private DefaultComboBoxModel<String> optionsPolarityDominant;
@@ -227,46 +234,52 @@ public class GUI {
 		timerActive = false;
 		indexStep = 0;
 
+		menusDropDownColorsPolarity = new JComboBox[COUNT_POLARITIES_MAXIMUM];
+		
 		propertyCommands = new HashMap<Object, Command>();
-		propertyCommands.put(PROPERTY_BOARD_SIZE, new CommandBoardSize());
-		propertyCommands.put(PROPERTY_BOARD_WRAPAROUND, new CommandBoardWraparound());
-		propertyCommands.put(PROPERTY_AGENTS_COUNT_NORMAL, new CommandAgentCount());
-		propertyCommands.put(PROPERTY_AGENTS_COUNT_SPECIAL, new CommandAgentCountSpecial());
-		propertyCommands.put(PROPERTY_AGENTS_COUNT_ALTERNATOR, new CommandAgentCountAlternator());
-		propertyCommands.put(PROPERTY_AGENTS_COUNT_EDGER, new CommandAgentCountEdger());
-		propertyCommands.put(PROPERTY_AGENTS_RATE, new CommandAgentRate());
-		propertyCommands.put(PROPERTY_AGENTS_ACTIVE, new CommandAgentActive());
-		propertyCommands.put(PROPERTY_AGENTS_VISIBLE, new CommandAgentVisible());
-		propertyCommands.put(PROPERTY_RULE_PATTERN, new CommandRuleGoal());
-		propertyCommands.put(PROPERTY_RULE_STRATEGY_SIGNAL, new CommandRuleStrategySignal());
-		propertyCommands.put(PROPERTY_RULE_STRATEGY_SIGNAL_RANGE, new CommandRuleStrategySignalRange());
-		propertyCommands.put(PROPERTY_RULE_POLARITY_DOMINANT, new CommandRuleDominantPolarity());
-		propertyCommands.put(PROPERTY_RULE_EQUILIBRIUM, new CommandRuleEquilibrium());
-		propertyCommands.put(PROPERTY_RULE_AUTOMATIC, new CommandRuleAutomatic());
-		propertyCommands.put(PROPERTY_RULE_AUTOMATIC_REPETITITONS, new CommandRuleAutomaticRepetitions());
-		propertyCommands.put(PROPERTY_RULE_AUTOMATIC_STEPS, new CommandRuleAutomaticSteps());
-		propertyCommands.put(PROPERTY_COLOR_AGENT_NORMAL, new CommandColorAgents());
-		propertyCommands.put(PROPERTY_COLOR_AGENT_SPECIAL, new CommandColorAgentsSpecial());
-		propertyCommands.put(PROPERTY_COLOR_AGENT_ALTERNATOR, new CommandColorAgentsAlternator());
+		propertyCommands.put(PROPERTY_BOARD_SIZE, new CommandValueInteger(sizeBoard = new Value<Integer>()));
+		propertyCommands.put(PROPERTY_BOARD_WRAPAROUND, new CommandComponentButtonToggle(buttonWraparound = new JToggleButton()));
+		propertyCommands.put(PROPERTY_AGENTS_COUNT_NORMAL, new CommandValueInteger(countAgentsNormal = new Value<Integer>()));
+		propertyCommands.put(PROPERTY_AGENTS_COUNT_SPECIAL, new CommandValueInteger(countAgentsSpecial = new Value<Integer>()));
+		propertyCommands.put(PROPERTY_AGENTS_COUNT_ALTERNATOR, new CommandValueInteger(countAgentsAlternator = new Value<Integer>()));
+		propertyCommands.put(PROPERTY_AGENTS_COUNT_EDGER, new CommandValueInteger(countAgentsEdger = new Value<Integer>()));
+		propertyCommands.put(PROPERTY_AGENTS_RATE, new CommandComponentSlider(sliderRateSwarm = new JSlider()));
+		propertyCommands.put(PROPERTY_AGENTS_ACTIVE, new CommandComponentButtonToggle(buttonSwarmActive = new JToggleButton()));
+		propertyCommands.put(PROPERTY_AGENTS_VISIBLE, new CommandComponentButtonToggle(buttonAgentVisiblity = new JToggleButton()));
+		propertyCommands.put(PROPERTY_PHEROMONES_MAGNET_STRENGTH, new CommandValueDouble(strengthMagnet = new Value<Double>()));
+		propertyCommands.put(PROPERTY_PHEROMONES_MAGNET_RANGE, new CommandValueDouble(rangeMagnet = new Value<Double>()));
+		propertyCommands.put(PROPERTY_PHEROMONES_MAGNET_ATTRACT, new CommandComponentButtonToggle(buttonModeMagnet = new JToggleButton()));
+		propertyCommands.put(PROPERTY_RULE_PATTERN, new CommandComponentMenuDropDownSelectedItemString(menuDropDownPattern = new JComboBox<String>()));
+		propertyCommands.put(PROPERTY_RULE_STRATEGY_SIGNAL, new CommandValueBoolean(modeSignal = new Value<Boolean>()));
+		propertyCommands.put(PROPERTY_RULE_STRATEGY_SIGNAL_RANGE, new CommandValueDouble(rangeSignal = new Value<Double>()));
+		propertyCommands.put(PROPERTY_RULE_POLARITY_DOMINANT, new CommandComponentMenuDropDownSelectedIndex(menuDropDownPolarityDominant = new JComboBox<String>()));
+		propertyCommands.put(PROPERTY_RULE_EQUILIBRIUM, new CommandComponentButtonToggle(buttonModeEquilibrium = new JToggleButton()));
+		propertyCommands.put(PROPERTY_RULE_AUTOMATIC, new CommandValueBoolean(modeAutomatic = new Value<Boolean>()));
+		propertyCommands.put(PROPERTY_RULE_AUTOMATIC_REPETITITONS, new CommandValueInteger(countRepetitionsMaximum = new Value<Integer>()));
+		propertyCommands.put(PROPERTY_RULE_AUTOMATIC_STEPS, new CommandValueInteger(countStepsMaximum = new Value<Integer>()));
+		propertyCommands.put(PROPERTY_COLOR_AGENT_NORMAL, new CommandComponentMenuDropDownSelectedItemString(menuDropDownColorAgents = new JComboBox<>()));
+		propertyCommands.put(PROPERTY_COLOR_AGENT_SPECIAL, new CommandComponentMenuDropDownSelectedItemString(menuDropDownColorAgentsSpecial = new JComboBox<String>()));
+		propertyCommands.put(PROPERTY_COLOR_AGENT_ALTERNATOR, new CommandComponentMenuDropDownSelectedItemString(menuDropDownColorAgentsAlternator = new JComboBox<String>()));
+		propertyCommands.put(PROPERTY_COLOR_AGENT_EDGER, new CommandComponentMenuDropDownSelectedItemString(menuDropDownColorAgentsEdger = new JComboBox<String>()));
 		for(int indexPolarity = 0; indexPolarity < COUNT_POLARITIES_MAXIMUM; indexPolarity++) {
-			propertyCommands.put(PROPERTY_COLOR_POLARITY + (indexPolarity + 1), new CommandColorPolarity(indexPolarity));
+			propertyCommands.put(PROPERTY_COLOR_POLARITY + (indexPolarity + 1), new CommandComponentMenuDropDownSelectedItemString(menusDropDownColorsPolarity[indexPolarity] = new JComboBox<String>()));
 		}
-		propertyCommands.put(PROPERTY_EXPORT_DATA, new CommandExportPolarities());
-		propertyCommands.put(PROPERTY_EXPORT_DATA_INTERVAL, new CommandExportPolaritiesInterval());
-		propertyCommands.put(PROPERTY_EXPORT_DATA_DIRECTORY, new CommandExportPolaritiesDirectory());
-		propertyCommands.put(PROPERTY_EXPORT_SCREENSHOT, new CommandExportScreenshot());
-		propertyCommands.put(PROPERTY_EXPORT_SCREENSHOT_INTERVAL, new CommandExportScreenshotInterval());
-		propertyCommands.put(PROPERTY_EXPORT_SCREENSHOT_DIRECTORY, new CommandExportScreenshotDirectory());
+		propertyCommands.put(PROPERTY_EXPORT_DATA, new CommandValueBoolean(exportData = new Value<Boolean>()));
+		propertyCommands.put(PROPERTY_EXPORT_DATA_INTERVAL, new CommandValueInteger(intervalExportData = new Value<Integer>()));
+		propertyCommands.put(PROPERTY_EXPORT_DATA_DIRECTORY, new CommandValuePath(pathData = new Value<Path>()));
+		propertyCommands.put(PROPERTY_EXPORT_SCREENSHOT, new CommandValueBoolean(exportScreenshot = new Value<Boolean>()));
+		propertyCommands.put(PROPERTY_EXPORT_SCREENSHOT_INTERVAL, new CommandValueInteger(intervalExportScreenshot = new Value<Integer>()));
+		propertyCommands.put(PROPERTY_EXPORT_SCREENSHOT_DIRECTORY, new CommandValuePath(pathScreenshot = new Value<Path>()));
 
 		String directoryHome = FileSystemView.getFileSystemView().getDefaultDirectory().getPath();
 		String directorySwarm = "Swarm";
 
-		pathData = Paths.get(directoryHome, File.separator, directorySwarm, File.separator, "Data");
-		pathScreenshot = Paths.get(directoryHome, File.separator, directorySwarm, File.separator, "Captures");
+		pathData.setValue(Paths.get(directoryHome, File.separator, directorySwarm, File.separator, "Data"));
+		pathScreenshot.setValue(Paths.get(directoryHome, File.separator, directorySwarm, File.separator, "Captures"));
 
 		settings = new Properties();
-		settings.setProperty(PROPERTY_EXPORT_DATA_DIRECTORY, pathData.toString());
-		settings.setProperty(PROPERTY_EXPORT_SCREENSHOT_DIRECTORY, pathScreenshot.toString());
+		settings.setProperty(PROPERTY_EXPORT_DATA_DIRECTORY, pathData.getValue().toString());
+		settings.setProperty(PROPERTY_EXPORT_SCREENSHOT_DIRECTORY, pathScreenshot.getValue().toString());
 
 		try {
 			InputStream streamInput = getClass().getResourceAsStream("/settings/simulation.properties");
@@ -292,7 +305,7 @@ public class GUI {
 						try {
 							writerData.close();
 
-							if(modeAutomatic) {
+							if(modeAutomatic.getValue()) {
 								outputAveragePolarityData();
 							}
 						}
@@ -527,7 +540,8 @@ public class GUI {
 		
 		JTextField fieldOptionsRangeSignal = new JFormattedTextField(formatterDouble);
 		
-		JComboBox<String> menuDropDownOptionsStrategy = new JComboBox<String>(new DefaultComboBoxModel<String>(OPTIONS_PATTERNS_NAMES));
+		JComboBox<String> menuDropDownOptionsStrategy = new JComboBox<String>();
+		menuDropDownOptionsStrategy.setModel(new DefaultComboBoxModel<String>(OPTIONS_PATTERNS_NAMES));
 		menuDropDownOptionsStrategy.setBackground(fieldOptionsSizeBoard.getBackground());
 
 		JPanel panelOptionsAutomatic = new JPanel(new GridBagLayout());
@@ -653,65 +667,78 @@ public class GUI {
 			new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent event) {
-					sizeBoard = Integer.parseInt(fieldOptionsSizeBoard.getText());
-					countAgentsNormal = Integer.parseInt(fieldOptionsCountAgentsNormal.getText());
-					countAgentsSpecial = Integer.parseInt(fieldOptionsCountAgentsSpecial.getText());
+					sizeBoard.setValue(Integer.parseInt(fieldOptionsSizeBoard.getText()));
+					countAgentsNormal.setValue(Integer.parseInt(fieldOptionsCountAgentsNormal.getText()));
+					countAgentsSpecial.setValue(Integer.parseInt(fieldOptionsCountAgentsSpecial.getText()));
 					
 					menuDropDownPattern.setSelectedIndex(menuDropDownOptionsStrategy.getSelectedIndex());
 					
-					if(modeSignal = buttonModeSignal.isSelected()) {
+					boolean buttonModeSignalSelected = buttonModeSignal.isSelected();
+					modeSignal.setValue(buttonModeSignalSelected);
+					if(buttonModeSignalSelected) {
 						String rangeSignalString = fieldOptionsRangeSignal.getText();
-						rangeSignal = Double.parseDouble(rangeSignalString);
+						rangeSignal.setValue(Double.parseDouble(rangeSignalString));
 						settings.setProperty(PROPERTY_RULE_STRATEGY_SIGNAL_RANGE, rangeSignalString);
 						
-						countAgentsAlternator = 0;
-						countAgentsEdger = 0;
+						countAgentsAlternator.setValue(0);
+						countAgentsEdger.setValue(0);
 					}
 					else {
 						String countAgentsAlternatorString = fieldOptionsCountAgentsAlternator.getText();
-						countAgentsAlternator = Integer.parseInt(countAgentsAlternatorString);
+						countAgentsAlternator.setValue(Integer.parseInt(countAgentsAlternatorString));
 						settings.setProperty(PROPERTY_AGENTS_COUNT_ALTERNATOR, countAgentsAlternatorString);
 						
 						String countAgentsEdgerString = fieldOptionsCountAgentsEdger.getText();
-						countAgentsEdger = Integer.parseInt(countAgentsEdgerString);
+						countAgentsEdger.setValue(Integer.parseInt(countAgentsEdgerString));
 						settings.setProperty(PROPERTY_AGENTS_COUNT_EDGER, countAgentsEdgerString);
 					}
-					settings.setProperty(PROPERTY_RULE_STRATEGY_SIGNAL, Boolean.toString(modeSignal));
+					settings.setProperty(PROPERTY_RULE_STRATEGY_SIGNAL, Boolean.toString(buttonModeSignalSelected));
 					
-					if(modeAutomatic = headerOptionsAutomatic.isSelected()) {
+					boolean headerOptionsAutomaticSelected = headerOptionsAutomatic.isSelected();
+					modeAutomatic.setValue(headerOptionsAutomaticSelected);
+					if(headerOptionsAutomaticSelected) {
+						indexRepetition = 0;
+						
 						String countRepetitionsMaximumString = fieldOptionsCountRepetitions.getText();
-						countRepetitionsMaximum = Integer.parseInt(countRepetitionsMaximumString);
+						countRepetitionsMaximum.setValue(Integer.parseInt(countRepetitionsMaximumString));
 						settings.setProperty(PROPERTY_RULE_AUTOMATIC_REPETITITONS, countRepetitionsMaximumString);
 
 						String countStepsMaximumString = fieldOptionsCountSteps.getText();
-						countStepsMaximum = Integer.parseInt(countStepsMaximumString);
+						countStepsMaximum.setValue(Integer.parseInt(countStepsMaximumString));
 						settings.setProperty(PROPERTY_RULE_AUTOMATIC_STEPS, countStepsMaximumString);
 					}
-					settings.setProperty(PROPERTY_RULE_AUTOMATIC, Boolean.toString(modeAutomatic));
+					settings.setProperty(PROPERTY_RULE_AUTOMATIC, Boolean.toString(headerOptionsAutomaticSelected));
 
-					if(exportData = (headerOptionsExport.isSelected() && headerOptionsExportData.isSelected())) {
+					boolean headerOptionsExportSelected = headerOptionsExport.isSelected();
+					boolean headerOptionsExportDataSelected = (headerOptionsExportSelected && headerOptionsExportData.isSelected());
+					exportData.setValue(headerOptionsExportDataSelected);
+					if(headerOptionsExportDataSelected) {
 						String intervalExportDataString = fieldOptionsExportDataInterval.getText();
-						intervalExportData = Integer.parseInt(intervalExportDataString);
+						intervalExportData.setValue(Integer.parseInt(intervalExportDataString));
 						settings.setProperty(PROPERTY_EXPORT_DATA_INTERVAL, intervalExportDataString);
 
 						String pathDataString = fieldOptionsExportDataPath.getText();
-						pathData = Paths.get(fieldOptionsExportDataPath.getText());
-						pathData.toFile().mkdirs();
+						Path path = Paths.get(fieldOptionsExportDataPath.getText());
+						path.toFile().mkdirs();
+						pathData.setValue(path);
 						settings.setProperty(PROPERTY_EXPORT_DATA_DIRECTORY, pathDataString);
 					}
-					settings.setProperty(PROPERTY_EXPORT_DATA, Boolean.toString(exportData));
+					settings.setProperty(PROPERTY_EXPORT_DATA, Boolean.toString(headerOptionsExportDataSelected));
 
-					if(exportScreenshot = (headerOptionsExport.isSelected() && headerOptionsExportScreenshot.isSelected())) {
+					boolean headerOptionsExportScreenshotSelected = (headerOptionsExportSelected && headerOptionsExportScreenshot.isSelected());
+					exportScreenshot.setValue(headerOptionsExportScreenshotSelected);
+					if(headerOptionsExportScreenshotSelected) {
 						String intervalExportScreenshotString = fieldOptionsExportScreenshotInterval.getText();
-						intervalExportScreenshot = Integer.parseInt(intervalExportScreenshotString);
+						intervalExportScreenshot.setValue(Integer.parseInt(intervalExportScreenshotString));
 						settings.setProperty(PROPERTY_EXPORT_SCREENSHOT_INTERVAL, intervalExportScreenshotString);
 
 						String pathScreenshotString = fieldOptionsExportScreenshotPath.getText();
-						pathScreenshot = Paths.get(pathScreenshotString);
-						pathScreenshot.toFile().mkdirs();
+						Path path = Paths.get(pathScreenshotString);
+						path.toFile().mkdirs();
+						pathScreenshot.setValue(path);
 						settings.setProperty(PROPERTY_EXPORT_SCREENSHOT_DIRECTORY, pathScreenshotString);
 					}
-					settings.setProperty(PROPERTY_EXPORT_SCREENSHOT, Boolean.toString(exportScreenshot));
+					settings.setProperty(PROPERTY_EXPORT_SCREENSHOT, Boolean.toString(headerOptionsExportScreenshotSelected));
 
 					frameOptions.setVisible(false);
 
@@ -730,7 +757,7 @@ public class GUI {
 			new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
-					fieldOptionsSizeBoard.setText(Integer.toString(sizeBoard));
+					fieldOptionsSizeBoard.setText(settings.getProperty(PROPERTY_BOARD_SIZE));
 					fieldOptionsCountAgentsNormal.setText(settings.getProperty(PROPERTY_AGENTS_COUNT_NORMAL));
 					fieldOptionsCountAgentsSpecial.setText(settings.getProperty(PROPERTY_AGENTS_COUNT_SPECIAL));
 					fieldOptionsCountAgentsAlternator.setText(settings.getProperty(PROPERTY_AGENTS_COUNT_ALTERNATOR));
@@ -742,17 +769,17 @@ public class GUI {
 					fieldOptionsCountSteps.setText(settings.getProperty(PROPERTY_RULE_AUTOMATIC_STEPS));
 							
 					fieldOptionsExportDataInterval.setText(settings.getProperty(PROPERTY_EXPORT_DATA_INTERVAL));
-					fieldOptionsExportDataPath.setText(pathData.toString());
+					fieldOptionsExportDataPath.setText(settings.getProperty(PROPERTY_EXPORT_DATA_DIRECTORY));
 					fieldOptionsExportScreenshotInterval.setText(settings.getProperty(PROPERTY_EXPORT_SCREENSHOT_INTERVAL));
-					fieldOptionsExportScreenshotPath.setText(pathScreenshot.toString());
+					fieldOptionsExportScreenshotPath.setText(settings.getProperty(PROPERTY_EXPORT_SCREENSHOT_DIRECTORY));
 					
 					menuDropDownOptionsStrategy.setSelectedIndex(menuDropDownPattern.getSelectedIndex());
 					
-					setButtonSelected(buttonModeSignal, modeSignal);
-					setButtonSelected(headerOptionsAutomatic, modeAutomatic);
-					setButtonSelected(headerOptionsExport, exportData || exportScreenshot);
-					setButtonSelected(headerOptionsExportData, exportData);
-					setButtonSelected(headerOptionsExportScreenshot, exportScreenshot);
+					setButtonSelected(buttonModeSignal, modeSignal.getValue());
+					setButtonSelected(headerOptionsAutomatic, Boolean.parseBoolean(settings.getProperty(PROPERTY_RULE_AUTOMATIC)));
+					setButtonSelected(headerOptionsExport, exportData.getValue() || exportScreenshot.getValue());
+					setButtonSelected(headerOptionsExportData, exportData.getValue());
+					setButtonSelected(headerOptionsExportScreenshot, exportScreenshot.getValue());
 					
 					frameOptions.setVisible(true);
 				}
@@ -799,7 +826,6 @@ public class GUI {
 		panelWorkbenchSwarm.setLayout(new GridBagLayout());
 				
 		// button to freeze swarm agents
-		buttonSwarmActive = new JToggleButton();
 		buttonSwarmActive.setBackground(colorDisabled);
 		buttonSwarmActive.addActionListener(
 			new ActionListener() {
@@ -825,7 +851,8 @@ public class GUI {
 				
 		// ************************************************************ Slider for the
 		// user to change how fast the board will step
-		sliderRateSwarm = new JSlider(1, 2 * RATE_STEPS_MAXIMUM);
+		sliderRateSwarm.setMinimum(1);
+		sliderRateSwarm.setMaximum(2 * RATE_STEPS_MAXIMUM);
 		sliderRateSwarm.setMajorTickSpacing(13);
 		sliderRateSwarm.setPaintLabels(true);
 		// slider to change the speed of the agents in board.agents[]
@@ -1015,7 +1042,7 @@ public class GUI {
 		
 		// ************************************************************ Updates the
 		// polarity to what is entered on the radio buttons
-		menuDropDownPattern = new JComboBox<String>(new DefaultComboBoxModel<String>(OPTIONS_PATTERNS_NAMES));
+		menuDropDownPattern.setModel(new DefaultComboBoxModel<String>(OPTIONS_PATTERNS_NAMES));
 		menuDropDownPattern.addActionListener(
 			new ActionListener() {
 				@Override
@@ -1046,7 +1073,6 @@ public class GUI {
 		//
 		//This button will determine if the agents should follow rules to get a single polarity
 		//or try to balance the 3 different polarities.
-		buttonModeEquilibrium = new JToggleButton();
 		buttonModeEquilibrium.addActionListener(
 			new ActionListener() {
 				@Override
@@ -1068,7 +1094,8 @@ public class GUI {
 
 		// ************************************************************ Sets what the
 		// polarity ratios should be for the two colors.
-		JComboBox<String> menuDropDownStabilityRegional = new JComboBox<String>(new DefaultComboBoxModel<String>(new String[] {"50/50", "60/40", "70/30", "80/20", "90/10", "100/0" })); //Does not work
+		JComboBox<String> menuDropDownStabilityRegional = new JComboBox<String>(); //Does not work
+		menuDropDownStabilityRegional.setModel(new DefaultComboBoxModel<String>(new String[] {"50/50", "60/40", "70/30", "80/20", "90/10", "100/0" }));
 		tabLayerPolarity.add(menuDropDownStabilityRegional, createConstraints(1, COUNT_POLARITIES_MAXIMUM + 2, 1, 1.0, 1.0, INSETS_SLIM));
 
 		JLabel labelStabilityRegional = new JLabel("Regional Stability:"); //Does not work
@@ -1086,7 +1113,7 @@ public class GUI {
 
 		//Action added 7/18 by Morgan Might
 		optionsPolarityDominant = new DefaultComboBoxModel<String>();
-		menuDropDownPolarityDominant = new JComboBox<String>(optionsPolarityDominant);
+		menuDropDownPolarityDominant.setModel(optionsPolarityDominant);
 		menuDropDownPolarityDominant.addItemListener(
 			new ItemListener() {
 				@Override
@@ -1115,10 +1142,9 @@ public class GUI {
 			}
 		};
 		
-		menusDropDownColorsPolarity = new JComboBox[COUNT_POLARITIES_MAXIMUM];
 		JLabel labelColorPolarity;
 		for(int indexMenu = 0; indexMenu < menusDropDownColorsPolarity.length; indexMenu++) {
-			menusDropDownColorsPolarity[indexMenu] = new JComboBox<String>(new DefaultComboBoxModel<String>(OPTIONS_COLORS_NAMES));
+			menusDropDownColorsPolarity[indexMenu].setModel(new DefaultComboBoxModel<String>(OPTIONS_COLORS_NAMES));
 			menusDropDownColorsPolarity[indexMenu].addItemListener(listenerDropDownColorPolarity);
 			tabLayerPolarity.add(menusDropDownColorsPolarity[indexMenu], createConstraints(1, 2 * COUNT_POLARITIES_MAXIMUM + 4 + indexMenu, 1, 1.0, 1.0, INSETS_SLIM));
 			
@@ -1182,7 +1208,6 @@ public class GUI {
 		labelAgentCloseness.setLabelFor(fieldAgentCloseness);
 		tabLayerInteractive.add(labelAgentCloseness, createConstraints(0, 2, 1, 0.04, 1.0, INSETS_NONE));
 		
-		buttonWraparound = new JToggleButton();
 		buttonWraparound.addActionListener(
 			new ActionListener() {
 				@Override
@@ -1206,7 +1231,7 @@ public class GUI {
 		
 		// ************************************************************ User can change
 		// the color of the agents
-		menuDropDownColorAgents = new JComboBox<String>(new DefaultComboBoxModel<String>(OPTIONS_COLORS_NAMES));
+		menuDropDownColorAgents.setModel(new DefaultComboBoxModel<String>(OPTIONS_COLORS_NAMES));
 		menuDropDownColorAgents.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -1229,7 +1254,7 @@ public class GUI {
 		//MODIFICATION: Special Agent Color
 		//Added 5/21 by Morgan Might
 		// User can change the color of the "special" agents
-		menuDropDownColorAgentsSpecial = new JComboBox<String>(new DefaultComboBoxModel<String>(OPTIONS_COLORS_NAMES));
+		menuDropDownColorAgentsSpecial.setModel(new DefaultComboBoxModel<String>(OPTIONS_COLORS_NAMES));
 		menuDropDownColorAgentsSpecial.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -1252,7 +1277,7 @@ public class GUI {
 		GridBagConstraints constraintsButtonAgentVisibility = createConstraints(2, 4, 2, 1.0, 1.0, INSETS_SLIM);
 		constraintsButtonAgentVisibility.gridheight = 2;
 		
-		buttonAgentVisiblity = new JToggleButton("View Agents");
+		buttonAgentVisiblity.setText("View Agents");
 		buttonAgentVisiblity.addActionListener(
 			new ActionListener() {
 				@Override
@@ -1302,7 +1327,8 @@ public class GUI {
 		
 		// ************************************************************ User changes the
 		// color of the pheromone trails on the board.
-		JComboBox<String> menuDropDownColorPheromone = new JComboBox<String>(new DefaultComboBoxModel<String>(OPTIONS_COLORS_NAMES));
+		JComboBox<String> menuDropDownColorPheromone = new JComboBox<String>();
+		menuDropDownColorPheromone.setModel(new DefaultComboBoxModel<String>(OPTIONS_COLORS_NAMES));
 		tabLayerInteractive.add(menuDropDownColorPheromone, createConstraints(1, 9, 3, 1.0, 1.0, INSETS_SLIM));
 		
 		JLabel labelColorPheromoneTrail = new JLabel("Pheromone Color:");
@@ -1310,26 +1336,27 @@ public class GUI {
 		labelColorPheromoneTrail.setForeground(Color.LIGHT_GRAY);
 		tabLayerInteractive.add(labelColorPheromoneTrail, createConstraints(0, 9, 1, 0.04, 1.0, INSETS_NONE));
 		
-		JToggleButton buttonModeAttractor = new JToggleButton("Attract");
-		buttonModeAttractor.setSelected(true);
-		buttonModeAttractor.addActionListener(
+		buttonModeMagnet.setText("Attract");
+		buttonModeMagnet.addActionListener(
 			new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
-					if (modeAttractor = buttonModeAttractor.isSelected()) {
-						buttonModeAttractor.setText("Attract");
+					if (modeMagnetAttract = buttonModeMagnet.isSelected()) {
+						buttonModeMagnet.setText("Attract");
 					}
 					else {
-						buttonModeAttractor.setText("Repel");
+						buttonModeMagnet.setText("Repel");
 					}
 					
 					if(board != null) {
-						board.setAttractorMode(modeAttractor);
+						board.setAttractorMode(modeMagnetAttract);
 					}
+					
+					settings.setProperty(PROPERTY_PHEROMONES_MAGNET_ATTRACT, Boolean.toString(modeMagnetAttract));
 				}
 			}
 		);
-		tabLayerInteractive.add(buttonModeAttractor, createConstraints(0, 10, 4, 1.0, 1.0, INSETS_SLIM));
+		tabLayerInteractive.add(buttonModeMagnet, createConstraints(0, 10, 4, 1.0, 1.0, INSETS_SLIM));
 
 		paneTabbed.addTab("Interactive Layer", tabLayerInteractive);
 		
@@ -1374,7 +1401,7 @@ public class GUI {
 	}
 	
 	public boolean getStrategySignalMode() {
-		return modeSignal;
+		return modeSignal.getValue();
 	}
 
 	public boolean getTimerActive() {
@@ -1391,27 +1418,23 @@ public class GUI {
 	}
 	
 	public boolean getAttractorMode() {
-		return modeAttractor;
-	}
-	
-	public int getBoardSize() {
-		return sizeBoard;
-	}
-
-	public int getAgentCount() {
-		return countAgentsNormal;
-	}
-
-	public int getSpecialAgentCount() {
-		return countAgentsSpecial;
+		return modeMagnetAttract;
 	}
 
 	public int getDominantPolarity() {
 		return indexPolarityDominant;
 	}
 	
+	public double getMagnetStrength() {
+		return strengthMagnet.getValue();
+	}
+	
+	public double getMagnetRange() {
+		return rangeMagnet.getValue();
+	}
+	
 	public double getSignalRange() {
-		return rangeSignal;
+		return rangeSignal.getValue();
 	}
 
 	public Color getAgentColor() {
@@ -1464,21 +1487,21 @@ public class GUI {
 
 		this.board = board;
 
-		sizeBoard = board.getBreadth();
-		countAgentsNormal = board.getNormalAgentCount();
-		countAgentsSpecial = board.getSpecialAgentCount();
+		sizeBoard.setValue(board.getBreadth());
+		countAgentsNormal.setValue(board.getNormalAgentCount());
+		countAgentsSpecial.setValue(board.getSpecialAgentCount());
 		frequencyColorsInitial = board.getInitialColorFrequencies();
 		frequencyColors = board.getColorFrequencies();
 		frequencyPolarities = board.getPolarityFrequencies();
 		
-		String sizeBoardString = Integer.toString(sizeBoard);
+		String sizeBoardString = Integer.toString(sizeBoard.getValue());
 
 		settings.setProperty(PROPERTY_BOARD_SIZE, sizeBoardString);
-		settings.setProperty(PROPERTY_AGENTS_COUNT_NORMAL, Integer.toString(countAgentsNormal));
-		settings.setProperty(PROPERTY_AGENTS_COUNT_SPECIAL, Integer.toString(countAgentsSpecial));
+		settings.setProperty(PROPERTY_AGENTS_COUNT_NORMAL, Integer.toString(countAgentsNormal.getValue()));
+		settings.setProperty(PROPERTY_AGENTS_COUNT_SPECIAL, Integer.toString(countAgentsSpecial.getValue()));
 
 		labelSizeBoardValue.setText(sizeBoardString);
-		labelCountAgentsValue.setText(Integer.toString(countAgentsNormal + countAgentsSpecial));
+		labelCountAgentsValue.setText(Integer.toString(countAgentsNormal.getValue() + countAgentsSpecial.getValue()));
 		labelCountStepsValue.setText(Integer.toString(indexStep = 0));
 		
 		panelBoard.add(board);
@@ -1486,9 +1509,9 @@ public class GUI {
 		
 		updateInitialColorFrequencyLabels();
 
-		if(exportData) {
+		if(exportData.getValue()) {
 			try {
-				writerData = new BufferedWriter(new FileWriter(pathData + "\\Swarm-Frequencies_" + FORMATTER_TIMESTAMP.format(LocalDateTime.now()) + ".csv"));
+				writerData = new BufferedWriter(new FileWriter(pathData.getValue() + "\\Swarm-Frequencies_" + FORMATTER_TIMESTAMP.format(LocalDateTime.now()) + ".csv"));
 				addDataColumnHeaders(writerData);
 				outputPolarityData(writerData);
 			}
@@ -1496,14 +1519,14 @@ public class GUI {
 				e.printStackTrace();
 			}
 
-			if(modeAutomatic) {
+			if(modeAutomatic.getValue()) {
 				storeAveragePolarityData(indexStep);
 			}
 		}
 		
-		if(exportScreenshot) {
+		if(exportScreenshot.getValue()) {
 			try {
-				ImageIO.write(board.capture(), "JPG", new File(pathScreenshot + File.separator + "Simulation_" + FORMATTER_TIMESTAMP.format(LocalDateTime.now()) + FILETYPE_SCREENSHOT));
+				ImageIO.write(board.capture(), "JPG", new File(pathScreenshot.getValue() + File.separator + "Simulation_" + FORMATTER_TIMESTAMP.format(LocalDateTime.now()) + FILETYPE_SCREENSHOT));
 			}
 			catch (IOException e) {
 				e.printStackTrace();
@@ -1693,7 +1716,7 @@ public class GUI {
 	}
 
 	public Board generateBoard() {
-		return new Board(sizeBoard, countAgentsNormal, countAgentsSpecial, countAgentsAlternator, countAgentsEdger, this);
+		return new Board(sizeBoard.getValue(), countAgentsNormal.getValue(), countAgentsSpecial.getValue(), countAgentsAlternator.getValue(), countAgentsEdger.getValue(), this);
 	}
 
 	public void toggleTimer() {
@@ -1728,21 +1751,21 @@ public class GUI {
 		
 		labelCountStepsValue.setText(Integer.toString(indexStep));
 		
-		if(exportData && indexStep % intervalExportData == 0) {
+		if(exportData.getValue() && indexStep % intervalExportData.getValue() == 0) {
 			outputPolarityData(writerData);
 
-			if(modeAutomatic) {
+			if(modeAutomatic.getValue()) {
 				storeAveragePolarityData(indexStep);
 			}
 		}
 
-		if(exportScreenshot && indexStep % intervalExportScreenshot == 0) {
+		if(exportScreenshot.getValue() && indexStep % intervalExportScreenshot.getValue() == 0) {
 			if(timerReady) {
 				toggleTimer();
 			}
 
 			try {
-				ImageIO.write(board.capture(), "JPG", new File(pathScreenshot + File.separator + "Simulation_" + FORMATTER_TIMESTAMP.format(LocalDateTime.now()) + FILETYPE_SCREENSHOT));
+				ImageIO.write(board.capture(), "JPG", new File(pathScreenshot.getValue() + File.separator + "Simulation_" + FORMATTER_TIMESTAMP.format(LocalDateTime.now()) + FILETYPE_SCREENSHOT));
 			}
 			catch (IOException e) {
 				e.printStackTrace();
@@ -1753,19 +1776,19 @@ public class GUI {
 			}
 		}
 
-		if(modeAutomatic) {
-			if(indexStep >= countStepsMaximum) {
+		if(modeAutomatic.getValue()) {
+			if(indexStep >= countStepsMaximum.getValue()) {
 				indexRepetition++;
 
-				if(indexRepetition >= countRepetitionsMaximum) {
+				if(indexRepetition >= countRepetitionsMaximum.getValue()) {
 					buttonSwarmActive.setSelected(true);
 					buttonSwarmActive.doClick();
 
-					if(exportData) {
+					if(exportData.getValue()) {
 						outputAveragePolarityData();
 					}
 					
-					modeAutomatic = false;
+					modeAutomatic.setValue(false);
 				}
 				else {
 					setBoard(generateBoard());
@@ -1825,7 +1848,7 @@ public class GUI {
 
 	private void outputAveragePolarityData() {
 		try {
-			BufferedWriter writer = new BufferedWriter(new FileWriter(pathData + "\\Swarm-Frequencies-Averages_" + FORMATTER_TIMESTAMP.format(LocalDateTime.now()) + ".csv"));
+			BufferedWriter writer = new BufferedWriter(new FileWriter(pathData.getValue() + "\\Swarm-Frequencies-Averages_" + FORMATTER_TIMESTAMP.format(LocalDateTime.now()) + ".csv"));
 
 			addDataColumnHeaders(writer);
 
@@ -1958,7 +1981,7 @@ public class GUI {
 	}
 
 	private static String[] generateColorProperties() {
-		String[] propertiesColorsSwarm = {PROPERTY_COLOR_AGENT_NORMAL, PROPERTY_COLOR_AGENT_SPECIAL, PROPERTY_COLOR_AGENT_ALTERNATOR};
+		String[] propertiesColorsSwarm = {PROPERTY_COLOR_AGENT_NORMAL, PROPERTY_COLOR_AGENT_SPECIAL, PROPERTY_COLOR_AGENT_ALTERNATOR, PROPERTY_COLOR_AGENT_EDGER};
 		String[] propertiesColorsPolarities = new String[COUNT_POLARITIES_MAXIMUM];
 		
 		for(int indexPropertyColorPolarity = 0; indexPropertyColorPolarity < propertiesColorsPolarities.length; indexPropertyColorPolarity++) {
@@ -2018,211 +2041,140 @@ public class GUI {
 			component.revalidate();
 		}
 	}
+	
+	private class Value<T> {
+		T value;
+		
+		public T getValue() {
+			return value;
+		}
+		
+		public void setValue(T value) {
+			this.value = value;
+		}
+	}
 
 	private abstract class Command {
-		public abstract void execute(String value);
+		public abstract void execute(String valueString);
 	}
-
-	private class CommandBoardSize extends Command {
-		@Override
-		public void execute(String value) {
-			sizeBoard = Integer.parseInt(value);
+	
+	private abstract class CommandValue<T> extends Command {
+		private Value<T> value;
+		
+		public CommandValue(Value<T> value) {
+			this.value = value;
 		}
-	}
-
-	private class CommandBoardWraparound extends Command {
+		
 		@Override
-		public void execute(String value) {
-			buttonWraparound.setSelected(!Boolean.parseBoolean(value));
-			buttonWraparound.doClick();
+		public String toString() {
+			return value.toString();
 		}
-	}
-
-	private class CommandAgentCount extends Command {
+		
 		@Override
-		public void execute(String value) {
-			countAgentsNormal = Integer.parseInt(value);
+		public void execute(String valueString) {
+			value.setValue(parseValue(valueString));
 		}
+		
+		protected abstract T parseValue(String valueString);
 	}
-
-	private class CommandAgentCountSpecial extends Command {
+	
+	private class CommandValueBoolean extends CommandValue<Boolean> {
+		public CommandValueBoolean(Value<Boolean> value) {
+			super(value);
+		}
+		
 		@Override
-		public void execute(String value) {
-			countAgentsSpecial = Integer.parseInt(value);
+		protected Boolean parseValue(String valueString) {
+			return Boolean.parseBoolean(valueString);
 		}
 	}
 	
-	private class CommandAgentCountAlternator extends Command {
+	private class CommandValueInteger extends CommandValue<Integer> {
+		public CommandValueInteger(Value<Integer> value) {
+			super(value);
+		}
+		
 		@Override
-		public void execute(String value) {
-			countAgentsAlternator = Integer.parseInt(value);
+		protected Integer parseValue(String valueString) {
+			return Integer.parseInt(valueString);
 		}
 	}
 	
-	private class CommandAgentCountEdger extends Command {
-		@Override
-		public void execute(String value) {
-			countAgentsEdger = Integer.parseInt(value);
+	private class CommandValueDouble extends CommandValue<Double> {
+		public CommandValueDouble(Value<Double> value) {
+			super(value);
 		}
-	}
-
-	private class CommandAgentRate extends Command {
+		
 		@Override
-		public void execute(String value) {
-			sliderRateSwarm.setValue(Integer.parseInt(value));
-		}
-	}
-
-	private class CommandAgentActive extends Command {
-		@Override
-		public void execute(String value) {
-			buttonSwarmActive.setSelected(!Boolean.parseBoolean(value));
-			buttonSwarmActive.doClick();
-		}
-	}
-
-	private class CommandAgentVisible extends Command {
-		@Override
-		public void execute(String value) {
-			buttonAgentVisiblity.setSelected(!Boolean.parseBoolean(value));
-			buttonAgentVisiblity.doClick();
-		}
-	}
-
-	private class CommandRuleGoal extends Command {
-		@Override
-		public void execute(String value) {
-			menuDropDownPattern.setSelectedItem(value);
+		protected Double parseValue(String valueString) {
+			return Double.parseDouble(valueString);
 		}
 	}
 	
-	private class CommandRuleStrategySignal extends Command {
+	private class CommandValuePath extends CommandValue<Path> {
+		public CommandValuePath(Value<Path> value) {
+			super(value);
+		}
+		
 		@Override
-		public void execute(String value) {
-			modeSignal = Boolean.parseBoolean(value);
+		protected Path parseValue(String value) {
+			return Paths.get(value);
 		}
 	}
 	
-	private class CommandRuleStrategySignalRange extends Command {
-		@Override
-		public void execute(String value) {
-			rangeSignal = Double.parseDouble(value);
-		}
-	}
-
-	private class CommandRuleDominantPolarity extends Command {
-		@Override
-		public void execute(String value) {
-			int valueInteger = Math.min(Math.max(Integer.parseInt(value), 1), goalStrategy.getPolarityCount());
-
-			menuDropDownPolarityDominant.setSelectedIndex(valueInteger - 1);
-		}
-	}
-
-	private class CommandRuleEquilibrium extends Command {
-		@Override
-		public void execute(String value) {
-			buttonModeEquilibrium.setSelected(!Boolean.parseBoolean(value));
-			buttonModeEquilibrium.doClick();
-		}
-	}
-
-	private class CommandRuleAutomatic extends Command {
-		@Override
-		public void execute(String value) {
-			modeAutomatic = Boolean.parseBoolean(value);
-		}
-	}
-
-	private class CommandRuleAutomaticRepetitions extends Command {
-		@Override
-		public void execute(String value) {
-			countRepetitionsMaximum = Integer.parseInt(value);
-		}
-	}
-
-	private class CommandRuleAutomaticSteps extends Command {
-		@Override
-		public void execute(String value) {
-			countStepsMaximum = Integer.parseInt(value);
-		}
-	}
-
-	private class CommandColorAgents extends Command {
-		@Override
-		public void execute(String value) {
-			menuDropDownColorAgents.setSelectedItem(value);
-		}
-	}
-
-	private class CommandColorAgentsSpecial extends Command {
-		@Override
-		public void execute(String value) {
-			menuDropDownColorAgentsSpecial.setSelectedItem(value);
+	private abstract class CommandComponent<T extends Component> extends Command {
+		protected T component;
+		
+		public CommandComponent(T component) {
+			this.component = component;
 		}
 	}
 	
-	private class CommandColorAgentsAlternator extends Command {
+	private class CommandComponentButtonToggle extends CommandComponent<JToggleButton> {
+		public CommandComponentButtonToggle(JToggleButton component) {
+			super(component);
+		}
+
 		@Override
-		public void execute(String value) {
-			//TODO
-			//menuDropDownColorAgentsAlternator.setSelectedItem(value);
+		public void execute(String valueString) {
+			setButtonSelected(component, Boolean.parseBoolean(valueString));
 		}
 	}
-
-	private class CommandColorPolarity extends Command {
-		private int indexPolarity;
-
-		public CommandColorPolarity(int indexPolarity) {
-			this.indexPolarity = indexPolarity;
+	
+	private class CommandComponentMenuDropDownSelectedIndex extends CommandComponent<JComboBox> {
+		public CommandComponentMenuDropDownSelectedIndex(JComboBox component) {
+			super(component);
 		}
 
 		@Override
-		public void execute(String value) {
-			menusDropDownColorsPolarity[indexPolarity].setSelectedItem(value);
-		}
-	}
-
-	private class CommandExportPolarities extends Command {
-		@Override
-		public void execute(String value) {
-			exportData = Boolean.parseBoolean(value);
+		public void execute(String valueString) {
+			int countOptions = component.getModel().getSize();
+			
+			if(countOptions > 0) {
+				component.setSelectedIndex(Math.min(Math.max(0, (Integer.parseInt(valueString) - 1)), countOptions));
+			}
 		}
 	}
+	
+	private class CommandComponentMenuDropDownSelectedItemString extends CommandComponent<JComboBox> {
+		public CommandComponentMenuDropDownSelectedItemString(JComboBox<String> component) {
+			super(component);
+		}
 
-
-	private class CommandExportPolaritiesInterval extends Command {
 		@Override
-		public void execute(String value) {
-			intervalExportData = Integer.parseInt(value);
+		public void execute(String valueString) {
+			component.setSelectedItem(valueString);
 		}
 	}
-
-	private class CommandExportPolaritiesDirectory extends Command {
-		@Override
-		public void execute(String value) {
-			pathData = Paths.get(value);
+	
+	private class CommandComponentSlider extends CommandComponent<JSlider> {
+		public CommandComponentSlider(JSlider component) {
+			super(component);
 		}
-	}
 
-	private class CommandExportScreenshot extends Command {
 		@Override
-		public void execute(String value) {
-			exportScreenshot = Boolean.parseBoolean(value);
-		}
-	}
-
-	private class CommandExportScreenshotInterval extends Command {
-		@Override
-		public void execute(String value) {
-			intervalExportScreenshot = Integer.parseInt(value);
-		}
-	}
-
-	private class CommandExportScreenshotDirectory extends Command {
-		@Override
-		public void execute(String value) {
-			pathScreenshot = Paths.get(value);
+		public void execute(String valueString) {
+			component.setValue(Integer.parseInt(valueString));
 		}
 	}
 }

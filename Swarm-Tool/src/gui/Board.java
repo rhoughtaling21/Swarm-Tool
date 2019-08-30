@@ -47,17 +47,17 @@ import swarm.SwarmAgent;
 public class Board extends JPanel implements MouseMotionListener {
 	public static final int BREADTH_MINIMUM = 1;
 	public static final double SCALE_BOARD = 800;
-	private static final double STRENGTH_ATTRACTOR = 1.0;
 	
 	private boolean swarmVisible;
 	private boolean wraparound; //whether the walls of the Board wrap or not; by default, they don't
-	private boolean modeAttractor;
+	private boolean modeMagnetAttract;
 	private int breadth; //these are the numbers of cells in the board, NOT the graphical dimensions of the board
 	private int countCells;
 	private int countAgents, countAgentsNormal, countAgentsSpecial, countAgentsAlternator; //MODIFICATION
 	private int indexLayerDisplay;
 	private double sizeCell; //pixel dimensions of each cell
-	private double rangeAttractor; //distance in cells, not pixels
+	private double rangeMagnet; //distance in cells, not pixels
+	private double strengthMagnet;
 	private Color colorAgentsNormal, colorAgentsSpecial, colorAgentsAlternator, colorAgentsEdger;
 	private Pattern pattern;//strategy that the agents and layer 2 use for their calculations given the current goal
 	private GUI gui;
@@ -81,7 +81,8 @@ public class Board extends JPanel implements MouseMotionListener {
 		
 		wraparound = gui.getBoardWraparound();
 		swarmVisible = gui.getAgentVisibility();
-		modeAttractor = gui.getAttractorMode();
+		modeMagnetAttract = gui.getAttractorMode();
+		strengthMagnet = gui.getMagnetStrength();
 		pattern = gui.getPattern();
 		
 		frequencyColorsInitial = new int[CellDisplayBase.getMaximumStateCount()];
@@ -95,7 +96,7 @@ public class Board extends JPanel implements MouseMotionListener {
 		sizeCell = (SCALE_BOARD / breadth);
 		double sizeAgent = (sizeCell * 0.7);
 
-		rangeAttractor = sizeCell * 5; //the attractor affects everything in a five cell block radius
+		rangeMagnet = sizeCell * gui.getMagnetRange(); //the attractor affects everything in a five cell block radius
 
 		layers = new CellDisplay[][][]{null, layerBase = new CellDisplayBase[breadth][breadth], layerPolarity = new CellDisplayPolarity[breadth][breadth], null, layerPersistence = new CellDisplayPersistence[breadth][breadth], layerCorrectness = new CellDisplayCorrectness[breadth][breadth]};
 		
@@ -262,7 +263,7 @@ public class Board extends JPanel implements MouseMotionListener {
 	}
 	
 	public void setAttractorMode(boolean modeAttractor) {
-		this.modeAttractor = modeAttractor;
+		this.modeMagnetAttract = modeAttractor;
 	}
 	
 	public void setAgentColor(SwarmAgent[] agents, Color colorAgents) {
@@ -470,7 +471,7 @@ public class Board extends JPanel implements MouseMotionListener {
 		event.translatePoint(offsetX, offsetY);
 		
 		double multiplier = 1;
-		if(!modeAttractor) {
+		if(!modeMagnetAttract) {
 			multiplier *= -1;
 		}
 		
@@ -480,9 +481,9 @@ public class Board extends JPanel implements MouseMotionListener {
 		for (SwarmAgent agent : agents) {
 			distance = Math.hypot(distanceX = (event.getX() - agent.getCenterX()), distanceY = (event.getY() - agent.getCenterY()));
 
-			if (distance < rangeAttractor) {
+			if (distance < rangeMagnet) {
 				//then the agent is in the specified range
-				if (generatorNumbersRandom.nextDouble() < STRENGTH_ATTRACTOR) {
+				if (generatorNumbersRandom.nextDouble() < strengthMagnet) {
 					multiplierScale = multiplier / distance;
 					agent.setVelocityCells(multiplierScale * distanceX, multiplierScale * distanceY);
 				}
