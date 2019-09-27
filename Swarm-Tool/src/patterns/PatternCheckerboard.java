@@ -7,7 +7,7 @@ import strategies.StrategyStatePatternCheckerboard;
 public class PatternCheckerboard extends Pattern {
 	private static final int COUNT_STATES = 2;
 	private static final int COUNT_POLARITIES = 2;
-	private static final Strategy STRATEGY_DEFAULT = new StrategyStatePatternCheckerboard();
+	private static final Strategy STRATEGY_DEFAULT = StrategyStatePatternCheckerboard.get();
 
 	@Override
 	public int getStateCount() {

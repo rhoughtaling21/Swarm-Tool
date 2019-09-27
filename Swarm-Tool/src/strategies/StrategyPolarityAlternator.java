@@ -7,6 +7,16 @@ import gui.Board;
 import swarm.SwarmAgent;
 
 public class StrategyPolarityAlternator extends StrategyPolarity {
+	private static final Strategy STRATEGY = new StrategyPolarityAlternator();
+	
+	public static Strategy get() {
+		return STRATEGY;
+	}
+	
+	private StrategyPolarityAlternator() {
+		
+	}
+	
 	@Override
 	public int determineDesiredPolarity(Board board, SwarmAgent agent) {
 		int indexRow = board.calculateAgentRow(agent);

@@ -13,7 +13,7 @@ import strategies.StrategyStatePatternLines;
 public class PatternLines extends Pattern {
 	private static final int COUNT_STATES = 2;
 	private static final int COUNT_POLARITIES = 4;
-	private static final Strategy STRATEGY_DEFAULT = new StrategyStatePatternLines();
+	private static final Strategy STRATEGY_DEFAULT = StrategyStatePatternLines.get();
 	
 
 	@Override

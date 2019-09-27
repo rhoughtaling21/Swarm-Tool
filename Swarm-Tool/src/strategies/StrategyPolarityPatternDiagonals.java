@@ -11,6 +11,15 @@ public class StrategyPolarityPatternDiagonals extends StrategyPolarity {
 	private static final int CAPACITY_MEMORY = 20;
 	private static final int THRESHOLD_POLARITY_DOMINANT_MEMORY = 18;
 	private static final int THRESHOLD_POLARITY_DOMINANT_NEIGHBORING = 2;
+	private static final Strategy STRATEGY = new StrategyPolarityPatternDiagonals();
+	
+	public static Strategy get() {
+		return STRATEGY;
+	}
+	
+	private StrategyPolarityPatternDiagonals() {
+		
+	}
 	
 	@Override
 	public int getMemoryCapacity() {

@@ -10,7 +10,7 @@ import strategies.StrategyStatePatternBlackout;
 public class PatternBlackout extends Pattern {
 	private static final int COUNT_STATES = 2;
 	private static final int COUNT_POLARITIES = 2;
-	private static final Strategy STRATEGY_DEFAULT = new StrategyStatePatternBlackout();
+	private static final Strategy STRATEGY_DEFAULT = StrategyStatePatternBlackout.get();
 
 	@Override
 	public int getStateCount() {

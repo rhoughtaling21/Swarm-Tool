@@ -8,6 +8,16 @@ import gui.Board;
 import swarm.SwarmAgent;
 
 public class StrategyStatePatternCheckerboard extends StrategyState {
+	private static final Strategy STRATEGY = new StrategyStatePatternCheckerboard();
+	
+	public static Strategy get() {
+		return STRATEGY;
+	}
+	
+	private StrategyStatePatternCheckerboard() {
+		
+	}
+	
 	@Override
 	public int determineDesiredState(Board board, SwarmAgent agent) {
 		int indexRow = board.calculateAgentRow(agent);

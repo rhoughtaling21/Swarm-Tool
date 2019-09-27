@@ -1,27 +1,56 @@
 package swarm;
 
+import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.concurrent.ThreadLocalRandom;
 
 import gui.Board;
 
 public class MotionEdge extends Motion {
-	private static boolean atEdge(Board board, int indexLine) {
-		return indexLine == 0 || indexLine == (board.getBreadth() - 1);
+	private static final MotionEdge MOTION = new MotionEdge();
+	
+	private static boolean atEdge(Board board, double position) {
+		double sizeCell = board.getCellSize();
+		return position < sizeCell || position > (Board.SCALE_BOARD - sizeCell);
+	}
+	
+	private static boolean atEdge(SwarmAgent agent, double position) {
+		return atEdge(agent.getBoard(), position);
 	}
 	
 	private static boolean atHorizontalEdge(SwarmAgent agent) {
-		Board board = agent.getBoard();
-		return atEdge(board, board.calculateAgentColumn(agent));
+		return atEdge(agent, agent.getCenterY());
 	}
 	
 	private static boolean atVerticalEdge(SwarmAgent agent) {
+		return atEdge(agent, agent.getCenterX());
+	}
+	
+	private static boolean leavingEdge(SwarmAgent agent) {
 		Board board = agent.getBoard();
-		return atEdge(board, board.calculateAgentRow(agent));
+		Point2D velocity = agent.getVelocity();
+		
+		if(velocity.getX() == 0) {
+			double positionY = agent.getCenterY();
+			
+			return atEdge(board, positionY) && !atEdge(board, positionY + velocity.getY());
+		}
+		
+		double positionX = agent.getCenterX();
+		
+		return atEdge(board, positionX) && !atEdge(board, positionX + velocity.getX());
+	}
+	
+	public static Motion get() {
+		return MOTION;
+	}
+	
+	private MotionEdge() {
+		
 	}
 	
 	@Override
-	protected void randomizeVelocityVector(SwarmAgent agent, double[] componentsVectorVelocity) {
+	protected void generateVelocityVector(SwarmAgent agent, double[] componentsVectorVelocity) {
 		ArrayList<Integer> indicesAxes = new ArrayList<Integer>(2);
 		
 		if(atHorizontalEdge(agent)) {
@@ -32,14 +61,12 @@ public class MotionEdge extends Motion {
 			indicesAxes.add(1);
 		}
 		
-		if(!indicesAxes.isEmpty()) {
-			componentsVectorVelocity[indicesAxes.get(ThreadLocalRandom.current().nextInt(indicesAxes.size()))] = generateRandomVelocityVectorComponent();
-		}
+		componentsVectorVelocity[indicesAxes.get(ThreadLocalRandom.current().nextInt(indicesAxes.size()))] = generateRandomVelocityVectorComponent();
 	}
 	
 	@Override
-	protected boolean updateVelocity(SwarmAgent agent) {
-		return !(atHorizontalEdge(agent) || atVerticalEdge(agent)) || super.updateVelocity(agent);
+	protected boolean accelerate(SwarmAgent agent) {
+		return (atHorizontalEdge(agent) || atVerticalEdge(agent)) && (leavingEdge(agent) || super.accelerate(agent));
 	}
 	
 	@Override

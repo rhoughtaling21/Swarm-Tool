@@ -1,18 +1,17 @@
 package swarm;
 
-import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
 public abstract class Motion {
-	public static final double MAGNITUDE_COMPONENT_VECTOR_VELOCITY_MAXIMUM = 0.5;
+	protected static final double MAGNITUDE_COMPONENT_VECTOR_VELOCITY_MAXIMUM = 0.5;
 	private static final double MAGNITUDE_COMPONENT_VECTOR_VELOCITY_MINIMUM = 0;
 	private static final double MAGNITUDE_COMPONENT_VECTOR_VELOCITY_RANGE = MAGNITUDE_COMPONENT_VECTOR_VELOCITY_MAXIMUM - MAGNITUDE_COMPONENT_VECTOR_VELOCITY_MINIMUM;
 	private static final double FREQUENCY_ACCELERATION = 0.1;
 	
 	protected static final double generateRandomVelocityVectorComponent() {
-		Random generatorNumbersRandom = ThreadLocalRandom.current();
+		ThreadLocalRandom generatorNumbersRandom = ThreadLocalRandom.current();
 		
-		double componentVectorVelocity = MAGNITUDE_COMPONENT_VECTOR_VELOCITY_MINIMUM + (MAGNITUDE_COMPONENT_VECTOR_VELOCITY_RANGE * generatorNumbersRandom.nextDouble());
+		double componentVectorVelocity = MAGNITUDE_COMPONENT_VECTOR_VELOCITY_MINIMUM + (generatorNumbersRandom.nextDouble(MAGNITUDE_COMPONENT_VECTOR_VELOCITY_RANGE));
 		
 		if(generatorNumbersRandom.nextDouble() < 0.5) {
 			componentVectorVelocity *= -1;
@@ -21,26 +20,26 @@ public abstract class Motion {
 		return componentVectorVelocity;
 	}
 	
-	protected abstract void randomizeVelocityVector(SwarmAgent agent, double[] componentsVectorVelocity);
+	protected abstract void generateVelocityVector(SwarmAgent agent, double[] componentsVectorVelocity);
 	
-	final void randomizeVelocityVector(SwarmAgent agent) {
+	protected final void updateVelocity(SwarmAgent agent) {
 		double[] componentsVectorVelocity = new double[2];
-		randomizeVelocityVector(agent, componentsVectorVelocity);
+		generateVelocityVector(agent, componentsVectorVelocity);
 		agent.setVelocityCells(componentsVectorVelocity[0], componentsVectorVelocity[1]);
 	}
 	
-	protected boolean updateVelocity(SwarmAgent agent) {
+	protected boolean accelerate(SwarmAgent agent) {
 		return ThreadLocalRandom.current().nextDouble() < FREQUENCY_ACCELERATION;
 	}
 	
 	final void questionVelocity(SwarmAgent agent) {
-		if(updateVelocity(agent)) {
-			randomizeVelocityVector(agent);
+		if(accelerate(agent)) {
+			updateVelocity(agent);
 		}
 	}
 	
 	protected void initializeVelocityVector(SwarmAgent agent, double[] componentsVectorVelocityInitial) {
-		randomizeVelocityVector(agent, componentsVectorVelocityInitial);
+		generateVelocityVector(agent, componentsVectorVelocityInitial);
 	}
 	
 	final void initializeVelocityVector(SwarmAgent agent) {

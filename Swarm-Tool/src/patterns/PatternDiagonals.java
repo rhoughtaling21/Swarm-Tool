@@ -14,7 +14,7 @@ import strategies.StrategyPolarityPatternDiagonals;
 public class PatternDiagonals extends Pattern {
 	private static final int COUNT_STATES = 3;
 	private static final int COUNT_POLARITIES = 3;
-	private static final Strategy STRATEGY_DEFAULT = new StrategyPolarityPatternDiagonals();
+	private static final Strategy STRATEGY_DEFAULT = StrategyPolarityPatternDiagonals.get();
 	private static final int[][] TABLE_STATES = {{0, 2, 1}, {2, 1, 0}, {1, 0, 2}};
 
 	@Override

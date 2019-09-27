@@ -35,7 +35,7 @@ import java.text.NumberFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
@@ -72,6 +72,8 @@ import patterns.PatternBlackout;
 import patterns.PatternCheckerboard;
 import patterns.PatternDiagonals;
 import patterns.PatternLines;
+import swarm.RegisterDefinitionsAgent;
+import swarm.RegisterDefinitionsAgent.DefinitionAgent;
 
 /*
  * Authors: Gabriel, Zak
@@ -86,16 +88,14 @@ import patterns.PatternLines;
 public class GUI {
 	public static final int COUNT_POLARITIES_MAXIMUM = 4;
 	private static final int RATE_STEPS_MAXIMUM = 85;
+	public static final int COUNT_ENTRIES_AGENTS = RegisterDefinitionsAgent.getSize();
 	private static final String TITLE = "Project Legion";
 	private static final String HEADER_PROPERTIES = "#--- Swarm Simulation Properties ---#";
 	private static final String FILETYPE_SCREENSHOT = ".jpg";
 	private static final String FILETYPE_PROPERTIES = ".properties";
 	private static final String PROPERTY_BOARD_SIZE = "board.size";
 	private static final String PROPERTY_BOARD_WRAPAROUND = "board.wraparound";
-	private static final String PROPERTY_AGENTS_COUNT_NORMAL = "agents.normal.count";
-	private static final String PROPERTY_AGENTS_COUNT_SPECIAL = "agents.special.count";
-	private static final String PROPERTY_AGENTS_COUNT_ALTERNATOR = "agents.alternator.count";
-	private static final String PROPERTY_AGENTS_COUNT_EDGER = "agents.edger.count";
+	private static final String TEMPLATE_PROPERTY_AGENTS_COUNT = "agents.count.";
 	private static final String PROPERTY_AGENTS_RATE = "agents.rate";
 	private static final String PROPERTY_AGENTS_ACTIVE = "agents.active";
 	private static final String PROPERTY_AGENTS_VISIBLE = "agents.visible";
@@ -110,11 +110,8 @@ public class GUI {
 	private static final String PROPERTY_RULE_AUTOMATIC = "rule.automatic";
 	private static final String PROPERTY_RULE_AUTOMATIC_REPETITITONS = "rule.automatic.repetitions";
 	private static final String PROPERTY_RULE_AUTOMATIC_STEPS = "rule.automatic.steps";
-	private static final String PROPERTY_COLOR_AGENT_NORMAL = "color.agents.normal";
-	private static final String PROPERTY_COLOR_AGENT_SPECIAL = "color.agents.special";
-	private static final String PROPERTY_COLOR_AGENT_ALTERNATOR = "color.agents.alternator";
-	private static final String PROPERTY_COLOR_AGENT_EDGER = "color.agents.edger";
-	private static final String PROPERTY_COLOR_POLARITY = "color.polarity.";
+	private static final String TEMPLATE_PROPERTY_COLOR_AGENTS = "color.agents.";
+	private static final String TEMPLATE_PROPERTY_COLOR_POLARITY = "color.polarity.";
 	private static final String PROPERTY_EXPORT_DATA = "export.polarities";
 	private static final String PROPERTY_EXPORT_DATA_INTERVAL = "export.polarities.interval";
 	private static final String PROPERTY_EXPORT_DATA_DIRECTORY = "export.polarities.directory";
@@ -130,38 +127,41 @@ public class GUI {
 	private static final Color[] OPTIONS_COLORS = {Color.BLACK, Color.BLUE, Color.CYAN, Color.GRAY, Color.GREEN, Color.MAGENTA, Color.ORANGE, Color.PINK, Color.RED, Color.WHITE, Color.YELLOW};
 	private static final String[] OPTIONS_COLORS_NAMES = {"BLACK", "BLUE", "CYAN", "GRAY", "GREEN", "MAGENTA", "ORANGE", "PINK", "RED", "WHITE", "YELLOW"};
 	private static final String[] OPTIONS_PATTERNS_NAMES = {"BLACKOUT", "CHECKERBOARD", "DIAGONALS", "LINES"};
+	private static final String[] ENTRIES_REGISTRY = RegisterDefinitionsAgent.getEntries();
 	private static final String[] PROPERTIES_BOARD = {PROPERTY_BOARD_SIZE, PROPERTY_BOARD_WRAPAROUND};
-	private static final String[] PROPERTIES_AGENTS = {PROPERTY_AGENTS_COUNT_NORMAL, PROPERTY_AGENTS_COUNT_SPECIAL, PROPERTY_AGENTS_COUNT_ALTERNATOR, PROPERTY_AGENTS_COUNT_EDGER, PROPERTY_AGENTS_RATE, PROPERTY_AGENTS_ACTIVE, PROPERTY_AGENTS_VISIBLE};
+	private static final String[] PROPERTIES_AGENTS_COUNTS = applySuffixes(TEMPLATE_PROPERTY_AGENTS_COUNT, ENTRIES_REGISTRY);
+	private static final String[] PROPERTIES_AGENTS = {PROPERTY_AGENTS_RATE, PROPERTY_AGENTS_ACTIVE, PROPERTY_AGENTS_VISIBLE};
 	private static final String[] PROPERTIES_PHEROMONES = {PROPERTY_PHEROMONES_MAGNET_STRENGTH, PROPERTY_PHEROMONES_MAGNET_RANGE, PROPERTY_PHEROMONES_MAGNET_ATTRACT};
 	private static final String[] PROPERTIES_RULES = {PROPERTY_RULE_PATTERN, PROPERTY_RULE_STRATEGY_SIGNAL, PROPERTY_RULE_STRATEGY_SIGNAL_RANGE, PROPERTY_RULE_POLARITY_DOMINANT, PROPERTY_RULE_EQUILIBRIUM, PROPERTY_RULE_AUTOMATIC, PROPERTY_RULE_AUTOMATIC_REPETITITONS, PROPERTY_RULE_AUTOMATIC_STEPS};
-	private static final String[] PROPERTIES_COLORS = generateColorProperties();
+	private static final String[] PROPERTIES_COLORS_AGENTS = applySuffixes(TEMPLATE_PROPERTY_COLOR_AGENTS, ENTRIES_REGISTRY);
+	private static final String[] PROPERTIES_COLORS_POLARITIES = applySuffixes(TEMPLATE_PROPERTY_COLOR_POLARITY, 1, COUNT_POLARITIES_MAXIMUM);
 	private static final String[] PROPERTIES_EXPORT = {PROPERTY_EXPORT_DATA, PROPERTY_EXPORT_DATA_INTERVAL, PROPERTY_EXPORT_DATA_DIRECTORY, PROPERTY_EXPORT_SCREENSHOT, PROPERTY_EXPORT_SCREENSHOT_INTERVAL, PROPERTY_EXPORT_SCREENSHOT_DIRECTORY};
+	public static final DefinitionAgent[] REGISTRY = RegisterDefinitionsAgent.getRegistry();
 	private static final Pattern[] OPTIONS_STRATEGIES = {new PatternBlackout(), new PatternCheckerboard(), new PatternDiagonals(), new PatternLines()};
-	private static final String[][] PROPERTIES = {PROPERTIES_BOARD, PROPERTIES_AGENTS, PROPERTIES_PHEROMONES, PROPERTIES_RULES, PROPERTIES_COLORS, PROPERTIES_EXPORT};
+	private static final String[][] PROPERTIES = {PROPERTIES_BOARD, PROPERTIES_AGENTS_COUNTS, PROPERTIES_AGENTS, PROPERTIES_PHEROMONES, PROPERTIES_RULES, PROPERTIES_COLORS_AGENTS, PROPERTIES_COLORS_POLARITIES, PROPERTIES_EXPORT};
 	private static final HashMap<Color, String> MAP_COLORS_NAMES = generateMapColorsNames();
 	private static final HashMap<String, Color> MAP_COLORS = generateMapColors();
 	private static final HashMap<String, Pattern> MAP_STRATEGIES = generateMapStrategies();
 
-	private boolean timerReady;// timer or agent step
+	private boolean timerReady;
 	private boolean timerActive;
 	private boolean modeMagnetAttract;
 	private boolean boardWraparound;
-	private Value<Boolean> modeSignal;
 	private boolean modeEquilibrium; //MODIFICATION #5 determines if the agents goal is a single polarity or three balanced polarities
-	private Value<Boolean> modeAutomatic;
 	private boolean swarmVisible;
-	private Value<Boolean> exportData, exportScreenshot;
 	public int indexLayerDisplay = 1;// which cell array in board to display
 	private int indexPolarityDominant;
-	private Value<Integer> sizeBoard;
 	private int indexRepetition;
-	private Value<Integer> countRepetitionsMaximum;
 	private int indexStep;
+	private long rateExecute;
+	private Value<Boolean> modeSignal;
+	private Value<Boolean> modeAutomatic;
+	private Value<Boolean> exportData, exportScreenshot;
+	private Value<Integer> sizeBoard;
+	private Value<Integer> countRepetitionsMaximum;
 	private Value<Integer> countStepsMaximum;
-	private Value<Integer> countAgentsNormal, countAgentsSpecial, countAgentsAlternator, countAgentsEdger;
 	private Value<Integer> intervalExportData;
 	private Value<Integer> intervalExportScreenshot;
-	private long rateExecute;
 	private Value<Double> strengthMagnet;
 	private Value<Double> rangeMagnet;
 	private Value<Double> rangeSignal;
@@ -186,10 +186,13 @@ public class GUI {
 	private JSlider sliderRateSwarm;
 	private JPanel panelBoard;
 	private DefaultComboBoxModel<String> optionsPolarityDominant;
-	private JComboBox<String> menuDropDownPattern, menuDropDownPolarityDominant, menuDropDownColorAgents, menuDropDownColorAgentsSpecial, menuDropDownColorAgentsAlternator, menuDropDownColorAgentsEdger;
+	private JComboBox<String> menuDropDownPattern, menuDropDownPolarityDominant;
 	private int[] frequencyColorsInitial;
 	private int[] frequencyColors;
 	private int[] frequencyPolarities;
+	private Integer[] countsAgents;
+	private Color[] colorsPolarity;
+	private Color[] colorsAgents;
 	private JLabel[] labelsFrequencyColorsInitialText;
 	private JLabel[] labelsFrequencyColorsText;
 	private JLabel[] labelsPolaritiesPercentText;
@@ -198,9 +201,8 @@ public class GUI {
 	private JLabel[] labelsPolaritiesPercent;
 	private JLabel[] labelsPolarityComparison;
 	private JLabel[] labelsPolarityComparisonText;
-	private Color[] colorsPolarity;
 	private ArrayList<double[]> frequenciesPolaritiesAverage;
-	private JComboBox<String>[] menusDropDownColorsPolarity;
+	private JComboBox<String>[] menusDropDownColorsAgents, menusDropDownColorsPolarity;
 	private HashMap<Object, Command> propertyCommands;
 
 	/**
@@ -226,7 +228,11 @@ public class GUI {
 	/**
 	 * Create the application.
 	 */
+	@SuppressWarnings("unchecked")
 	public GUI() {
+		countsAgents = new Integer[COUNT_ENTRIES_AGENTS];
+		
+		colorsAgents = new Color[COUNT_ENTRIES_AGENTS];
 		colorsPolarity = new Color[COUNT_POLARITIES_MAXIMUM];
 
 		timer = new Timer();
@@ -234,15 +240,16 @@ public class GUI {
 		timerActive = false;
 		indexStep = 0;
 
+		menusDropDownColorsAgents = new JComboBox[COUNT_ENTRIES_AGENTS];
 		menusDropDownColorsPolarity = new JComboBox[COUNT_POLARITIES_MAXIMUM];
 		
 		propertyCommands = new HashMap<Object, Command>();
 		propertyCommands.put(PROPERTY_BOARD_SIZE, new CommandValueInteger(sizeBoard = new Value<Integer>()));
 		propertyCommands.put(PROPERTY_BOARD_WRAPAROUND, new CommandComponentButtonToggle(buttonWraparound = new JToggleButton()));
-		propertyCommands.put(PROPERTY_AGENTS_COUNT_NORMAL, new CommandValueInteger(countAgentsNormal = new Value<Integer>()));
-		propertyCommands.put(PROPERTY_AGENTS_COUNT_SPECIAL, new CommandValueInteger(countAgentsSpecial = new Value<Integer>()));
-		propertyCommands.put(PROPERTY_AGENTS_COUNT_ALTERNATOR, new CommandValueInteger(countAgentsAlternator = new Value<Integer>()));
-		propertyCommands.put(PROPERTY_AGENTS_COUNT_EDGER, new CommandValueInteger(countAgentsEdger = new Value<Integer>()));
+		for(int indexEntryAgent = 0; indexEntryAgent < COUNT_ENTRIES_AGENTS; indexEntryAgent++) {
+			propertyCommands.put(PROPERTIES_AGENTS_COUNTS[indexEntryAgent], new CommandElementArrayInteger(countsAgents, indexEntryAgent));
+			propertyCommands.put(PROPERTIES_COLORS_AGENTS[indexEntryAgent], new CommandComponentMenuDropDownSelectedItemString(menusDropDownColorsAgents[indexEntryAgent] = new JComboBox<String>()));
+		}
 		propertyCommands.put(PROPERTY_AGENTS_RATE, new CommandComponentSlider(sliderRateSwarm = new JSlider()));
 		propertyCommands.put(PROPERTY_AGENTS_ACTIVE, new CommandComponentButtonToggle(buttonSwarmActive = new JToggleButton()));
 		propertyCommands.put(PROPERTY_AGENTS_VISIBLE, new CommandComponentButtonToggle(buttonAgentVisiblity = new JToggleButton()));
@@ -257,12 +264,8 @@ public class GUI {
 		propertyCommands.put(PROPERTY_RULE_AUTOMATIC, new CommandValueBoolean(modeAutomatic = new Value<Boolean>()));
 		propertyCommands.put(PROPERTY_RULE_AUTOMATIC_REPETITITONS, new CommandValueInteger(countRepetitionsMaximum = new Value<Integer>()));
 		propertyCommands.put(PROPERTY_RULE_AUTOMATIC_STEPS, new CommandValueInteger(countStepsMaximum = new Value<Integer>()));
-		propertyCommands.put(PROPERTY_COLOR_AGENT_NORMAL, new CommandComponentMenuDropDownSelectedItemString(menuDropDownColorAgents = new JComboBox<>()));
-		propertyCommands.put(PROPERTY_COLOR_AGENT_SPECIAL, new CommandComponentMenuDropDownSelectedItemString(menuDropDownColorAgentsSpecial = new JComboBox<String>()));
-		propertyCommands.put(PROPERTY_COLOR_AGENT_ALTERNATOR, new CommandComponentMenuDropDownSelectedItemString(menuDropDownColorAgentsAlternator = new JComboBox<String>()));
-		propertyCommands.put(PROPERTY_COLOR_AGENT_EDGER, new CommandComponentMenuDropDownSelectedItemString(menuDropDownColorAgentsEdger = new JComboBox<String>()));
 		for(int indexPolarity = 0; indexPolarity < COUNT_POLARITIES_MAXIMUM; indexPolarity++) {
-			propertyCommands.put(PROPERTY_COLOR_POLARITY + (indexPolarity + 1), new CommandComponentMenuDropDownSelectedItemString(menusDropDownColorsPolarity[indexPolarity] = new JComboBox<String>()));
+			propertyCommands.put(PROPERTIES_COLORS_POLARITIES[indexPolarity], new CommandComponentMenuDropDownSelectedItemString(menusDropDownColorsPolarity[indexPolarity] = new JComboBox<String>()));
 		}
 		propertyCommands.put(PROPERTY_EXPORT_DATA, new CommandValueBoolean(exportData = new Value<Boolean>()));
 		propertyCommands.put(PROPERTY_EXPORT_DATA_INTERVAL, new CommandValueInteger(intervalExportData = new Value<Integer>()));
@@ -371,6 +374,7 @@ public class GUI {
 							streamInput.close();
 
 							applyProperties();
+							setBoard(generateBoard());
 						}
 						catch (IOException exceptionInput) {
 							exceptionInput.printStackTrace();
@@ -519,21 +523,22 @@ public class GUI {
 
 		JLabel labelOptionsSizeBoard = new JLabel("Board Size:");
 		JLabel labelOptionsStrategy = new JLabel("Strategy:");
-		JLabel labelOptionsCountAgentsNormal = new JLabel("Standard Agents:");
-		JLabel labelOptionsCountAgentsSpecial = new JLabel("Special Agents:");
-		JLabel labelOptionsCountAgentsAlternator = new JLabel("Alternator Agents:");
-		JLabel labelOptionsCountAgentsEdger = new JLabel("Edger Agents:");
 		JLabel labelOptionsRangeSignal = new JLabel("Signal Range:");
 		JLabel labelOptionsPattern = new JLabel("Pattern:");
 
+		JLabel[] labelsOptionsCountAgents = new JLabel[COUNT_ENTRIES_AGENTS];
+		for(int indexLabel = 0; indexLabel < labelsOptionsCountAgents.length; indexLabel++) {
+			labelsOptionsCountAgents[indexLabel] = new JLabel(REGISTRY[indexLabel].getName() + " Agents:");
+		}
+		
 		JTextField fieldOptionsSizeBoard = new JFormattedTextField(getIntegerFormatter(Board.BREADTH_MINIMUM));
 		
 		NumberFormatter formatterInteger = getIntegerFormatter(0);
 
-		JTextField fieldOptionsCountAgentsNormal = new JFormattedTextField(formatterInteger);
-		JTextField fieldOptionsCountAgentsSpecial = new JFormattedTextField(formatterInteger);
-		JTextField fieldOptionsCountAgentsAlternator = new JFormattedTextField(formatterInteger);
-		JTextField fieldOptionsCountAgentsEdger = new JFormattedTextField(formatterInteger);
+		JTextField[] fieldsOptionsCountAgents = new JTextField[COUNT_ENTRIES_AGENTS];
+		for(int indexField = 0; indexField < fieldsOptionsCountAgents.length; indexField++) {
+			fieldsOptionsCountAgents[indexField] = new JFormattedTextField(formatterInteger);
+		}
 
 		NumberFormat formatDouble = new DecimalFormat();
 		NumberFormatter formatterDouble = new NumberFormatter(formatDouble);
@@ -597,22 +602,17 @@ public class GUI {
 			new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent event) {
-					if(buttonModeSignal.isSelected()) {
-						fieldOptionsCountAgentsAlternator.setVisible(false);
-						fieldOptionsCountAgentsEdger.setVisible(false);
-						labelOptionsCountAgentsAlternator.setVisible(false);
-						labelOptionsCountAgentsEdger.setVisible(false);
-						labelOptionsRangeSignal.setVisible(true);
-						fieldOptionsRangeSignal.setVisible(true);
+					boolean modeSignal = buttonModeSignal.isSelected();
+					
+					boolean display;
+					for(int indexField = 0; indexField < fieldsOptionsCountAgents.length; indexField++) {
+						display = (modeSignal == (REGISTRY[indexField].getMode() == 1));
+						
+						fieldsOptionsCountAgents[indexField].setVisible(display);
+						labelsOptionsCountAgents[indexField].setVisible(display);
 					}
-					else {
-						fieldOptionsCountAgentsAlternator.setVisible(true);
-						fieldOptionsCountAgentsEdger.setVisible(true);
-						labelOptionsCountAgentsAlternator.setVisible(true);
-						labelOptionsCountAgentsEdger.setVisible(true);
-						labelOptionsRangeSignal.setVisible(false);
-						fieldOptionsRangeSignal.setVisible(false);
-					}
+					labelOptionsRangeSignal.setVisible(modeSignal);
+					fieldOptionsRangeSignal.setVisible(modeSignal);
 				}
 			}
 		);
@@ -633,9 +633,23 @@ public class GUI {
 		frameOptions.add(headerOptionsExport, constraintsHeader);
 		frameOptions.add(panelOptionsExport, constraintsPanel);
 
+		int estimateOptionsGeneral = 4 + COUNT_ENTRIES_AGENTS;
+		
+		List<JLabel> labelsOptionsGeneralList = new ArrayList<JLabel>(estimateOptionsGeneral);
+		labelsOptionsGeneralList.addAll(Arrays.asList(new JLabel[]{labelOptionsSizeBoard, labelOptionsStrategy}));
+		labelsOptionsGeneralList.addAll(Arrays.asList(labelsOptionsCountAgents));
+		labelsOptionsGeneralList.addAll(Arrays.asList(new JLabel[]{labelOptionsRangeSignal, labelOptionsPattern}));
+		JLabel[] labelsOptionsGeneral = labelsOptionsGeneralList.toArray(new JLabel[labelsOptionsGeneralList.size()]);
+		
+		List<Component> componentsOptionsGeneralList = new ArrayList<Component>(estimateOptionsGeneral);
+		componentsOptionsGeneralList.addAll(Arrays.asList(new Component[]{fieldOptionsSizeBoard, buttonModeSignal}));
+		componentsOptionsGeneralList.addAll(Arrays.asList(fieldsOptionsCountAgents));
+		componentsOptionsGeneralList.addAll(Arrays.asList(new Component[]{fieldOptionsRangeSignal, menuDropDownOptionsStrategy}));
+		Component[] componentsOptionsGeneral = componentsOptionsGeneralList.toArray(new Component[labelsOptionsGeneralList.size()]);
+		
 		JPanel[] panelsOptions = {panelOptionsGeneral, panelOptionsAutomatic, panelOptionsExportData, panelOptionsExportScreenshot};
-		JLabel[][] labelsOptions = {{labelOptionsSizeBoard, labelOptionsStrategy, labelOptionsCountAgentsNormal, labelOptionsCountAgentsSpecial, labelOptionsCountAgentsAlternator, labelOptionsCountAgentsEdger, labelOptionsRangeSignal, labelOptionsPattern}, {labelOptionsCountRepetitions, labelOptionsCountSteps}, {labelOptionsExportDataInterval, labelOptionsExportDataPath}, {labelOptionsExportScreenshotInterval, labelOptionsExportScreenshotPath}};
-		Component[][] componentsOptions = {{fieldOptionsSizeBoard, buttonModeSignal, fieldOptionsCountAgentsNormal, fieldOptionsCountAgentsSpecial, fieldOptionsCountAgentsAlternator, fieldOptionsCountAgentsEdger, fieldOptionsRangeSignal, menuDropDownOptionsStrategy}, {fieldOptionsCountRepetitions, fieldOptionsCountSteps}, {fieldOptionsExportDataInterval, fieldOptionsExportDataPath}, {fieldOptionsExportScreenshotInterval, fieldOptionsExportScreenshotPath}};
+		JLabel[][] labelsOptions = {labelsOptionsGeneral, {labelOptionsCountRepetitions, labelOptionsCountSteps}, {labelOptionsExportDataInterval, labelOptionsExportDataPath}, {labelOptionsExportScreenshotInterval, labelOptionsExportScreenshotPath}};
+		Component[][] componentsOptions = {componentsOptionsGeneral, {fieldOptionsCountRepetitions, fieldOptionsCountSteps}, {fieldOptionsExportDataInterval, fieldOptionsExportDataPath}, {fieldOptionsExportScreenshotInterval, fieldOptionsExportScreenshotPath}};
 
 		JPanel panel;
 		JLabel label;
@@ -668,31 +682,38 @@ public class GUI {
 				@Override
 				public void actionPerformed(ActionEvent event) {
 					sizeBoard.setValue(Integer.parseInt(fieldOptionsSizeBoard.getText()));
-					countAgentsNormal.setValue(Integer.parseInt(fieldOptionsCountAgentsNormal.getText()));
-					countAgentsSpecial.setValue(Integer.parseInt(fieldOptionsCountAgentsSpecial.getText()));
 					
 					menuDropDownPattern.setSelectedIndex(menuDropDownOptionsStrategy.getSelectedIndex());
 					
+					int mode;
 					boolean buttonModeSignalSelected = buttonModeSignal.isSelected();
 					modeSignal.setValue(buttonModeSignalSelected);
 					if(buttonModeSignalSelected) {
 						String rangeSignalString = fieldOptionsRangeSignal.getText();
 						rangeSignal.setValue(Double.parseDouble(rangeSignalString));
 						settings.setProperty(PROPERTY_RULE_STRATEGY_SIGNAL_RANGE, rangeSignalString);
-						
-						countAgentsAlternator.setValue(0);
-						countAgentsEdger.setValue(0);
+
+						mode = 1;
 					}
 					else {
-						String countAgentsAlternatorString = fieldOptionsCountAgentsAlternator.getText();
-						countAgentsAlternator.setValue(Integer.parseInt(countAgentsAlternatorString));
-						settings.setProperty(PROPERTY_AGENTS_COUNT_ALTERNATOR, countAgentsAlternatorString);
-						
-						String countAgentsEdgerString = fieldOptionsCountAgentsEdger.getText();
-						countAgentsEdger.setValue(Integer.parseInt(countAgentsEdgerString));
-						settings.setProperty(PROPERTY_AGENTS_COUNT_EDGER, countAgentsEdgerString);
+						mode = 0;
 					}
 					settings.setProperty(PROPERTY_RULE_STRATEGY_SIGNAL, Boolean.toString(buttonModeSignalSelected));
+					
+					int countAgents;
+					String countAgentsString;
+					for(int indexEntryAgent = 0; indexEntryAgent < fieldsOptionsCountAgents.length; indexEntryAgent++) {
+						if(REGISTRY[indexEntryAgent].getMode() == mode) {
+							countAgentsString = fieldsOptionsCountAgents[indexEntryAgent].getText();
+							countAgents = Integer.parseInt(countAgentsString);
+							settings.setProperty(PROPERTIES_AGENTS_COUNTS[indexEntryAgent], countAgentsString);
+						}
+						else {
+							countAgents = 0;
+						}
+						
+						countsAgents[indexEntryAgent] = countAgents;
+					}
 					
 					boolean headerOptionsAutomaticSelected = headerOptionsAutomatic.isSelected();
 					modeAutomatic.setValue(headerOptionsAutomaticSelected);
@@ -758,10 +779,9 @@ public class GUI {
 				@Override
 				public void actionPerformed(ActionEvent e) {
 					fieldOptionsSizeBoard.setText(settings.getProperty(PROPERTY_BOARD_SIZE));
-					fieldOptionsCountAgentsNormal.setText(settings.getProperty(PROPERTY_AGENTS_COUNT_NORMAL));
-					fieldOptionsCountAgentsSpecial.setText(settings.getProperty(PROPERTY_AGENTS_COUNT_SPECIAL));
-					fieldOptionsCountAgentsAlternator.setText(settings.getProperty(PROPERTY_AGENTS_COUNT_ALTERNATOR));
-					fieldOptionsCountAgentsEdger.setText(settings.getProperty(PROPERTY_AGENTS_COUNT_EDGER));
+					for(int indexField = 0; indexField < fieldsOptionsCountAgents.length; indexField++) {
+						fieldsOptionsCountAgents[indexField].setText(settings.getProperty(PROPERTIES_AGENTS_COUNTS[indexField]));
+					}
 					
 					fieldOptionsRangeSignal.setText(settings.getProperty(PROPERTY_RULE_STRATEGY_SIGNAL_RANGE));
 					
@@ -976,8 +996,12 @@ public class GUI {
 		labelSizeBoardUpdate.setLabelFor(fieldSizeBoard);
 		tabLayerBase.add(labelSizeBoardUpdate, createConstraints(0, 6, 1, 0.04, 1.0, INSETS_NONE));
 
+		NumberFormatter formatterIntegerPercent = getIntegerFormatter(0);
+		formatterIntegerPercent.setMaximum(100);
+		
 		//MODIFICATION #2  stores the % of random cells to flip, the user may change the number
-		fieldFlip = new JTextField("20", 10);
+		fieldFlip = new JFormattedTextField(formatterIntegerPercent);
+		fieldFlip.setText("20");
 		tabLayerBase.add(fieldFlip, createConstraints(1, 7, 1, 1.0, 1.0, INSETS_SLIM));
 
 		//MODIFICATION #2  button will flip the percent of cells based on number in text field
@@ -989,7 +1013,7 @@ public class GUI {
 					if(board != null) {
 						//set number in the text field to an int variable
 						//Call method that will cause some cells to flip
-						board.flipCells(Integer.parseInt(fieldFlip.getText()));
+						board.flipCells(Math.min(Integer.parseInt(fieldFlip.getText()), 100));
 					}
 				}
 			}
@@ -1126,26 +1150,10 @@ public class GUI {
 		);
 		tabLayerPolarity.add(menuDropDownPolarityDominant, createConstraints(1, COUNT_POLARITIES_MAXIMUM + 3, 1, 1.0, 1.0, INSETS_SLIM));
 		
-		ItemListener listenerDropDownColorPolarity = new ItemListener() {
-			@Override
-			public void itemStateChanged(ItemEvent event) {
-				if(event.getStateChange() == ItemEvent.SELECTED) {
-					JComboBox<String> menuDropDownSource = (JComboBox<String>)event.getSource();
-
-					for(int indexPolarity = 0; indexPolarity < menusDropDownColorsPolarity.length; indexPolarity++) {
-						if(menusDropDownColorsPolarity[indexPolarity].equals(menuDropDownSource)) {
-							setPolarityColor(indexPolarity, getColor((String)menuDropDownSource.getSelectedItem()));
-							return;
-						}
-					}
-				}
-			}
-		};
-		
 		JLabel labelColorPolarity;
 		for(int indexMenu = 0; indexMenu < menusDropDownColorsPolarity.length; indexMenu++) {
 			menusDropDownColorsPolarity[indexMenu].setModel(new DefaultComboBoxModel<String>(OPTIONS_COLORS_NAMES));
-			menusDropDownColorsPolarity[indexMenu].addItemListener(listenerDropDownColorPolarity);
+			menusDropDownColorsPolarity[indexMenu].addItemListener(new ItemListenerIndexedColorPolarity(indexMenu));
 			tabLayerPolarity.add(menusDropDownColorsPolarity[indexMenu], createConstraints(1, 2 * COUNT_POLARITIES_MAXIMUM + 4 + indexMenu, 1, 1.0, 1.0, INSETS_SLIM));
 			
 			labelColorPolarity = new JLabel("Polarity (" + (indexMenu + 1) + ") Color:");
@@ -1161,52 +1169,54 @@ public class GUI {
 		JPanel tabLayerInteractive = new JPanel();
 		tabLayerInteractive.setBackground(COLOR_ACCENT);
 		tabLayerInteractive.setLayout(new GridBagLayout());
+		
+		int positionY = 0;
 
 		// ************************************************************ User can set the
 		// number of agents
 		fieldCountAgentsNormal = new JTextField("4", 10);
-		tabLayerInteractive.add(fieldCountAgentsNormal, createConstraints(1, 0, 1, 1.0, 1.0, INSETS_SLIM));
+		tabLayerInteractive.add(fieldCountAgentsNormal, createConstraints(1, positionY, 1, 1.0, 1.0, INSETS_SLIM));
 
 		JButton buttonCountAgents = new JButton("Update Agents");
 		buttonCountAgents.setForeground(Color.LIGHT_GRAY);
-		tabLayerInteractive.add(buttonCountAgents, createConstraints(2, 0, 2, 1.0, 1.0, INSETS_SLIM));
+		tabLayerInteractive.add(buttonCountAgents, createConstraints(2, positionY, 2, 1.0, 1.0, INSETS_SLIM));
 		
 		JLabel labelCountAgentsUpdate = new JLabel("Number of Agents:");
 		labelCountAgentsUpdate.setHorizontalAlignment(SwingConstants.RIGHT);
 		labelCountAgentsUpdate.setForeground(Color.LIGHT_GRAY);
 		labelCountAgentsUpdate.setLabelFor(fieldCountAgentsNormal);
-		tabLayerInteractive.add(labelCountAgentsUpdate, createConstraints(0, 0, 1, 0.04, 1.0, INSETS_NONE));
+		tabLayerInteractive.add(labelCountAgentsUpdate, createConstraints(0, positionY++, 1, 0.04, 1.0, INSETS_NONE));
 
 		// ************************************************************ User can select
 		// how many changes the agent can make
 		fieldCountModifications = new JTextField("-1", 10);
-		tabLayerInteractive.add(fieldCountModifications, createConstraints(1, 1, 1, 1.0, 1.0, INSETS_SLIM));
+		tabLayerInteractive.add(fieldCountModifications, createConstraints(1, positionY, 1, 1.0, 1.0, INSETS_SLIM));
 
 		JButton buttonCountModifications = new JButton("Update Changes");
 		buttonCountModifications.setForeground(Color.LIGHT_GRAY);
-		tabLayerInteractive.add(buttonCountModifications, createConstraints(2, 1, 2, 1.0, 1.0, INSETS_SLIM));
+		tabLayerInteractive.add(buttonCountModifications, createConstraints(2, positionY, 2, 1.0, 1.0, INSETS_SLIM));
 				
 		JLabel labelCountModifications = new JLabel("Number of Changes:");
 		labelCountModifications.setHorizontalAlignment(SwingConstants.RIGHT);
 		labelCountModifications.setForeground(Color.LIGHT_GRAY);
 		labelCountModifications.setLabelFor(fieldCountModifications);
-		tabLayerInteractive.add(labelCountModifications, createConstraints(0, 1, 1, 0.04, 1.0, INSETS_NONE));
+		tabLayerInteractive.add(labelCountModifications, createConstraints(0, positionY++, 1, 0.04, 1.0, INSETS_NONE));
 
 		// ************************************************************ User can choose
 		// how close an agent can get to another. 0 implies that many spaces between,
 		// thus they could overlap.
 		fieldAgentCloseness = new JTextField("0", 10);
-		tabLayerInteractive.add(fieldAgentCloseness, createConstraints(1, 2, 1, 1.0, 1.0, INSETS_SLIM));
+		tabLayerInteractive.add(fieldAgentCloseness, createConstraints(1, positionY, 1, 1.0, 1.0, INSETS_SLIM));
 
 		JButton buttonAgentCloseness = new JButton("Update Closeness");
 		buttonAgentCloseness.setForeground(Color.LIGHT_GRAY);
-		tabLayerInteractive.add(buttonAgentCloseness, createConstraints(2, 2, 2, 1.0, 1.0, INSETS_SLIM));
+		tabLayerInteractive.add(buttonAgentCloseness, createConstraints(2, positionY, 2, 1.0, 1.0, INSETS_SLIM));
 
 		JLabel labelAgentCloseness = new JLabel("Agent Closeness:");
 		labelAgentCloseness.setHorizontalAlignment(SwingConstants.RIGHT);
 		labelAgentCloseness.setForeground(Color.LIGHT_GRAY);
 		labelAgentCloseness.setLabelFor(fieldAgentCloseness);
-		tabLayerInteractive.add(labelAgentCloseness, createConstraints(0, 2, 1, 0.04, 1.0, INSETS_NONE));
+		tabLayerInteractive.add(labelAgentCloseness, createConstraints(0, positionY++, 1, 0.04, 1.0, INSETS_NONE));
 		
 		buttonWraparound.addActionListener(
 			new ActionListener() {
@@ -1227,55 +1237,27 @@ public class GUI {
 				}
 			}
 		);
-		tabLayerInteractive.add(buttonWraparound, createConstraints(0, 3, 4, 1.0, 1.0, INSETS_SLIM));
+		tabLayerInteractive.add(buttonWraparound, createConstraints(0, positionY++, 4, 1.0, 1.0, INSETS_SLIM));
+		
+		GridBagConstraints constraintsButtonAgentVisibility = createConstraints(2, positionY, 2, 1.0, 1.0, INSETS_SLIM);
+		constraintsButtonAgentVisibility.gridheight = COUNT_ENTRIES_AGENTS;
 		
 		// ************************************************************ User can change
 		// the color of the agents
-		menuDropDownColorAgents.setModel(new DefaultComboBoxModel<String>(OPTIONS_COLORS_NAMES));
-		menuDropDownColorAgents.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				String nameColor = (String)((JComboBox<String>)e.getSource()).getSelectedItem();
-
-				if(board != null) {
-					board.setNormalAgentColor(getColor(nameColor));
-				}
-
-				settings.setProperty(PROPERTY_COLOR_AGENT_NORMAL, nameColor);
-			}
-		});
-		tabLayerInteractive.add(menuDropDownColorAgents, createConstraints(1, 4, 1, 1.0, 1.0, INSETS_SLIM));
-
-		JLabel labelAgentColor = new JLabel("Agents Color:");
-		labelAgentColor.setHorizontalAlignment(SwingConstants.RIGHT);
-		labelAgentColor.setLabelFor(menuDropDownColorAgents);
-		tabLayerInteractive.add(labelAgentColor, createConstraints(0, 4, 1, 0.04, 1.0, INSETS_NONE));
-		
-		//MODIFICATION: Special Agent Color
-		//Added 5/21 by Morgan Might
-		// User can change the color of the "special" agents
-		menuDropDownColorAgentsSpecial.setModel(new DefaultComboBoxModel<String>(OPTIONS_COLORS_NAMES));
-		menuDropDownColorAgentsSpecial.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				String nameColor = (String)((JComboBox<String>)e.getSource()).getSelectedItem();
-
-				if(board != null) {
-					board.setSpecialAgentColor(getColor(nameColor));
-				}
-
-				settings.setProperty(PROPERTY_COLOR_AGENT_SPECIAL, nameColor);
-			}
-		});
-		tabLayerInteractive.add(menuDropDownColorAgentsSpecial, createConstraints(1, 5, 1, 1.0, 1.0, INSETS_SLIM));
-
-		JLabel labelColorAgentsSpecial = new JLabel("Special Agent Color:");
-		labelColorAgentsSpecial.setHorizontalAlignment(SwingConstants.RIGHT);
-		labelColorAgentsSpecial.setLabelFor(menuDropDownColorAgentsSpecial);
-		tabLayerInteractive.add(labelColorAgentsSpecial, createConstraints(0, 5, 1, 0.04, 1.0, INSETS_NONE));
-		
-		GridBagConstraints constraintsButtonAgentVisibility = createConstraints(2, 4, 2, 1.0, 1.0, INSETS_SLIM);
-		constraintsButtonAgentVisibility.gridheight = 2;
+		JComboBox<String> menuDropDownColorAgents;
+		JLabel labelAgentColor;
+		for(int indexEntryAgent = 0; indexEntryAgent < COUNT_ENTRIES_AGENTS; indexEntryAgent++) {
+			menuDropDownColorAgents = menusDropDownColorsAgents[indexEntryAgent];
+			
+			menuDropDownColorAgents.setModel(new DefaultComboBoxModel<String>(OPTIONS_COLORS_NAMES));
+			menuDropDownColorAgents.addItemListener(new ItemListenerIndexedColorAgents(indexEntryAgent));
+			tabLayerInteractive.add(menuDropDownColorAgents, createConstraints(1, positionY, 1, 1.0, 1.0, INSETS_SLIM));
+			
+			labelAgentColor = new JLabel(REGISTRY[indexEntryAgent].getName() + " Agent Color:");
+			labelAgentColor.setHorizontalAlignment(SwingConstants.RIGHT);
+			labelAgentColor.setLabelFor(menuDropDownColorAgents);
+			tabLayerInteractive.add(labelAgentColor, createConstraints(0, positionY++, 1, 0.04, 1.0, INSETS_NONE));
+		}
 		
 		buttonAgentVisiblity.setText("View Agents");
 		buttonAgentVisiblity.addActionListener(
@@ -1296,45 +1278,45 @@ public class GUI {
 
 		JButton buttonPheromoneTrailAdd = new JButton("Set Phrmn Trail");
 		buttonPheromoneTrailAdd.setForeground(Color.LIGHT_GRAY);
-		tabLayerInteractive.add(buttonPheromoneTrailAdd, createConstraints(0, 6, 2, 1.0, 1.0, INSETS_SLIM));
+		tabLayerInteractive.add(buttonPheromoneTrailAdd, createConstraints(0, positionY, 2, 1.0, 1.0, INSETS_SLIM));
 
 		JButton buttonPheromoneTrailRemove = new JButton("Remove Phrmn Trail");
 		buttonPheromoneTrailRemove.setForeground(Color.LIGHT_GRAY);
-		tabLayerInteractive.add(buttonPheromoneTrailRemove, createConstraints(2, 6, 2, 1.0, 1.0, INSETS_SLIM));
+		tabLayerInteractive.add(buttonPheromoneTrailRemove, createConstraints(2, positionY++, 2, 1.0, 1.0, INSETS_SLIM));
 
 		JButton buttonPheromoneZoneAdd = new JButton("Set Phrmn Zone");
 		buttonPheromoneZoneAdd.setForeground(Color.LIGHT_GRAY);
-		tabLayerInteractive.add(buttonPheromoneZoneAdd, createConstraints(0, 7, 2, 1.0, 1.0, INSETS_SLIM));
+		tabLayerInteractive.add(buttonPheromoneZoneAdd, createConstraints(0, positionY, 2, 1.0, 1.0, INSETS_SLIM));
 
 		JButton buttonPheromoneZoneRemove = new JButton("Remove Phrmn Zone");
 		buttonPheromoneZoneRemove.setForeground(Color.LIGHT_GRAY);
-		tabLayerInteractive.add(buttonPheromoneZoneRemove, createConstraints(2, 7, 2, 1.0, 1.0, INSETS_SLIM));
+		tabLayerInteractive.add(buttonPheromoneZoneRemove, createConstraints(2, positionY++, 2, 1.0, 1.0, INSETS_SLIM));
 
 		// ************************************************************ User can set how
 		// strongly the agents should follow the swarm.
 		fieldStrengthPheromone = new JTextField("1", 10);
-		tabLayerInteractive.add(fieldStrengthPheromone, createConstraints(1, 8, 1, 1.0, 1.0, INSETS_SLIM));
+		tabLayerInteractive.add(fieldStrengthPheromone, createConstraints(1, positionY, 1, 1.0, 1.0, INSETS_SLIM));
 
 		JButton buttonStrengthPheromone = new JButton("Update P Strength");
 		buttonStrengthPheromone.setForeground(Color.LIGHT_GRAY);
-		tabLayerInteractive.add(buttonStrengthPheromone, createConstraints(2, 8, 2, 1.0, 1.0, INSETS_SLIM));
+		tabLayerInteractive.add(buttonStrengthPheromone, createConstraints(2, positionY, 2, 1.0, 1.0, INSETS_SLIM));
 				
 		JLabel labelStrengthPheromone = new JLabel("Pheromone Strength:");
 		labelStrengthPheromone.setHorizontalAlignment(SwingConstants.RIGHT);
 		labelStrengthPheromone.setForeground(Color.LIGHT_GRAY);
 		labelStrengthPheromone.setLabelFor(fieldStrengthPheromone);
-		tabLayerInteractive.add(labelStrengthPheromone, createConstraints(0, 8, 1, 0.04, 1.0, INSETS_NONE));
+		tabLayerInteractive.add(labelStrengthPheromone, createConstraints(0, positionY++, 1, 0.04, 1.0, INSETS_NONE));
 		
 		// ************************************************************ User changes the
 		// color of the pheromone trails on the board.
 		JComboBox<String> menuDropDownColorPheromone = new JComboBox<String>();
 		menuDropDownColorPheromone.setModel(new DefaultComboBoxModel<String>(OPTIONS_COLORS_NAMES));
-		tabLayerInteractive.add(menuDropDownColorPheromone, createConstraints(1, 9, 3, 1.0, 1.0, INSETS_SLIM));
+		tabLayerInteractive.add(menuDropDownColorPheromone, createConstraints(1, positionY, 3, 1.0, 1.0, INSETS_SLIM));
 		
 		JLabel labelColorPheromoneTrail = new JLabel("Pheromone Color:");
 		labelColorPheromoneTrail.setHorizontalAlignment(SwingConstants.RIGHT);
 		labelColorPheromoneTrail.setForeground(Color.LIGHT_GRAY);
-		tabLayerInteractive.add(labelColorPheromoneTrail, createConstraints(0, 9, 1, 0.04, 1.0, INSETS_NONE));
+		tabLayerInteractive.add(labelColorPheromoneTrail, createConstraints(0, positionY++, 1, 0.04, 1.0, INSETS_NONE));
 		
 		buttonModeMagnet.setText("Attract");
 		buttonModeMagnet.addActionListener(
@@ -1356,7 +1338,7 @@ public class GUI {
 				}
 			}
 		);
-		tabLayerInteractive.add(buttonModeMagnet, createConstraints(0, 10, 4, 1.0, 1.0, INSETS_SLIM));
+		tabLayerInteractive.add(buttonModeMagnet, createConstraints(0, positionY++, 4, 1.0, 1.0, INSETS_SLIM));
 
 		paneTabbed.addTab("Interactive Layer", tabLayerInteractive);
 		
@@ -1437,30 +1419,16 @@ public class GUI {
 		return rangeSignal.getValue();
 	}
 
-	public Color getAgentColor() {
-		return getColor((String)menuDropDownColorAgents.getSelectedItem());
-	}
-
-	public Color getSpecialAgentColor() {
-		return getColor((String)menuDropDownColorAgentsSpecial.getSelectedItem());
-	}
-	
-	public Color getAlternatorAgentColor() {
-		return Color.ORANGE;
-		//return getColor((String)menuDropDownColorAgentsAlternator.getSelectedItem());
-	}
-	
-	public Color getEdgerAgentColor() {
-		return Color.GRAY;
-		//return getColor((String)menuDropDownColorAgentsEdger.getSelectedItem());
-	}
-
 	public Pattern getPattern() {
 		return goalStrategy;
 	}
 
 	public Board getBoard() {
 		return board;
+	}
+	
+	public Color[] getAgentColors() {
+		return colorsAgents;
 	}
 	
 	public Color[] getPolarityColors() {
@@ -1488,8 +1456,16 @@ public class GUI {
 		this.board = board;
 
 		sizeBoard.setValue(board.getBreadth());
-		countAgentsNormal.setValue(board.getNormalAgentCount());
-		countAgentsSpecial.setValue(board.getSpecialAgentCount());
+		
+		countsAgents = board.getAgentCounts();
+		int countAgents;
+		int countAgentsTotal = 0;
+		for(int indexEntryAgent = 0; indexEntryAgent < COUNT_ENTRIES_AGENTS; indexEntryAgent++) {
+			countAgents = countsAgents[indexEntryAgent];
+			
+			countAgentsTotal += countAgents;
+		}
+		
 		frequencyColorsInitial = board.getInitialColorFrequencies();
 		frequencyColors = board.getColorFrequencies();
 		frequencyPolarities = board.getPolarityFrequencies();
@@ -1497,11 +1473,9 @@ public class GUI {
 		String sizeBoardString = Integer.toString(sizeBoard.getValue());
 
 		settings.setProperty(PROPERTY_BOARD_SIZE, sizeBoardString);
-		settings.setProperty(PROPERTY_AGENTS_COUNT_NORMAL, Integer.toString(countAgentsNormal.getValue()));
-		settings.setProperty(PROPERTY_AGENTS_COUNT_SPECIAL, Integer.toString(countAgentsSpecial.getValue()));
 
 		labelSizeBoardValue.setText(sizeBoardString);
-		labelCountAgentsValue.setText(Integer.toString(countAgentsNormal.getValue() + countAgentsSpecial.getValue()));
+		labelCountAgentsValue.setText(Integer.toString(countAgentsTotal));
 		labelCountStepsValue.setText(Integer.toString(indexStep = 0));
 		
 		panelBoard.add(board);
@@ -1538,6 +1512,16 @@ public class GUI {
 		}
 	}
 	
+	private void setAgentsColor(int indexEntryAgent, Color colorAgents) {
+		colorsAgents[indexEntryAgent] = colorAgents;
+		
+		if(board != null) {
+			board.setAgentColor(indexEntryAgent, colorAgents);
+		}
+
+		settings.setProperty(PROPERTIES_COLORS_AGENTS[indexEntryAgent], getColorName(colorAgents));
+	}
+	
 	private void setPolarityColor(int indexPolarity, Color colorPolarity) {
 		colorsPolarity[indexPolarity] = colorPolarity;
 
@@ -1559,7 +1543,7 @@ public class GUI {
 			board.updatePolarityColor(indexPolarity);
 		}
 
-		settings.setProperty(PROPERTY_COLOR_POLARITY + (indexPolarity + 1), getColorName(colorsPolarity[indexPolarity]));
+		settings.setProperty(PROPERTIES_COLORS_POLARITIES[indexPolarity], getColorName(colorsPolarity[indexPolarity]));
 	}
 
 	//MODIFICATION #10
@@ -1716,7 +1700,7 @@ public class GUI {
 	}
 
 	public Board generateBoard() {
-		return new Board(sizeBoard.getValue(), countAgentsNormal.getValue(), countAgentsSpecial.getValue(), countAgentsAlternator.getValue(), countAgentsEdger.getValue(), this);
+		return new Board(sizeBoard.getValue(), countsAgents, this);
 	}
 
 	public void toggleTimer() {
@@ -1799,7 +1783,7 @@ public class GUI {
 
 	private void storeAveragePolarityData(int index) {
 		double[] frequencyPolaritiesAverage = new double[COUNT_POLARITIES_MAXIMUM + 1];
-		frequencyPolaritiesAverage[0] = indexStep + 1;
+		frequencyPolaritiesAverage[0] = indexStep;
 
 		if(index < frequenciesPolaritiesAverage.size()) {
 			for(int indexPolarity = 1; indexPolarity < frequencyPolaritiesAverage.length; indexPolarity++) {
@@ -1979,23 +1963,25 @@ public class GUI {
 		
 		return constraints;
 	}
-
-	private static String[] generateColorProperties() {
-		String[] propertiesColorsSwarm = {PROPERTY_COLOR_AGENT_NORMAL, PROPERTY_COLOR_AGENT_SPECIAL, PROPERTY_COLOR_AGENT_ALTERNATOR, PROPERTY_COLOR_AGENT_EDGER};
-		String[] propertiesColorsPolarities = new String[COUNT_POLARITIES_MAXIMUM];
+	
+	private static String[] applySuffixes(String template, String[] suffixes) {
+		String[] product = new String[suffixes.length];
 		
-		for(int indexPropertyColorPolarity = 0; indexPropertyColorPolarity < propertiesColorsPolarities.length; indexPropertyColorPolarity++) {
-			propertiesColorsPolarities[indexPropertyColorPolarity] = PROPERTY_COLOR_POLARITY + (indexPropertyColorPolarity + 1);
+		for(int indexSuffix = 0; indexSuffix < product.length; indexSuffix++) {
+			product[indexSuffix] = template + suffixes[indexSuffix];
 		}
 		
-		String[] propertiesColors = new String[propertiesColorsSwarm.length + propertiesColorsPolarities.length];
-		ArrayList<String> propertiesColorsList = new ArrayList<String>(propertiesColors.length);
-		Collections.addAll(propertiesColorsList, propertiesColorsSwarm);
-		Collections.addAll(propertiesColorsList, propertiesColorsPolarities);
+		return product;
+	}
+	
+	private static String[] applySuffixes(String template, int suffixMinimum, int suffixMaximum) {
+		String[] suffixes = new String[1 + suffixMaximum - suffixMinimum];
 		
-		propertiesColorsList.toArray(propertiesColors);
+		for(int indexSuffix = 0; indexSuffix < suffixes.length; indexSuffix++) {
+			suffixes[indexSuffix] = Integer.toString(suffixMinimum + indexSuffix);
+		}
 		
-		return propertiesColors;
+		return applySuffixes(template, suffixes);
 	}
 
 	private static HashMap<Color, String> generateMapColorsNames() {
@@ -2042,6 +2028,45 @@ public class GUI {
 		}
 	}
 	
+	private abstract class ItemListenerIndexedColor implements ItemListener {
+		protected int index;
+		
+		public ItemListenerIndexedColor(int index) {
+			this.index = index;
+		}
+		
+		@Override
+		public final void itemStateChanged(ItemEvent event) {
+			if(event.getStateChange() == ItemEvent.SELECTED) {
+				itemSelected(getColor((String)(event.getItem())));
+			}
+		}
+		
+		protected abstract void itemSelected(Color colorSelected);
+	}
+	
+	private class ItemListenerIndexedColorPolarity extends ItemListenerIndexedColor {
+		public ItemListenerIndexedColorPolarity(int index) {
+			super(index);
+		}
+
+		@Override
+		protected void itemSelected(Color colorSelected) {
+			setPolarityColor(index, colorSelected);
+		}
+	};
+	
+	private class ItemListenerIndexedColorAgents extends ItemListenerIndexedColor {
+		public ItemListenerIndexedColorAgents(int index) {
+			super(index);
+		}
+
+		@Override
+		protected void itemSelected(Color colorSelected) {
+			setAgentsColor(index, colorSelected);
+		}
+	};
+	
 	private class Value<T> {
 		T value;
 		
@@ -2051,6 +2076,11 @@ public class GUI {
 		
 		public void setValue(T value) {
 			this.value = value;
+		}
+		
+		@Override
+		public String toString() {
+			return value.toString();
 		}
 	}
 
@@ -2063,11 +2093,6 @@ public class GUI {
 		
 		public CommandValue(Value<T> value) {
 			this.value = value;
-		}
-		
-		@Override
-		public String toString() {
-			return value.toString();
 		}
 		
 		@Override
@@ -2175,6 +2200,34 @@ public class GUI {
 		@Override
 		public void execute(String valueString) {
 			component.setValue(Integer.parseInt(valueString));
+		}
+	}
+	
+	private abstract class CommandElementArray<T> extends Command {
+		protected int index;
+		protected T[] array;
+		
+		public CommandElementArray(T[] array, int index) {
+			this.array = array;
+			this.index = index;
+		}
+		
+		@Override
+		public void execute(String valueString) {
+			array[index] = parseValue(valueString);
+		}
+		
+		protected abstract T parseValue(String valueString);
+	}
+	
+	private class CommandElementArrayInteger extends CommandElementArray<Integer> {
+		public CommandElementArrayInteger(Integer[] array, int index) {
+			super(array, index);
+		}
+
+		@Override
+		protected Integer parseValue(String valueString) {
+			return Integer.valueOf(valueString);
 		}
 	}
 }

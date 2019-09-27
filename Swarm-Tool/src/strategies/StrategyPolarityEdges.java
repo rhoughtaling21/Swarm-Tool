@@ -6,6 +6,15 @@ import swarm.SwarmAgent;
 
 public class StrategyPolarityEdges extends StrategyPolarity {
 	private static final int THRESHOLD_NEIGHBORING_POLARITY_DOMINANT = 2;
+	private static final Strategy STRATEGY = new StrategyPolarityEdges();
+	
+	public static Strategy get() {
+		return STRATEGY;
+	}
+	
+	private StrategyPolarityEdges() {
+		
+	}
 	
 	@Override
 	public int determineDesiredPolarity(Board board, SwarmAgent agent) {
