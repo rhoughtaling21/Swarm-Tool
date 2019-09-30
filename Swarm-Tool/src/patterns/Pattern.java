@@ -23,7 +23,7 @@ public abstract class Pattern {
 		else {
 			cellBase.setState(indexState);
 			updatePolarityCell(board, indexRow, indexColumn);
-			board.getPersistenceLayer()[indexRow][indexColumn].reset();
+			board.getPersistenceLayer()[indexRow][indexColumn].resetState();
 		}
 	}
 	
@@ -53,7 +53,7 @@ public abstract class Pattern {
 		else {
 			cellPolarity.setState(indexPolarity);
 			board.getBaseLayer()[indexRow][indexColumn].setState(computePolarityState(board, indexRow, indexColumn));
-			board.getPersistenceLayer()[indexRow][indexColumn].reset();
+			board.getPersistenceLayer()[indexRow][indexColumn].resetState();
 			updateCorrectnessCell(board, indexRow, indexColumn);
 		}
 	}

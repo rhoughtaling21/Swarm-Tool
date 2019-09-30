@@ -17,10 +17,17 @@ public class CellDisplayPersistence extends CellDisplay {
 	private static final Color COLOR_FINAL = new Color(60, 0, 60);
 	private static final Color[] COLORS = new Color[COUNT_STATES_PERSISTENCE];
 	
+	private static Color computeCellColor(int indexState) {
+		if(COLORS[indexState] == null) {
+			COLORS[indexState] = new Color(COLOR_INITIAL.getRed() - (((COLOR_INITIAL.getRed() - COLOR_FINAL.getRed()) / COUNT_STATES_PERSISTENCE) * indexState), COLOR_INITIAL.getGreen() - (((COLOR_INITIAL.getGreen() - COLOR_FINAL.getGreen()) / COUNT_STATES_PERSISTENCE) * indexState), COLOR_INITIAL.getBlue() - (((COLOR_INITIAL.getBlue() - COLOR_FINAL.getBlue()) / COUNT_STATES_PERSISTENCE) * indexState));
+		}
+		
+		return COLORS[indexState];
+	}
+	
 	public CellDisplayPersistence(double x, double y, double size, Board board) {
 		super(x, y, size, board);
-		indexState = -1;
-		reset();
+		resetState();
 	}
 
 	@Override
@@ -28,7 +35,7 @@ public class CellDisplayPersistence extends CellDisplay {
 		if(indexState < COUNT_STATES_PERSISTENCE) {
 			this.indexState = indexState;
 			
-			colorFill = computeColor(indexState);
+			updateCellColor();
 		}
 	}
 	
@@ -36,15 +43,11 @@ public class CellDisplayPersistence extends CellDisplay {
 		setState(indexState + 1);
 	}
 	
-	public void reset() {
+	public void resetState() {
 		setState(0);
 	}
 	
-	public Color computeColor(int indexState) {
-		if(COLORS[indexState] == null) {
-			COLORS[indexState] = new Color(COLOR_INITIAL.getRed() - (((COLOR_INITIAL.getRed() - COLOR_FINAL.getRed()) / COUNT_STATES_PERSISTENCE) * indexState), COLOR_INITIAL.getGreen() - (((COLOR_INITIAL.getGreen() - COLOR_FINAL.getGreen()) / COUNT_STATES_PERSISTENCE) * indexState), COLOR_INITIAL.getBlue() - (((COLOR_INITIAL.getBlue() - COLOR_FINAL.getBlue()) / COUNT_STATES_PERSISTENCE) * indexState));
-		}
-		
-		return COLORS[indexState];
+	private void updateCellColor() {
+		colorFill = computeCellColor(indexState);
 	}
 }
