@@ -9,34 +9,28 @@ package cells;
  * 		Date: June 1, 2018
  */
 
-import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.geom.Rectangle2D;
 
-import gui.Board;
-
 @SuppressWarnings("serial")
-public abstract class CellDisplay extends Rectangle2D.Double implements Cell {
-	protected int indexState;
-	protected Color colorFill;
-	protected Board board;
+public class RectangleCellDisplay extends Rectangle2D.Double {
+	private Cell cellActive;
+	private Cell[] cells;
 	
-	public CellDisplay(double x, double y, double size, Board board) {
+	public RectangleCellDisplay(double x, double y, double size, Cell[] cells, int indexLayer) {
 		super(x, y, size, size);
-		this.board = board;
-	}
-	
-	@Override
-	public int getState() {
-		return indexState;
-	}
-	
-	public Board getBoard() {
-		return board;
+		
+		this.cells = cells;
+		
+		setLayer(indexLayer);
 	}
 
 	public void draw(Graphics2D helperGraphics2D) {
-		helperGraphics2D.setColor(colorFill);
+		helperGraphics2D.setColor(cellActive.getColor());
 		helperGraphics2D.fill(this);
+	}
+	
+	public void setLayer(int indexLayer) {
+		cellActive = cells[indexLayer];
 	}
 }

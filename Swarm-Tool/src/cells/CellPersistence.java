@@ -10,9 +10,9 @@ import java.awt.Color;
 
 import gui.Board;
 
-@SuppressWarnings("serial")
-public class CellDisplayPersistence extends CellDisplay {
+public class CellPersistence extends Cell {
 	private static final int COUNT_STATES_PERSISTENCE = 50;
+	private static final int STATE_FINAL = COUNT_STATES_PERSISTENCE - 1;
 	private static final Color COLOR_INITIAL = Color.WHITE;
 	private static final Color COLOR_FINAL = new Color(60, 0, 60);
 	private static final Color[] COLORS = new Color[COUNT_STATES_PERSISTENCE];
@@ -25,29 +25,24 @@ public class CellDisplayPersistence extends CellDisplay {
 		return COLORS[indexState];
 	}
 	
-	public CellDisplayPersistence(double x, double y, double size, Board board) {
-		super(x, y, size, board);
-		resetState();
-	}
-
-	@Override
-	public void setState(int indexState) {
-		if(indexState < COUNT_STATES_PERSISTENCE) {
-			this.indexState = indexState;
-			
-			updateCellColor();
-		}
+	public CellPersistence(Board board) {
+		super(0, board);
+		
+		updateState();
 	}
 	
 	public void shiftState() {
-		setState(indexState + 1);
+		if(indexState < STATE_FINAL) {
+			setState(indexState + 1);
+		}
 	}
 	
 	public void resetState() {
 		setState(0);
 	}
 	
-	private void updateCellColor() {
-		colorFill = computeCellColor(indexState);
+	@Override
+	protected Color determineColor() {
+		return computeCellColor(indexState);
 	}
 }

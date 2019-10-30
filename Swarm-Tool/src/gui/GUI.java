@@ -63,10 +63,11 @@ import javax.swing.WindowConstants;
 import javax.swing.border.Border;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.filechooser.FileSystemView;
 import javax.swing.text.NumberFormatter;
 
-import cells.CellDisplayBase;
+import cells.CellTalliedBase;
 import patterns.Pattern;
 import patterns.PatternBlackout;
 import patterns.PatternCheckerboard;
@@ -149,7 +150,7 @@ public class GUI {
 	private boolean boardWraparound;
 	private boolean modeEquilibrium; //MODIFICATION #5 determines if the agents goal is a single polarity or three balanced polarities
 	private boolean swarmVisible;
-	public int indexLayerDisplay = 1;// which cell array in board to display
+	private int indexLayerDisplay;// which cell array in board to display
 	private int indexPolarityDominant;
 	private int indexRepetition;
 	private int indexStep;
@@ -362,6 +363,9 @@ public class GUI {
 		JMenu mnFile = new JMenu("File");
 		menuBar.add(mnFile);
 
+		SELECTOR_FILEPATH.setAcceptAllFileFilterUsed(false);
+		SELECTOR_FILEPATH.setFileFilter(new FileNameExtensionFilter("Properties Files", "properties"));
+		
 		JMenuItem mntmOpen = new JMenuItem("Import Preferences");
 		mntmOpen.addActionListener(
 			new ActionListener() {
@@ -374,7 +378,10 @@ public class GUI {
 							streamInput.close();
 
 							applyProperties();
-							setBoard(generateBoard());
+							
+							if(board != null) {
+								setBoard(null);
+							}
 						}
 						catch (IOException exceptionInput) {
 							exceptionInput.printStackTrace();
@@ -922,10 +929,10 @@ public class GUI {
 			new ChangeListener() {
 				@Override
 				public void stateChanged(ChangeEvent event) {
-					indexLayerDisplay = ((JTabbedPane)event.getSource()).getSelectedIndex() + 1;
-
+					indexLayerDisplay = ((JTabbedPane)event.getSource()).getSelectedIndex();
+					
 					if(board != null) {
-						board.repaint();
+						board.setDisplayedLayer(indexLayerDisplay);
 					}
 				}
 			}
@@ -940,14 +947,14 @@ public class GUI {
 		// ************************************************************ Labels
 		// displaying information
 
-		int countStates = CellDisplayBase.getMaximumStateCount();
+		int countStates = CellTalliedBase.getMaximumStateCount();
 		labelsFrequencyColorsInitialText = new JLabel[countStates];
 		labelsFrequencyColorsInitial = new JLabel[countStates];
 		labelsFrequencyColorsText = new JLabel[countStates];
 		labelsFrequencyColors = new JLabel[countStates];
 		String nameColor;
 		for(int indexLabel = 0; indexLabel < countStates; indexLabel++) {
-			nameColor = getColorName(CellDisplayBase.COLORS_BASE[indexLabel]);
+			nameColor = getColorName(CellTalliedBase.COLORS_BASE[indexLabel]);
 			nameColor = nameColor.substring(0, 1) + nameColor.substring(1).toLowerCase();
 
 			labelsFrequencyColorsInitial[indexLabel] = new JLabel("0");
@@ -1407,6 +1414,10 @@ public class GUI {
 		return indexPolarityDominant;
 	}
 	
+	public int getSelectedLayerIndex() {
+		return indexLayerDisplay;
+	}
+	
 	public double getMagnetStrength() {
 		return strengthMagnet.getValue();
 	}
@@ -1455,60 +1466,62 @@ public class GUI {
 
 		this.board = board;
 
-		sizeBoard.setValue(board.getBreadth());
-		
-		countsAgents = board.getAgentCounts();
-		int countAgents;
-		int countAgentsTotal = 0;
-		for(int indexEntryAgent = 0; indexEntryAgent < COUNT_ENTRIES_AGENTS; indexEntryAgent++) {
-			countAgents = countsAgents[indexEntryAgent];
+		if(board != null) {
+			sizeBoard.setValue(board.getBreadth());
 			
-			countAgentsTotal += countAgents;
-		}
-		
-		frequencyColorsInitial = board.getInitialColorFrequencies();
-		frequencyColors = board.getColorFrequencies();
-		frequencyPolarities = board.getPolarityFrequencies();
-		
-		String sizeBoardString = Integer.toString(sizeBoard.getValue());
-
-		settings.setProperty(PROPERTY_BOARD_SIZE, sizeBoardString);
-
-		labelSizeBoardValue.setText(sizeBoardString);
-		labelCountAgentsValue.setText(Integer.toString(countAgentsTotal));
-		labelCountStepsValue.setText(Integer.toString(indexStep = 0));
-		
-		panelBoard.add(board);
-		scaleBoard();
-		
-		updateInitialColorFrequencyLabels();
-
-		if(exportData.getValue()) {
-			try {
-				writerData = new BufferedWriter(new FileWriter(pathData.getValue() + "\\Swarm-Frequencies_" + FORMATTER_TIMESTAMP.format(LocalDateTime.now()) + ".csv"));
-				addDataColumnHeaders(writerData);
-				outputPolarityData(writerData);
+			countsAgents = board.getAgentCounts();
+			int countAgents;
+			int countAgentsTotal = 0;
+			for(int indexEntryAgent = 0; indexEntryAgent < COUNT_ENTRIES_AGENTS; indexEntryAgent++) {
+				countAgents = countsAgents[indexEntryAgent];
+				
+				countAgentsTotal += countAgents;
 			}
-			catch (IOException e) {
-				e.printStackTrace();
-			}
+			
+			frequencyColorsInitial = board.getInitialColorFrequencies();
+			frequencyColors = board.getColorFrequencies();
+			frequencyPolarities = board.getPolarityFrequencies();
+			
+			String sizeBoardString = Integer.toString(sizeBoard.getValue());
 
-			if(modeAutomatic.getValue()) {
-				storeAveragePolarityData(indexStep);
-			}
-		}
-		
-		if(exportScreenshot.getValue()) {
-			try {
-				ImageIO.write(board.capture(), "JPG", new File(pathScreenshot.getValue() + File.separator + "Simulation_" + FORMATTER_TIMESTAMP.format(LocalDateTime.now()) + FILETYPE_SCREENSHOT));
-			}
-			catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
+			settings.setProperty(PROPERTY_BOARD_SIZE, sizeBoardString);
 
-		if(timerReady) {
-			toggleTimer();
+			labelSizeBoardValue.setText(sizeBoardString);
+			labelCountAgentsValue.setText(Integer.toString(countAgentsTotal));
+			labelCountStepsValue.setText(Integer.toString(indexStep = 0));
+			
+			panelBoard.add(board);
+			scaleBoard();
+			
+			updateInitialColorFrequencyLabels();
+
+			if(exportData.getValue()) {
+				try {
+					writerData = new BufferedWriter(new FileWriter(pathData.getValue() + "\\Swarm-Frequencies_" + FORMATTER_TIMESTAMP.format(LocalDateTime.now()) + ".csv"));
+					addDataColumnHeaders(writerData);
+					outputPolarityData(writerData);
+				}
+				catch (IOException e) {
+					e.printStackTrace();
+				}
+
+				if(modeAutomatic.getValue()) {
+					storeAveragePolarityData(indexStep);
+				}
+			}
+			
+			if(exportScreenshot.getValue()) {
+				try {
+					ImageIO.write(board.capture(), "JPG", new File(pathScreenshot.getValue() + File.separator + "Simulation_" + FORMATTER_TIMESTAMP.format(LocalDateTime.now()) + FILETYPE_SCREENSHOT));
+				}
+				catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			if(timerReady) {
+				toggleTimer();
+			}
 		}
 	}
 	
@@ -2166,8 +2179,8 @@ public class GUI {
 		}
 	}
 	
-	private class CommandComponentMenuDropDownSelectedIndex extends CommandComponent<JComboBox> {
-		public CommandComponentMenuDropDownSelectedIndex(JComboBox component) {
+	private class CommandComponentMenuDropDownSelectedIndex extends CommandComponent<JComboBox<?>> {
+		public CommandComponentMenuDropDownSelectedIndex(JComboBox<?> component) {
 			super(component);
 		}
 
@@ -2181,7 +2194,7 @@ public class GUI {
 		}
 	}
 	
-	private class CommandComponentMenuDropDownSelectedItemString extends CommandComponent<JComboBox> {
+	private class CommandComponentMenuDropDownSelectedItemString extends CommandComponent<JComboBox<?>> {
 		public CommandComponentMenuDropDownSelectedItemString(JComboBox<String> component) {
 			super(component);
 		}

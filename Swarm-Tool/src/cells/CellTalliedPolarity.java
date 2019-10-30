@@ -17,34 +17,19 @@ import gui.Board;
  * description: Cell is a rectangle of one color that is generated in two 2X2 Arrays (cells, cells2) in board
  * parameters: Constructor takes in an X and Y position, a width and height(size X size), and a Color to fill
  */
-@SuppressWarnings("serial")
-public class CellDisplayPolarity extends CellDisplay {
-	private int[] frequenciesPolarities;
+public class CellTalliedPolarity extends CellTallied {
 	private Color[] colorsPolarity;
 	
-	public CellDisplayPolarity(double x, double y, double size, int indexState, Board board) {
-		//a lot of these parameters actually belong to Rectangle2D.Double, so we call in the super class CellDisplay
-		super(x, y, size, board);
+	public CellTalliedPolarity(int indexState, Board board) {
+		super(indexState, board, board.getPolarityFrequencies());
 		
 		colorsPolarity = board.getGui().getPolarityColors();
-		frequenciesPolarities = board.getPolarityFrequencies();
 		
-		setStateValue(indexState);
+		updateState();
 	}
 	
 	@Override
-	public void setState(int indexState) {
-		frequenciesPolarities[this.indexState]--;
-		setStateValue(indexState);
-	}
-	
-	private void setStateValue(int indexState) {
-		this.indexState = indexState;
-		updatePolarityColor();
-		frequenciesPolarities[indexState]++;
-	}
-	
-	public void updatePolarityColor() {
-		colorFill = colorsPolarity[indexState];
+	protected Color determineColor() {
+		return colorsPolarity[indexState];
 	}
 }

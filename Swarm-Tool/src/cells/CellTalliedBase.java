@@ -1,6 +1,6 @@
 package cells;
 /*		Author: Zak Gray and Tim Dobeck
- * 		Description: This is the constuctor for determining the first board's cells. The cells in layer 1 can be only black or white. This class mainly just
+ * 		Description: This is the constructor for determining the first board's cells. The cells in layer 1 can be only black or white. This class mainly just
  * 					creates the instance of the cells in layer 1. FlipColor allows the color to be flipped if any cell is clicked. This class extends GenericCell 
  * 					which is an abstract class that creates the cells as rectangles
  * 		Parameters: Cell is made up of an x coordinate, a y coordinate, a fixed size, and a color and for this class (layer 1) the cells can only be either 
@@ -9,6 +9,7 @@ package cells;
  */
 
 import java.awt.Color;
+import java.util.concurrent.ThreadLocalRandom;
 
 import gui.Board;
 
@@ -17,41 +18,30 @@ import gui.Board;
  * description: Cell is a rectangle of one color that is generated in two 2X2 Arrays (cells, cells2) in board
  * parameters: Constructor takes in an X and Y position, a width and height(size X size), and a Color to fill
  */
-@SuppressWarnings("serial")
-public class CellDisplayBase extends CellDisplay {
+public class CellTalliedBase extends CellTallied {
 	public static final Color[] COLORS_BASE = {Color.BLACK, Color.WHITE, Color.GRAY};
-	private int[] frequenciesBase;
 	
 	public static int getMaximumStateCount() {
 		return COLORS_BASE.length;
 	}
 	
-	public CellDisplayBase(double x, double y, double size, int indexState, Board board) {
-		//a lot of these parameters actually belong to Rectangle2D.Double, so we call in the super class CellDisplay
-		super(x, y, size, board);
+	public CellTalliedBase(int indexState, Board board) {
+		super(indexState, board, board.getColorFrequencies(), board.getInitialColorFrequencies());
 		
-		frequenciesBase = board.getColorFrequencies();
-		
-		board.getInitialColorFrequencies()[indexState]++;
-		setStateValue(indexState);
+		updateState();
 	}
-
-	//MODIFICATION #3
-	//change color of Cell
+	
+	public CellTalliedBase(Board board) {
+		this(ThreadLocalRandom.current().nextInt(board.getPattern().getStateCount()), board);
+	}
+	
 	@Override
-	public void setState(int indexState) {
-		frequenciesBase[this.indexState]--;
-		setStateValue(indexState);
+	protected Color determineColor() {
+		return COLORS_BASE[indexState];
 	}
 	
 	//flip color of Cell
 	public void shiftState() {
 		setState((indexState + 1) % board.getPattern().getStateCount());
-	}
-	
-	private void setStateValue(int indexState) {
-		this.indexState = indexState;
-		colorFill = COLORS_BASE[indexState];
-		frequenciesBase[indexState]++;
 	}
 }

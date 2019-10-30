@@ -1,7 +1,6 @@
 package patterns;
 
 import cells.Cell;
-import cells.CellDisplay;
 import gui.Board;
 import strategies.Strategy;
 import strategies.StrategyStatePatternLines;
@@ -35,7 +34,7 @@ public class PatternLines extends Pattern {
 	public int computeStatePolarity(Board board, int indexRow, int indexColumn) {
 		//Layer 2 in this sense shows 4 colors. one for each variation of straight lines. In the final, solved state,
 		//the 4 colors indicate the 4 faces of the pyramid.
-		CellDisplay[][] layerBase = board.getBaseLayer();
+		Cell[][] layerBase = board.getBaseLayer();
 
 		Cell[] neighbors = board.getNeighbors(layerBase, indexRow, indexColumn);
 		int indexPolarityApparent = 0, countCornersBlack = 0, countEdgesBlack = 0, vertical = 0, horizontal = 0;

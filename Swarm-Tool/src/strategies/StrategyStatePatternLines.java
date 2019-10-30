@@ -1,7 +1,7 @@
 package strategies;
 
 import cells.Cell;
-import cells.CellDisplayBase;
+import cells.CellTalliedBase;
 import gui.Board;
 import swarm.SwarmAgent;
 
@@ -23,8 +23,8 @@ public class StrategyStatePatternLines extends StrategyState {
 		
 		int countStates = board.getPattern().getStateCount();
 		
-		CellDisplayBase[][] layerBase = board.getBaseLayer();
-		CellDisplayBase cellBase = layerBase[indexRow][indexColumn];
+		CellTalliedBase[][] layerBase = board.getBaseLayer();
+		CellTalliedBase cellBase = layerBase[indexRow][indexColumn];
 		
 		Cell[] neighbors = board.getNeighbors(board.getBaseLayer(), indexRow, indexColumn);
 		

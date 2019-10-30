@@ -20,12 +20,12 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import javax.swing.JPanel;
 
-import cells.CellDisplayBase;
-import cells.CellDisplayCorrectness;
+import cells.CellTalliedBase;
+import cells.CellCorrectness;
 import cells.Cell;
-import cells.CellDisplay;
-import cells.CellDisplayPersistence;
-import cells.CellDisplayPolarity;
+import cells.RectangleCellDisplay;
+import cells.CellPersistence;
+import cells.CellTalliedPolarity;
 import patterns.Pattern;
 import strategies.Strategy;
 import swarm.RegisterDefinitionsAgent.DefinitionAgent;
@@ -63,12 +63,12 @@ public class Board extends JPanel implements MouseMotionListener {
 	private Color[] colorsAgents;
 	private SwarmAgent[] agentsSignalTransmitter, agentsStrategyPatternDefault;
 	private SwarmAgent[][] swarm;
-	private CellDisplayBase[][] layerBase;
-	private CellDisplayPolarity[][] layerPolarity;
-	private CellDisplayPersistence[][] layerPersistence;  //MODIFICATION #7: new layer of cells for persistency
-	private CellDisplayCorrectness[][] layerCorrectness;
-	private CellDisplay[][] layerDisplay; //layer to paint
-	private CellDisplay[][][] layers;
+	private CellTalliedBase[][] layerBase;
+	private CellTalliedPolarity[][] layerPolarity;
+	private CellPersistence[][] layerPersistence;  //MODIFICATION #7: new layer of cells for persistency
+	private CellCorrectness[][] layerCorrectness;
+	private RectangleCellDisplay[][] layerDisplay; //layer to paint
+	private Cell[][][] layers;
 
 	public Board(int breadth, Integer[] countsAgents, GUI gui) {
 		this.breadth = breadth;
@@ -79,9 +79,10 @@ public class Board extends JPanel implements MouseMotionListener {
 		swarmVisible = gui.getAgentVisibility();
 		modeMagnetAttract = gui.getAttractorMode();
 		strengthMagnet = gui.getMagnetStrength();
+		indexLayerDisplay = gui.getSelectedLayerIndex();
 		pattern = gui.getPattern();
 		
-		frequencyColorsInitial = new int[CellDisplayBase.getMaximumStateCount()];
+		frequencyColorsInitial = new int[CellTalliedBase.getMaximumStateCount()];
 		frequencyColors = new int[frequencyColorsInitial.length];
 		frequencyPolarities = new int[GUI.COUNT_POLARITIES_MAXIMUM];
 		
@@ -93,24 +94,25 @@ public class Board extends JPanel implements MouseMotionListener {
 		double sizeAgent = (sizeCell * 0.7);
 
 		rangeMagnet = sizeCell * gui.getMagnetRange(); //the attractor affects everything in a five cell block radius
+		
+		
+		layers = new Cell[][][]{layerBase = new CellTalliedBase[breadth][breadth], layerPolarity = new CellTalliedPolarity[breadth][breadth], null, layerPersistence = new CellPersistence[breadth][breadth], layerCorrectness = new CellCorrectness[breadth][breadth]};
 
-		layers = new CellDisplay[][][]{null, layerBase = new CellDisplayBase[breadth][breadth], layerPolarity = new CellDisplayPolarity[breadth][breadth], null, layerPersistence = new CellDisplayPersistence[breadth][breadth], layerCorrectness = new CellDisplayCorrectness[breadth][breadth]};
+		layerDisplay = new RectangleCellDisplay[breadth][breadth];
 		
-		Random generatorNumbersRandom = ThreadLocalRandom.current();
-		
-		//layer 1
-		int countStates = pattern.getStateCount();
-		for (int indexRow = 0; indexRow < layerBase.length; indexRow++) {
-			for (int indexColumn = 0; indexColumn < layerBase[indexRow].length; indexColumn++) {
-				layerBase[indexRow][indexColumn] = new CellDisplayBase(indexRow * sizeCell, indexColumn * sizeCell, sizeCell, generatorNumbersRandom.nextInt(countStates), this);
-			}
+		if(layers[indexLayerDisplay] == null) {
+			indexLayerDisplay = 0;
 		}
-
-		for (int indexRow = 0; indexRow < breadth; indexRow++) {
-			for (int indexColumn = 0; indexColumn < breadth; indexColumn++) {
-				layerPolarity[indexRow][indexColumn] = pattern.createPolarityCell(this, indexRow, indexColumn);
-				layerPersistence[indexRow][indexColumn] = new CellDisplayPersistence(indexRow * sizeCell, indexColumn * sizeCell, sizeCell, this);
-				layerCorrectness[indexRow][indexColumn] = pattern.createCorrectnessCell(this, indexRow, indexColumn);
+		
+		Cell cellBase, cellPolarity, cellPersistence, cellCorrectness;
+		for(int indexRow = 0; indexRow < breadth; indexRow++) {
+			for(int indexColumn = 0; indexColumn < breadth; indexColumn++) {
+				cellBase = (layerBase[indexRow][indexColumn] = new CellTalliedBase(this));
+				cellPolarity = (layerPolarity[indexRow][indexColumn] = pattern.createPolarityCell(this, indexRow, indexColumn));
+				cellPersistence = (layerPersistence[indexRow][indexColumn] = new CellPersistence(this));
+				cellCorrectness = (layerCorrectness[indexRow][indexColumn] = pattern.createCorrectnessCell(this, indexRow, indexColumn));
+				
+				layerDisplay[indexRow][indexColumn] = new RectangleCellDisplay(indexRow * sizeCell, indexColumn * sizeCell, sizeCell, new Cell[]{cellBase, cellPolarity, null, cellPersistence, cellCorrectness}, indexLayerDisplay);
 			}
 		}
 		
@@ -159,10 +161,6 @@ public class Board extends JPanel implements MouseMotionListener {
 		}
 		
 		addMouseMotionListener(this);
-
-		if (gui.indexLayerDisplay == 3) {
-			gui.indexLayerDisplay = 1;
-		}
 	}
 	
 	public boolean getWraparound() {
@@ -209,24 +207,38 @@ public class Board extends JPanel implements MouseMotionListener {
 		return agentsSignalTransmitter;
 	}
 	
-	public CellDisplayBase[][] getBaseLayer() {
+	public CellTalliedBase[][] getBaseLayer() {
 		return layerBase;
 	}
 	
-	public CellDisplayPolarity[][] getPolarityLayer() {
+	public CellTalliedPolarity[][] getPolarityLayer() {
 		return layerPolarity;
 	}
 	
-	public CellDisplayPersistence[][] getPersistenceLayer() {
+	public CellPersistence[][] getPersistenceLayer() {
 		return layerPersistence;
 	}
 	
-	public CellDisplayCorrectness[][] getCorrectnessLayer(){
+	public CellCorrectness[][] getCorrectnessLayer(){
 		return layerCorrectness;
 	}
 	
 	public void setAttractorMode(boolean modeAttractor) {
 		this.modeMagnetAttract = modeAttractor;
+	}
+	
+	public void setDisplayedLayer(int indexLayerDisplay) {
+		if(layers[indexLayerDisplay] != null && this.indexLayerDisplay != indexLayerDisplay) {
+			this.indexLayerDisplay = indexLayerDisplay;
+			
+			for(RectangleCellDisplay[] cellRow : layerDisplay) {
+				for(RectangleCellDisplay cell : cellRow) {
+					cell.setLayer(indexLayerDisplay);
+				}
+			}
+			
+			repaint();
+		}
 	}
 	
 	public void setAgentColor(int indexEntryAgent, Color colorAgents) {
@@ -270,11 +282,11 @@ public class Board extends JPanel implements MouseMotionListener {
 	
 	public void updatePolarityColor(int indexPolarity) {
 		if(indexPolarity < pattern.getPolarityCount()) {
-			CellDisplayPolarity cell;
+			CellTalliedPolarity cell;
 			for(int indexRow = 0; indexRow < layerPolarity.length; indexRow++) {
 				for(int indexColumn = 0; indexColumn < layerPolarity[indexRow].length; indexColumn++) {
 					if((cell = layerPolarity[indexRow][indexColumn]).getState() == indexPolarity) {
-						cell.updatePolarityColor();
+						cell.updateColor();
 					}
 				}
 			}
@@ -283,31 +295,22 @@ public class Board extends JPanel implements MouseMotionListener {
 
 	@Override
 	protected void paintComponent(Graphics helperGraphics) {
-		//draw boards
-		if(gui.indexLayerDisplay == 3) {
-			gui.indexLayerDisplay = indexLayerDisplay;
-			repaint();
-		}
-		else {
-			super.paintComponent(helperGraphics);
+		super.paintComponent(helperGraphics);
 
-			Graphics2D helperGraphics2D = (Graphics2D)helperGraphics;
-			helperGraphics2D.scale(getWidth() / SCALE_BOARD, getHeight() / SCALE_BOARD);
+		Graphics2D helperGraphics2D = (Graphics2D)helperGraphics;
+		helperGraphics2D.scale(getWidth() / SCALE_BOARD, getHeight() / SCALE_BOARD);
 			
-			layerDisplay = layers[indexLayerDisplay = gui.indexLayerDisplay];
-			
-			for(int indexRow = 0; indexRow < layerDisplay.length; indexRow++) {
-				for(int indexColumn = 0; indexColumn < layerDisplay[indexRow].length; indexColumn++) {
-					layerDisplay[indexRow][indexColumn].draw(helperGraphics2D);
-				}
+		for(int indexRow = 0; indexRow < layerDisplay.length; indexRow++) {
+			for(int indexColumn = 0; indexColumn < layerDisplay[indexRow].length; indexColumn++) {
+				layerDisplay[indexRow][indexColumn].draw(helperGraphics2D);
 			}
+		}
 			
-			//draw agents
-			if(swarmVisible) {
-				for(SwarmAgent[] ag : swarm) {
-					for(SwarmAgent agent : ag) {
-						agent.draw(helperGraphics2D);
-					}
+		//draw agents
+		if(swarmVisible) {
+			for(SwarmAgent[] agents : swarm) {
+				for(SwarmAgent agent : agents) {
+					agent.draw(helperGraphics2D);
 				}
 			}
 		}
@@ -322,8 +325,8 @@ public class Board extends JPanel implements MouseMotionListener {
 		//for each agent, have the agent decide randomly whether to flip its cell's color
 		
 		int indexRow, indexColumn;
-		for(SwarmAgent[] ag : swarm) {
-			for(SwarmAgent agent : ag) {
+		for(SwarmAgent[] agents : swarm) {
+			for(SwarmAgent agent : agents) {
 				//10% of the time, the agent will determine algebraically which cell it's in, then flip the color of that cell.
 				//a better approach than this would be to have the agent store which cell it's currently in, then just flip that
 				//color 10% of the time. this would also make it easy to keep the agent from flipping the same cell many times
@@ -370,7 +373,7 @@ public class Board extends JPanel implements MouseMotionListener {
 		int indexRowNeighborMaximum = indexRow + 1;
 		int indexColumnNeighborMinimum = indexColumn - 1;
 		int indexColumnNeighborMaximum = indexColumn + 1;
-		Cell[] neighbors = new CellDisplay[9];
+		Cell[] neighbors = new Cell[9];
 		for(int indexRowNeighbor = indexRow - 1; indexRowNeighbor <= indexRowNeighborMaximum; indexRowNeighbor++) {
 			for(indexColumnNeighbor = indexColumnNeighborMinimum; indexColumnNeighbor <= indexColumnNeighborMaximum; indexColumnNeighbor++) {
 				if(indexRowNeighbor != indexRow || indexColumnNeighbor != indexColumn) {
@@ -431,9 +434,6 @@ public class Board extends JPanel implements MouseMotionListener {
 					if (generatorNumbersRandom.nextDouble() < strengthMagnet) {
 						multiplierScale = multiplier / distance;
 						agent.setVelocityCells(multiplierScale * distanceX, multiplierScale * distanceY);
-					}
-					else {
-						System.out.println("failed");
 					}
 				}
 			}

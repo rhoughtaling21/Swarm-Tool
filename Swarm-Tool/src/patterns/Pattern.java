@@ -1,8 +1,8 @@
 package patterns;
 
 import cells.Cell;
-import cells.CellDisplayCorrectness;
-import cells.CellDisplayPolarity;
+import cells.CellCorrectness;
+import cells.CellTalliedPolarity;
 import gui.Board;
 import gui.GUI;
 import strategies.Strategy;
@@ -29,9 +29,8 @@ public abstract class Pattern {
 	
 	protected abstract int computeStatePolarity(Board board, int indexRow, int indexColumn);
 	
-	public final CellDisplayPolarity createPolarityCell(Board board, int indexRow, int indexColumn) {
-		double sizeCell = board.getCellSize();
-		return new CellDisplayPolarity((indexRow * sizeCell), (indexColumn * sizeCell), sizeCell, computeStatePolarity(board, indexRow, indexColumn), board);
+	public final CellTalliedPolarity createPolarityCell(Board board, int indexRow, int indexColumn) {
+		return new CellTalliedPolarity(computeStatePolarity(board, indexRow, indexColumn), board);
 	}
 	
 	public final void updatePolarityCell(Board board, int indexRow, int indexColumn) {
@@ -81,9 +80,8 @@ public abstract class Pattern {
 		return 0;
 	}
 	
-	public final CellDisplayCorrectness createCorrectnessCell(Board board, int indexRow, int indexColumn) {
-		double sizeCell = board.getCellSize();
-		return new CellDisplayCorrectness((indexRow * sizeCell), (indexColumn * sizeCell), sizeCell, computePolarityCorrectness(board, indexRow, indexColumn), board);
+	public final CellCorrectness createCorrectnessCell(Board board, int indexRow, int indexColumn) {
+		return new CellCorrectness(computePolarityCorrectness(board, indexRow, indexColumn), board);
 	}
 	
 	public final void updateCorrectnessCell(Board board, int indexRow, int indexColumn) {

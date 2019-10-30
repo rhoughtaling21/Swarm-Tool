@@ -3,7 +3,7 @@ package strategies;
 import java.util.concurrent.ThreadLocalRandom;
 
 import cells.Cell;
-import cells.CellDisplayBase;
+import cells.CellTalliedBase;
 import gui.Board;
 import swarm.SwarmAgent;
 
@@ -25,7 +25,7 @@ public class StrategyStatePatternCheckerboard extends StrategyState {
 		
 		int countCorners = 0;
 		int countEdges = 0;
-		CellDisplayBase[][] layerBase = board.getBaseLayer();
+		CellTalliedBase[][] layerBase = board.getBaseLayer();
 		Cell[] neighbors = board.getNeighbors(layerBase, indexRow, indexColumn);
 		for(int index = 0; index < neighbors.length; index++)	{
 			if(neighbors[index] != null) {
