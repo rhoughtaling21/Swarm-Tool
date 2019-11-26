@@ -1,25 +1,26 @@
 package cells;
-/*		Author: Zak Gray and Tim Dobeck
- * 		Description: This is the constuctor for determining the first board's cells. The cells in layer 1 can be only black or white. This class mainly just
- * 					creates the instance of the cells in layer 1. FlipColor allows the color to be flipped if any cell is clicked. This class extends GenericCell 
- * 					which is an abstract class that creates the cells as rectangles
- * 		Parameters: Cell is made up of an x coordinate, a y coordinate, a fixed size, and a color and for this class (layer 1) the cells can only be either 
- * 					black or white.
- * 					setColor is made up of an object color which determines what color each cell can be.
- */
 
 import java.awt.Color;
 
 import gui.Board;
 
 /**
- * @authors Zak, Nick, Gabriel, Tim
- * description: Cell is a rectangle of one color that is generated in two 2X2 Arrays (cells, cells2) in board
- * parameters: Constructor takes in an X and Y position, a width and height(size X size), and a Color to fill
+ * CellTalliedPolarity defines the Cells of the Polarity Layer, each of which is to display the 'polarity' of state of the corresponding Cell in the Board's Base Layer
+ * and keep track of how many Cells have each 'polarity'.
+ * 
+ * @see CellTallied
  */
 public class CellTalliedPolarity extends CellTallied {
+	/** The array that contains the Colors that correspond to each possible polarity */
 	private Color[] colorsPolarity;
 	
+	/**
+	 * Creates a new Cell of type CellTalliedPolarity that is initially in the given state and that considers itself a part of the given Board
+	 * @param indexState - The (integer) state that this Cell is to be in initially
+	 * @param board - The Board to which this Cell will be attached
+	 * 
+	 * @see CellTallied#CellTallied(int, Board, int[])
+	 */
 	public CellTalliedPolarity(int indexState, Board board) {
 		super(indexState, board, board.getPolarityFrequencies());
 		
@@ -28,6 +29,11 @@ public class CellTalliedPolarity extends CellTallied {
 		updateState();
 	}
 	
+	/**
+	 * {@inheritDoc}<br/>
+	 * --------------------<br/>
+	 * Retrieves the appropriate Color from {@link #colorsPolarity}
+	 */
 	@Override
 	protected Color determineColor() {
 		return colorsPolarity[indexState];

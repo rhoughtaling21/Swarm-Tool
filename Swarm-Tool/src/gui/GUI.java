@@ -954,7 +954,7 @@ public class GUI {
 		labelsFrequencyColors = new JLabel[countStates];
 		String nameColor;
 		for(int indexLabel = 0; indexLabel < countStates; indexLabel++) {
-			nameColor = getColorName(CellTalliedBase.COLORS_BASE[indexLabel]);
+			nameColor = getColorName(CellTalliedBase.retrieveCellColor(indexLabel));
 			nameColor = nameColor.substring(0, 1) + nameColor.substring(1).toLowerCase();
 
 			labelsFrequencyColorsInitial[indexLabel] = new JLabel("0");

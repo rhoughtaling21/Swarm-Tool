@@ -23,7 +23,7 @@ import javax.swing.JPanel;
 import cells.CellTalliedBase;
 import cells.CellCorrectness;
 import cells.Cell;
-import cells.RectangleCellDisplay;
+import cells.Rectangle2DCell;
 import cells.CellPersistence;
 import cells.CellTalliedPolarity;
 import patterns.Pattern;
@@ -67,7 +67,7 @@ public class Board extends JPanel implements MouseMotionListener {
 	private CellTalliedPolarity[][] layerPolarity;
 	private CellPersistence[][] layerPersistence;  //MODIFICATION #7: new layer of cells for persistency
 	private CellCorrectness[][] layerCorrectness;
-	private RectangleCellDisplay[][] layerDisplay; //layer to paint
+	private Rectangle2DCell[][] layerDisplay; //layer to paint
 	private Cell[][][] layers;
 
 	public Board(int breadth, Integer[] countsAgents, GUI gui) {
@@ -98,7 +98,7 @@ public class Board extends JPanel implements MouseMotionListener {
 		
 		layers = new Cell[][][]{layerBase = new CellTalliedBase[breadth][breadth], layerPolarity = new CellTalliedPolarity[breadth][breadth], null, layerPersistence = new CellPersistence[breadth][breadth], layerCorrectness = new CellCorrectness[breadth][breadth]};
 
-		layerDisplay = new RectangleCellDisplay[breadth][breadth];
+		layerDisplay = new Rectangle2DCell[breadth][breadth];
 		
 		if(layers[indexLayerDisplay] == null) {
 			indexLayerDisplay = 0;
@@ -112,7 +112,7 @@ public class Board extends JPanel implements MouseMotionListener {
 				cellPersistence = (layerPersistence[indexRow][indexColumn] = new CellPersistence(this));
 				cellCorrectness = (layerCorrectness[indexRow][indexColumn] = pattern.createCorrectnessCell(this, indexRow, indexColumn));
 				
-				layerDisplay[indexRow][indexColumn] = new RectangleCellDisplay(indexRow * sizeCell, indexColumn * sizeCell, sizeCell, new Cell[]{cellBase, cellPolarity, null, cellPersistence, cellCorrectness}, indexLayerDisplay);
+				layerDisplay[indexRow][indexColumn] = new Rectangle2DCell(indexRow * sizeCell, indexColumn * sizeCell, sizeCell, new Cell[]{cellBase, cellPolarity, null, cellPersistence, cellCorrectness}, indexLayerDisplay);
 			}
 		}
 		
@@ -231,8 +231,8 @@ public class Board extends JPanel implements MouseMotionListener {
 		if(layers[indexLayerDisplay] != null && this.indexLayerDisplay != indexLayerDisplay) {
 			this.indexLayerDisplay = indexLayerDisplay;
 			
-			for(RectangleCellDisplay[] cellRow : layerDisplay) {
-				for(RectangleCellDisplay cell : cellRow) {
+			for(Rectangle2DCell[] cellRow : layerDisplay) {
+				for(Rectangle2DCell cell : cellRow) {
 					cell.setLayer(indexLayerDisplay);
 				}
 			}
