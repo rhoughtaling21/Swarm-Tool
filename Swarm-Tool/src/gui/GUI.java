@@ -1510,6 +1510,8 @@ public class GUI {
 				}
 			}
 			
+			frmProjectLegion.validate();
+			
 			if(exportScreenshot.getValue()) {
 				try {
 					ImageIO.write(board.capture(), "JPG", new File(pathScreenshot.getValue() + File.separator + "Simulation_" + FORMATTER_TIMESTAMP.format(LocalDateTime.now()) + FILETYPE_SCREENSHOT));

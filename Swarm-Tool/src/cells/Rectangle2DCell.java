@@ -5,6 +5,8 @@ import java.awt.geom.Rectangle2D;
 
 /**
  * Rectangle2DCell defines the Rectangles that serve as visual representations for the Cells of the active layer.
+ * 
+ * @see java.awt.geom.Rectangle2D.Double
  */
 @SuppressWarnings("serial")
 public class Rectangle2DCell extends Rectangle2D.Double {

@@ -1,12 +1,5 @@
 package gui;
 
-/*
- *		Authors: Zakary Gray, Tim Dobeck, Nick Corrado, Gabriel Petkac
- *		Description:  This is currently the main class for all intents and purposes.  The board holds the cells of layers 1 and 2
- *               as well as the agents in the layer 3 swarm. The jframe of Board are displayed in the GUI after a new board is created
- *               in NewBoardWindow.
- */
-
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
@@ -30,44 +23,70 @@ import patterns.Pattern;
 import strategies.Strategy;
 import swarm.RegisterDefinitionsAgent.DefinitionAgent;
 import swarm.SwarmAgent;
-/*
- * Authors: Nick, Tim, Zak, Gabriel
- * Description: This is the guts of the program. Two 2x2 Cell arrays of size[size X size] are created to be layers 1 and 2,
- * Layer 2 gives information about layer 1, for example... Layer one currently tells which polarity (black in the corners or white)
- * of a checker board the cells in layer 1 are in.  An array of Agents is also created with random movement over the layers 1 & 2
- * while randomly changing the cells underneath them. In the future, the agents will have a low level of intelligence.
- * Parameters: width of board in pixels, height of board in pixels, number of cells on a side, and number of Agents
+
+/**
+ * Board defines a JPanel capable of displaying a multi-layered grid of Cells of type {@link cells#Cell}.
+ * 
+ * @see JPanel
+ * @see MouseMotionListener
  */
 @SuppressWarnings("serial")
 public class Board extends JPanel implements MouseMotionListener {
+	/** The minimum allowed value of {@link #breadth} -- ({@value #BREADTH_MINIMUM}) */
 	public static final int BREADTH_MINIMUM = 1;
+	/** -- ({@value #SCALE_BOARD}) */
 	public static final double SCALE_BOARD = 800;
 	
+	/** */
 	private static final int COUNT_ENTRIES_AGENTS = GUI.COUNT_ENTRIES_AGENTS;
 	
+	/** Whether or not the swarm of agents is to be displayed on-screen */
 	private boolean swarmVisible;
-	private boolean wraparound; //whether the walls of the Board wrap or not; by default, they don't
+	/** Whether or not the */
+	private boolean wraparound;
+	/** Whether the magnet is to attract or repel */
 	private boolean modeMagnetAttract;
-	private int breadth; //these are the numbers of cells in the board, NOT the graphical dimensions of the board
+	/** The number of Cells in each of the Board's rows and columns */
+	private int breadth;
+	/** The total number of Cells that make up one of the Board's layers */
 	private int countCells;
+	/** */
 	private int indexLayerDisplay;
+	/** */
 	private double sizeCell; //pixel dimensions of each cell
+	/** */
 	private double rangeMagnet; //distance in cells, not pixels
+	/** */
 	private double strengthMagnet;
+	/** */
 	private Pattern pattern;//strategy that the agents and layer 2 use for their calculations given the current goal
+	/** */
 	private GUI gui;
+	/** */
 	private int[] frequencyColorsInitial;
+	/** */
 	private int[] frequencyColors;
+	/** */
 	private int[] frequencyPolarities;
+	/** */
 	private Integer[] countsAgents;
+	/** */
 	private Color[] colorsAgents;
+	/** */
 	private SwarmAgent[] agentsSignalTransmitter, agentsStrategyPatternDefault;
+	/**  */
 	private SwarmAgent[][] swarm;
+	/** The 2-Dimensional array of Cells that make up the Board's Base Layer */
 	private CellTalliedBase[][] layerBase;
+	/** The 2-Dimensional array of Cells that make up the Board's Polarity Layer */
 	private CellTalliedPolarity[][] layerPolarity;
-	private CellPersistence[][] layerPersistence;  //MODIFICATION #7: new layer of cells for persistency
+	/** The 2-Dimensional array of Cells that make up the Board's Persistence Layer */
+	private CellPersistence[][] layerPersistence;
+	/** The 2-Dimensional array of Cells that make up the Board's Correctness Layer */
 	private CellCorrectness[][] layerCorrectness;
-	private Rectangle2DCell[][] layerDisplay; //layer to paint
+	/** The 2-Dimensional array of Rectangles that represent */
+	private Rectangle2DCell[][] layerDisplay;
+	/** The array of layers of Cells */
 	private Cell[][][] layers;
 
 	public Board(int breadth, Integer[] countsAgents, GUI gui) {
@@ -520,7 +539,9 @@ public class Board extends JPanel implements MouseMotionListener {
 		Graphics2D helperGraphics2D = image.createGraphics();
 		helperGraphics2D.scale(image.getWidth() / (double)getWidth(), image.getHeight() / (double)getHeight());
 		
-		paint(helperGraphics2D);
+		printAll(helperGraphics2D);
+		
+		helperGraphics2D.dispose();
 		
 		return image;
 	}
