@@ -6,9 +6,9 @@ import gui.Board;
 import swarm.SwarmAgent;
 
 public class StrategyStatePatternLines extends StrategyState {
-	private static final Strategy STRATEGY = new StrategyStatePatternLines();
+	private static final StrategyStatePatternLines STRATEGY = new StrategyStatePatternLines();
 	
-	public static Strategy get() {
+	public static StrategyStatePatternLines get() {
 		return STRATEGY;
 	}
 	

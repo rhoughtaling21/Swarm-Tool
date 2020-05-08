@@ -4,9 +4,9 @@ import gui.Board;
 import swarm.SwarmAgent;
 
 public class StrategyStatePatternBlackout extends StrategyState {
-	private static final Strategy STRATEGY = new StrategyStatePatternBlackout();
+	private static final StrategyStatePatternBlackout STRATEGY = new StrategyStatePatternBlackout();
 	
-	public static Strategy get() {
+	public static StrategyStatePatternBlackout get() {
 		return STRATEGY;
 	}
 	

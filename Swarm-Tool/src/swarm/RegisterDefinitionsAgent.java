@@ -3,10 +3,14 @@ package swarm;
 import strategies.Strategy;
 import strategies.StrategyPolarityAlternator;
 import strategies.StrategyPolarityEdges;
+import strategies.StrategyPolarityEqualizer;
+import strategies.StrategyPolarityHybridDiagonalsEqualizer;
+import strategies.StrategyPolarityPatternDiagonals;
 import strategies.StrategyPolaritySignal;
+import strategies.StrategyRandom;
 
 public class RegisterDefinitionsAgent {
-	private static final DefinitionAgent[] REGISTRY = {new DefinitionAgentStandard(), new DefinitionAgentSpecial(), new DefinitionAgentAlternator(), new DefinitionAgentEdger(), new DefinitionAgentSignalTransmitter(), new DefinitionAgentSignalReceiver()};
+	private static final DefinitionAgent[] REGISTRY = {new DefinitionAgentStandard(), new DefinitionAgentSpecial(), new DefinitionAgentAlternator(), new DefinitionAgentEdger(), new DefinitionAgentEqualizer(), new DefinitionAgentRandomStandardEqualizer(), new DefinitionAgentHybridDiagonalsEqualizer(), new DefinitionAgentSignalTransmitter(), new DefinitionAgentSignalReceiver()};
 	private static final int SIZE = REGISTRY.length;
 	private static String[] entries;
 	
@@ -113,6 +117,69 @@ public class RegisterDefinitionsAgent {
 		private static final String NAME = "Edger";
 		private static final Motion MOTION = MotionEdge.get();
 		private static final Strategy STRATEGY = StrategyPolarityEdges.get();
+		
+		@Override
+		public String getName() {
+			return NAME;
+		}
+		
+		@Override
+		public Motion getMotion() {
+			return MOTION;
+		}
+		
+		@Override
+		public Strategy getStrategy() {
+			return STRATEGY;
+		}
+	}
+	
+	private static class DefinitionAgentEqualizer extends DefinitionAgent {
+		private static final String NAME = "Equalizer";
+		private static final Motion MOTION = MotionFree.get();
+		private static final Strategy STRATEGY = StrategyPolarityEqualizer.get();
+		
+		@Override
+		public String getName() {
+			return NAME;
+		}
+		
+		@Override
+		public Motion getMotion() {
+			return MOTION;
+		}
+		
+		@Override
+		public Strategy getStrategy() {
+			return STRATEGY;
+		}
+	}
+	
+	private static class DefinitionAgentRandomStandardEqualizer extends DefinitionAgent {
+		private static final String NAME = "Diagonals/Equalizer";
+		private static final Motion MOTION = MotionFree.get();
+		private static final Strategy STRATEGY = new StrategyRandom(new Strategy[]{StrategyPolarityPatternDiagonals.get(), StrategyPolarityEqualizer.get()}, new int[] {2, 1});
+		
+		@Override
+		public String getName() {
+			return NAME;
+		}
+		
+		@Override
+		public Motion getMotion() {
+			return MOTION;
+		}
+		
+		@Override
+		public Strategy getStrategy() {
+			return STRATEGY;
+		}
+	}
+	
+	private static class DefinitionAgentHybridDiagonalsEqualizer extends DefinitionAgent {
+		private static final String NAME = "Diagonals-Equalizer";
+		private static final Motion MOTION = MotionFree.get();
+		private static final Strategy STRATEGY = StrategyPolarityHybridDiagonalsEqualizer.get();
 		
 		@Override
 		public String getName() {

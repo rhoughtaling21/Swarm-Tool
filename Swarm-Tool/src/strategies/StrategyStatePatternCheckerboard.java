@@ -8,9 +8,9 @@ import gui.Board;
 import swarm.SwarmAgent;
 
 public class StrategyStatePatternCheckerboard extends StrategyState {
-	private static final Strategy STRATEGY = new StrategyStatePatternCheckerboard();
+	private static final StrategyStatePatternCheckerboard STRATEGY = new StrategyStatePatternCheckerboard();
 	
-	public static Strategy get() {
+	public static StrategyStatePatternCheckerboard get() {
 		return STRATEGY;
 	}
 	

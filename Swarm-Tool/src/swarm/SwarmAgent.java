@@ -88,8 +88,20 @@ public class SwarmAgent extends Ellipse2D.Double {
 		this(generateRandomCoordinate(), generateRandomCoordinate(), size, colorFill, board, definition.getMotion(), definition.isSlow(), definition.getStrategy());
 	}
 	
-	public int getPolarityCount(int indexPolarity) {
+	public int getMemoryCapacity() {
+		return capacityMemory;
+	}
+	
+	public int getMemoryCount() {
 		if(modeMemory) {
+			return polaritiesRecent.size();
+		}
+		
+		return 0;
+	}
+	
+	public int getMemoryPolarityFrequency(int indexPolarity) {
+		if(modeMemory && indexPolarity < countsPolaritiesRecent.length) {
 			return countsPolaritiesRecent[indexPolarity];
 		}
 		
@@ -128,16 +140,10 @@ public class SwarmAgent extends Ellipse2D.Double {
 	public void setStrategy(Strategy strategy) {
 		this.strategy = strategy;
 		
-		ArrayList<Integer> polaritiesRecent = null;
-		int[] countsPolaritiesRecent = null;
+		capacityMemory = strategy.getMemoryCapacity();
+		modeMemory = capacityMemory > 0;
 		
-		if(modeMemory = ((capacityMemory = strategy.getMemoryCapacity()) > 0)) {
-			polaritiesRecent = new ArrayList<Integer>(capacityMemory);
-			countsPolaritiesRecent = new int[board.getPattern().getPolarityCount()];
-		}
-		
-		this.polaritiesRecent = polaritiesRecent;
-		this.countsPolaritiesRecent = countsPolaritiesRecent;
+		clearMemory();
 	}
 
 	/**
@@ -232,13 +238,28 @@ public class SwarmAgent extends Ellipse2D.Double {
 		y = coordinateY;
 	}
 
-	public void seePolarity(int indexPolarity) {
-		if(polaritiesRecent.size() >= capacityMemory) {
-			countsPolaritiesRecent[polaritiesRecent.remove(0)]--;
+	public void clearMemory() {
+		ArrayList<Integer> polaritiesRecent = null;
+		int[] countsPolaritiesRecent = null;
+		
+		if(modeMemory) {
+			polaritiesRecent = new ArrayList<Integer>(capacityMemory);
+			countsPolaritiesRecent = new int[board.getPattern().getPolarityCount()];
 		}
 		
-		polaritiesRecent.add(indexPolarity);
-		countsPolaritiesRecent[indexPolarity]++;
+		this.polaritiesRecent = polaritiesRecent;
+		this.countsPolaritiesRecent = countsPolaritiesRecent;
+	}
+	
+	public void seePolarity(int indexPolarity) {
+		if(modeMemory) {
+			if(polaritiesRecent.size() >= capacityMemory) {
+				countsPolaritiesRecent[polaritiesRecent.remove(0)]--;
+			}
+			
+			polaritiesRecent.add(indexPolarity);
+			countsPolaritiesRecent[indexPolarity]++;
+		}
 	}
 	
 	public void logic() {

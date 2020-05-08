@@ -5,10 +5,11 @@ import gui.Board;
 import swarm.SwarmAgent;
 
 public class StrategyPolarityEdges extends StrategyPolarity {
-	private static final int THRESHOLD_NEIGHBORING_POLARITY_DOMINANT = 2;
-	private static final Strategy STRATEGY = new StrategyPolarityEdges();
+	static final int THRESHOLD_NEIGHBORING_POLARITY_DOMINANT = 2;
 	
-	public static Strategy get() {
+	private static final StrategyPolarityEdges STRATEGY = new StrategyPolarityEdges();
+	
+	public static StrategyPolarityEdges get() {
 		return STRATEGY;
 	}
 	

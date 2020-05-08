@@ -7,9 +7,9 @@ import gui.Board;
 import swarm.SwarmAgent;
 
 public class StrategyPolarityAlternator extends StrategyPolarity {
-	private static final Strategy STRATEGY = new StrategyPolarityAlternator();
+	private static final StrategyPolarityAlternator STRATEGY = new StrategyPolarityAlternator();
 	
-	public static Strategy get() {
+	public static StrategyPolarityAlternator get() {
 		return STRATEGY;
 	}
 	

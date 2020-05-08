@@ -7,18 +7,19 @@ import cells.Cell;
 import gui.Board;
 import swarm.SwarmAgent;
 
-public class StrategyPolarityPatternDiagonals extends StrategyPolarity {
-	static final int CAPACITY_MEMORY = 20;
-	static final int THRESHOLD_POLARITY_DOMINANT_MEMORY = 18;
-	static final int THRESHOLD_POLARITY_DOMINANT_NEIGHBORING = 3;
+public class StrategyPolarityHybridDiagonalsEqualizer extends StrategyPolarity {
+	static final int CAPACITY_MEMORY = Math.max(StrategyPolarityPatternDiagonals.CAPACITY_MEMORY, StrategyPolarityEqualizer.CAPACITY_MEMORY);
+	static final int THRESHOLD_POLARITY_DOMINANT_MEMORY = StrategyPolarityPatternDiagonals.THRESHOLD_POLARITY_DOMINANT_MEMORY;
+	static final int THRESHOLD_POLARITY_DOMINANT_NEIGHBORING = StrategyPolarityPatternDiagonals.THRESHOLD_POLARITY_DOMINANT_NEIGHBORING;
 	
-	private static final StrategyPolarityPatternDiagonals STRATEGY = new StrategyPolarityPatternDiagonals();
+	private static final StrategyPolarityHybridDiagonalsEqualizer STRATEGY = new StrategyPolarityHybridDiagonalsEqualizer();
+	private static final StrategyPolarityEqualizer STRATEGY_EQUALIZER = StrategyPolarityEqualizer.get();
 	
-	public static StrategyPolarityPatternDiagonals get() {
+	public static StrategyPolarityHybridDiagonalsEqualizer get() {
 		return STRATEGY;
 	}
 	
-	private StrategyPolarityPatternDiagonals() {
+	private StrategyPolarityHybridDiagonalsEqualizer() {
 		
 	}
 	
@@ -54,6 +55,8 @@ public class StrategyPolarityPatternDiagonals extends StrategyPolarity {
 				}
 			}
 		}
+		
+		int indexPolarityCurrent = board.getPolarityLayer()[indexRow][indexColumn].getState();
 		
 		int indexPolarity;
 		
@@ -121,7 +124,10 @@ public class StrategyPolarityPatternDiagonals extends StrategyPolarity {
 			}
 		}
 		
-		int indexPolarityCurrent = board.getPolarityLayer()[indexRow][indexColumn].getState();
+		int indexPolarityMinimum = STRATEGY_EQUALIZER.determineDesiredPolarity(board, agent);
+		if(indexPolarityMinimum != indexPolarityCurrent) {
+			return indexPolarityMinimum;
+		}
 		
 		for(indexPolarity = 0; indexPolarity < countPolarities; indexPolarity++) {
 			if(frequenciesPolaritiesNeighboring[indexPolarity] == 0) {
@@ -148,6 +154,7 @@ public class StrategyPolarityPatternDiagonals extends StrategyPolarity {
 				return indexPolarity;
 			}
 		}
+		
 		
 		return indexPolarityCurrent;
 	}

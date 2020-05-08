@@ -142,7 +142,7 @@ public class GUI {
 	private static final String[][] PROPERTIES = {PROPERTIES_BOARD, PROPERTIES_AGENTS_COUNTS, PROPERTIES_AGENTS, PROPERTIES_PHEROMONES, PROPERTIES_RULES, PROPERTIES_COLORS_AGENTS, PROPERTIES_COLORS_POLARITIES, PROPERTIES_EXPORT};
 	private static final HashMap<Color, String> MAP_COLORS_NAMES = generateMapColorsNames();
 	private static final HashMap<String, Color> MAP_COLORS = generateMapColors();
-	private static final HashMap<String, Pattern> MAP_STRATEGIES = generateMapStrategies();
+	private static final HashMap<String, Pattern> MAP_PATTERNS = generateMapStrategies();
 
 	private boolean timerReady;
 	private boolean timerActive;
@@ -362,9 +362,6 @@ public class GUI {
 
 		JMenu mnFile = new JMenu("File");
 		menuBar.add(mnFile);
-
-		SELECTOR_FILEPATH.setAcceptAllFileFilterUsed(false);
-		SELECTOR_FILEPATH.setFileFilter(new FileNameExtensionFilter("Properties Files", "properties"));
 		
 		JMenuItem mntmOpen = new JMenuItem("Import Preferences");
 		mntmOpen.addActionListener(
@@ -1079,7 +1076,7 @@ public class GUI {
 				@Override
 				public void actionPerformed(ActionEvent e) {
 					String nameStrategy = (String)((JComboBox<String>)e.getSource()).getSelectedItem();
-					goalStrategy = getStrategy(nameStrategy);
+					goalStrategy = getPattern(nameStrategy);
 
 					if(board == null) {
 						updatePolarityCount();
@@ -1776,9 +1773,10 @@ public class GUI {
 		}
 
 		if(modeAutomatic.getValue()) {
+			
 			if(indexStep >= countStepsMaximum.getValue()) {
 				indexRepetition++;
-
+				
 				if(indexRepetition >= countRepetitionsMaximum.getValue()) {
 					buttonSwarmActive.setSelected(true);
 					buttonSwarmActive.doClick();
@@ -1945,24 +1943,24 @@ public class GUI {
 		return null;
 	}
 
-	private static Pattern getStrategy(String nameStrategy) {
-		nameStrategy = nameStrategy.toUpperCase();
+	private static Pattern getPattern(String namePattern) {
+		namePattern = namePattern.toUpperCase();
 
-		if(MAP_STRATEGIES.containsKey(nameStrategy)) {
-			return MAP_STRATEGIES.get(nameStrategy);
+		if(MAP_PATTERNS.containsKey(namePattern)) {
+			return MAP_PATTERNS.get(namePattern);
 		}
 
-		StringBuilder messageError = new StringBuilder("Error: Invalid Strategy '");
-		messageError.append(nameStrategy);
-		messageError.append("' (Allowed Strategies:");
-		for(String nameStrategyKey : MAP_COLORS.keySet()) {
+		StringBuilder messageError = new StringBuilder("Error: Invalid Pattern '");
+		messageError.append(namePattern);
+		messageError.append("' (Allowed Patterns:");
+		for(String namePatternKey : MAP_COLORS.keySet()) {
 			messageError.append(' ');
-			messageError.append(nameStrategyKey);
+			messageError.append(namePatternKey);
 		}
 		messageError.append(')');
 		System.out.println(messageError.toString());
 
-		return MAP_STRATEGIES.get("CHECKERBOARD");
+		return MAP_PATTERNS.get("CHECKERBOARD");
 	}
 	
 	private static GridBagConstraints createConstraints(int x, int y, int width, double weightX, double weightY, Insets insets) {

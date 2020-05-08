@@ -170,7 +170,7 @@ public class Board extends JPanel implements MouseMotionListener {
 		}
 		
 		agentsStrategyPatternDefault = agentsStrategyPatternDefaultList.toArray(agentsStrategyPatternDefault = new SwarmAgent[] {});
-		agentsSignalTransmitter = swarm[4];
+		agentsSignalTransmitter = swarm[swarm.length - 2];
 		
 		if(agentsSignalTransmitter != null) {
 			double rangeSignal = gui.getSignalRange();
@@ -277,6 +277,12 @@ public class Board extends JPanel implements MouseMotionListener {
 				
 				for(SwarmAgent agent : agentsStrategyPatternDefault) {
 					agent.setStrategy(strategySwarm);
+				}
+				
+				for(SwarmAgent[] agents : swarm) {
+					for(SwarmAgent agent : agents) {
+						agent.clearMemory();
+					}
 				}
 			}
 			
